@@ -1,0 +1,189 @@
+<%- include('layout') %>
+<%- include('partials/nav') %>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Programs Management</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <link rel="stylesheet" href="../public/css/styles.css">
+  <style>
+    .btn-custom {
+      background-color: #007bff; /* Customize button color */
+      color: #fff;
+    }
+    .btn-custom:hover {
+      background-color: #0056b3; /* Darker shade on hover */
+    }
+    .table-container {
+      overflow-x: auto; /* Ensures horizontal scrolling if table overflows */
+    }
+  </style>
+</head>
+<body>
+  <div class="container mt-5">
+    <h1 class="text-center mb-4">Programs Management</h1>
+
+    <!-- Add Program Button -->
+    <a href="/programs/form" class="btn btn-custom mb-3"><i class="fas fa-plus"></i> Add Program</a>
+
+    <!-- Display Programs -->
+    <% if (locals.programs) { %>
+      <h2 class="mb-4">All Programs</h2>
+      <div class="table-container">
+        <table class="table table-bordered table-striped">
+          <thead class="thead-dark">
+            <tr>
+              <th title="EXAMPLE COMPUTER SCIENCE">Program Name</th>
+              <th>Program Code</th>
+              <th title="MEANS NUMBER OF YEAR FOR PROGRAM">Program Duration</th>
+              <th>Level</th>
+              <th title="MEANS PROGRAM DEPARTMENT">Department</th>
+              <th>Program Capacity</th>
+              <th  title="MAY BE FULL TIME OR EVENING">Program Type</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% programs.forEach(program => { %>
+              <tr>
+                <td title="EXAMPLE COMPUTER SCIENCE"><%= program.program_name %></td>
+                <td><%= program.program_code %></td>
+                <td title="MEANS NUMBER OF YEAR FOR PROGRAM"><%= program.duration %></td>
+                <td><%= program.level %></td>
+                <td title="MEANS PROGRAM DEPARTMENT"><%= program.category %></td>
+                <td><%= program.program_capacity %></td>
+                <td title="MAY BE FULL TIME OR EVENING"><%= program.program_type %></td>
+                <td>
+                  <!-- Edit Button -->
+                  <button type="button" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#updateModal<%= program.program_id %>">
+                    Edit
+                  </button>
+                  <!-- Delete Button -->
+                  <a href="/programs/delete/<%= program.program_id %>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this program?');">
+                    Delete
+                  </a>
+                </td>
+              </tr>
+
+              <!-- Update Modal -->
+              <div class="modal fade" id="updateModal<%= program.program_id %>" tabindex="-1" role="dialog" aria-labelledby="updateModalLabel<%= program.program_id %>" aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <h5 class="modal-title" id="updateModalLabel<%= program.program_id %>">Update Program</h5>
+                      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                      </button>
+                    </div>
+                    <div class="modal-body">
+                      <form action="/programs/edit/<%= program.program_id %>" method="post">
+                        <div class="form-group">
+                          <label for="name">Program Name:</label>
+                          <input type="text" id="name" name="name" class="form-control" value="<%= program.program_name %>" required>
+                        </div>
+                        <div class="form-group">
+                          <label for="program_code">Program Code:</label>
+                          <input type="number" id="program_code" name="program_code" class="form-control" value="<%= program.program_code %>" required>
+                        </div>
+                        <div class="form-group">
+                          <label for="duration">Duration:</label>
+                          <input type="text" id="duration" name="duration" class="form-control" value="<%= program.duration %>" required>
+                        </div>
+                        <div class="form-group">
+                          <label for="level">Level:</label>
+                          <input type="text" id="level" name="level" class="form-control" value="<%= program.level %>" required>
+                        </div>
+
+
+
+                        <div class="form-group">
+                          <label for="category">Department:</label>
+                          <select id="category" name="category" class="form-control select2" required>
+                            <% departments.forEach(department => { %>
+                              <option value="<%= department.department_name %>"><%= department.department_name %> </option>
+                            <% }); %>
+                          </select>
+                        </div>
+                
+                        <div class="form-group">
+                          <label for="program_capacity">Program Capacity:</label>
+                          <input type="text" id="program_capacity" name="program_capacity" class="form-control" value="<%= program.program_capacity %>">
+                        </div>
+                        <div class="form-group">
+                          <label for="program_type">program_type:</label>
+                          <select id="program_type" name="program_type" class="form-control select2" required>
+                            <option value="full-time">full-time </option>
+                              <option value="evening">evening</option>
+                          </select>
+                        </div>
+                        <button type="submit" class="btn btn-success">Submit Changes</button>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } else { %>
+      <!-- Display Add Program Form -->
+      <h2 class="mb-4">Add Program</h2>
+      <form action="/programs" method="post">
+        <div class="form-group">
+          <label for="name">Program Name:</label>
+          <input type="text" id="name" name="name" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label for="program_code">Program Code:</label>
+          <input type="number" id="program_code" name="program_code" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label for="duration">Duration:</label>
+          <input type="text" id="duration" name="duration" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label for="level" title="Example 7-1">Level:</label>
+          <input type="text" id="level" name="level" class="form-control" required>
+        </div>
+
+
+
+        <div class="form-group">
+          <label for="category">Department:</label>
+          <select id="category" name="category" class="form-control select2" required>
+            <% departments.forEach(department => { %>
+              <option value="<%= department.department_name %>"><%= department.department_name %> </option>
+            <% }); %>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="program_capacity" title="We have few rooms; no need to arrange timetable based on program capacity. We'll assume all venues are the same in capacity.">Program Capacity:</label>
+          <input type="text" id="program_capacity" name="program_capacity">
+        </div>
+
+        <div class="form-group">
+          <label for="program_type">program_type:</label>
+          <select id="program_type" name="program_type" class="form-control select2" required>
+            <option value="full-time">full-time </option>
+              <option value="evening">evening</option>
+       
+          </select>
+        </div>
+        <button type="submit" class="btn btn-success">Add Program</button>
+      </form>
+    <% } %>
+  </div>
+
+  <!-- Bootstrap JS and dependencies -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
+
+<%- include('partials/footer') %>

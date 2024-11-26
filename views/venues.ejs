@@ -1,0 +1,196 @@
+<%- include('layout') %>
+<%- include('partials/nav') %>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Venues Management</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <!-- Include Select2 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+  <style>
+    .table-container {
+      overflow-x: auto; /* Enables horizontal scrolling if table overflows */
+    }
+  </style>
+</head>
+<body>
+  <div class="container mt-5">
+    <h1 class="text-center text-primary mb-4">Venues Management</h1>
+
+    <!-- Add Venue Button --> 
+    <a href="/venues/form" class="btn btn-primary mb-3"><i class="fas fa-plus"></i> Add Venue</a>
+
+    <!-- Display Venues -->
+    <% if (locals.venues) { %>
+      <h2 class="mb-4 text-warning">All Venues</h2>
+      <div class="table-container">
+        <table class="table table-bordered table-striped">
+          <thead class="thead-dark bg-dark text-light">
+            <tr>
+              <th>Name</th>
+              <th>Capacity</th>
+              <th>Location</th>
+              <th>Type</th>
+              <th>Quality</th>
+              <th>Department</th>
+              <th>Status</th>
+              
+              <th>mnos++(1-18)</th>
+              <th>tnos++(1-18)</th>
+              <th>wnos++(1-18)</th>
+              <th>thnos++(1-18)</th>
+              <th>frnos++(1-18)</th>
+              <th>satnos++(1-18)</th>
+              <th>sunnos++(1-18)</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% venues.forEach(venue => { %>
+              <tr>
+                <td><%= venue.venue_name %></td>
+                <td><%= venue.capacity %></td>
+                <td><%= venue.location %></td>
+                <td><%= venue.type %></td>
+                <td><%= venue.quality %></td>
+                <td><%= venue.department %></td>
+                <td><%= venue.status %></td>
+
+                <td><%= venue.mnos %></td>
+                <td><%= venue.tnos %></td>
+                <td><%= venue.wnos %></td>
+                <td><%= venue.thnos %></td>
+                <td><%= venue.frnos %></td>
+                <td><%= venue.satnos %></td>
+                <td><%= venue.sunnos %></td>
+                <td>
+                  <!-- Edit Button -->
+                  <button type="button" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#updateModal<%= venue.venue_id %>">
+                    Edit
+                  </button>
+                  <!-- Delete Button -->
+                  <a href="/venues/delete/<%= venue.venue_id %>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this venue?');">
+                    Delete
+                  </a>
+                </td>
+              </tr>
+              <!-- Update Modal -->
+              <div class="modal fade" id="updateModal<%= venue.venue_id %>" tabindex="-1" role="dialog" aria-labelledby="updateModalLabel<%= venue.venue_id %>" aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                  <div class="modal-content">
+                    <div class="modal-header bg-primary text-light">
+                      <h5 class="modal-title" id="updateModalLabel<%= venue.venue_id %>">Update Venue</h5>
+                      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                      </button>
+                    </div>
+                    <div class="modal-body">
+                      <form action="/venues/edit/<%= venue.venue_id %>" method="post">
+                        <div class="form-group">
+                          <label for="venue_name">Name:</label>
+                          <input type="text" id="name" name="name" class="form-control" value="<%= venue.venue_name %>" required>
+                        </div>
+                        <div class="form-group">
+                          <label for="capacity">Capacity:</label>
+                          <input type="number" id="capacity" name="capacity" class="form-control" value="<%= venue.capacity %>" required>
+                        </div>
+                        <div class="form-group">
+                          <label for="location">Location:</label>
+                          <input type="text" id="location" name="location" class="form-control" value="<%= venue.location %>" required>
+                        </div>
+                        <div class="form-group">
+                          <label for="type">Type:</label>
+                          <input type="text" id="type" name="type" class="form-control" value="<%= venue.type %>" required>
+                        </div>
+                        <div class="form-group">
+                          <label for="quality">Quality:</label>
+                          <input type="text" id="quality" name="quality" class="form-control" value="<%= venue.quality %>">
+                        </div>
+                 
+                        <div class="form-group">
+                          <label for="department">Department:</label>
+                          <select id="department" name="department" class="form-control select2" required>
+                            <% departments.forEach(department => { %>
+                              <option value="<%= department.department_name %>"><%= department.department_name %> </option>
+                            <% }); %>
+                          </select>
+                        </div>
+
+                        <div class="form-group">
+                          <label for="status">Status:</label>
+                          <input type="text" id="status" name="status" class="form-control" value="<%= venue.status %>" required>
+                        </div>
+                        <button type="submit" class="btn btn-success">Submit Changes</button>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } else { %>
+      <!-- Display Add Venue Form -->
+      <h2 class="mb-4 text-warning">Add Venue</h2>
+      <form action="/venues" method="post">
+        <div class="form-group">
+          <label for="name">Venue Name:</label>
+          <input type="text" id="name" name="name" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label for="capacity">Venue Capacity:</label>
+          <input type="number" id="capacity" name="capacity" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label for="location">Venue Location:</label>
+          <input type="text" id="location" name="location" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label for="type">Venue Type:</label>
+          <select id="type" name="type" class="form-control">
+            <option value="Theory">Theory</option>
+            <option value="Lab">Lab</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="quality">Venue Quality:</label>
+          <input type="text" id="quality" name="quality" class="form-control">
+        </div>
+        <div class="form-group">
+          <label for="department">Venue Department:</label>
+          <select id="department" name="department" class="form-control select2" required>
+            <% departments.forEach(department => { %>
+              <option value="<%= department.department_name %>"><%= department.department_name %> </option>
+            <% }); %>
+          </select>
+        </div>
+
+        <input type="text" id="status" name="status" class="form-control" value="used" required hidden>
+        <button type="submit" class="btn btn-success">Add Venue</button>
+      </form>
+    <% } %>
+  </div>
+
+  <!-- jQuery (Full Version) -->
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+  <!-- Select2 JS -->
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  <!-- Bootstrap JS and dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+  <script>
+    // Initialize Select2
+    $(document).ready(function() {
+      $('.select2').select2();
+    });
+  </script>
+</body>
+</html>
+
+<%- include('partials/footer') %>

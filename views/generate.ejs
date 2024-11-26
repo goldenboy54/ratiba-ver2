@@ -1,0 +1,106 @@
+<%- include('layout') %>
+  <%- include('partials/nav') %>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>subjects Management</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <link rel="stylesheet" href="../public/css/styles.css">
+  <style>
+    .fixed-size-btn {
+      width: 80px;
+      height: 35px;
+    }
+    .modal-dialog {
+      max-width: 800px;
+    }
+  </style>
+</head>
+<body>
+
+      <!-- Display Add subject Form -->
+     
+      <form action="/timetables" method="post">
+
+        <h2 class="mb-4">GENERATE TIMETABLE BASING ON PROGRAM</h2>
+        <div class="form-group">
+          <label for="program_name">program_name:</label>
+          <input type="text" id="program_name" name="program_name" class="form-control" required>
+        </div>
+    
+      
+        <button type="submit" class="btn btn-success">Add subject</button>
+      </form>
+   
+  
+
+      <form action="/timetables" method="post">
+
+        <h2 class="mb-4">GENERATE TIMETABLE BASING ON TUTOR</h2>
+        <div class="form-group">
+          <label for="tutor_name">tutor_name:</label>
+          <input type="text" id="tutor_name" name="tutor_name" class="form-control" required>
+        </div>
+    
+      
+        <button type="submit" class="btn btn-success">Add subject</button>
+      </form>
+
+
+
+      <form action="/timetables" method="post">
+
+        <h2 class="mb-4">GENERATE TIMETABLE BASING ON venue</h2>
+        <div class="form-group">
+          <label for="venue_name">venue_name:</label>
+          <input type="text" id="venue_name" name="venue_name" class="form-control" required>
+        </div>
+    
+      
+        <button type="submit" class="btn btn-success">Add subject</button>
+      </form>
+
+
+      <form action="/timetables" method="post">
+
+        <h2 class="mb-4">GENERATE TIMETABLE BASING ON DEPARTMENT</h2>
+        <div class="form-group">
+          <label for="department_name">department_name:</label>
+          <input type="text" id="department_name" name="department_name" class="form-control" required>
+        </div>
+    
+      
+        <button type="submit" class="btn btn-success">Add subject</button>
+      </form>
+
+
+  <!-- Bootstrap JS and dependencies -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
+
+  <%- include('partials/footer') %>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

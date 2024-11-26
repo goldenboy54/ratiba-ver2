@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Timetable Management System</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
+  <style>
+    body {
+      background-color: #f8f9fa;
+      color: #343a40;
+      font-family: 'Arial', sans-serif;
+    }
+    .navbar {
+      background: linear-gradient(45deg, #28a745, #007bff); /* Green-blue gradient */
+      z-index: 9999; /* Ensure navbar is on top */
+    }
+    .navbar-nav {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .navbar-nav .nav-item {
+      flex: 1 1 calc(20% - 20px); /* Five buttons per row with margins */
+      margin: 10px;
+    }
+    .navbar-nav .nav-item .btn {
+      width: 100%; /* Ensure buttons take up full width of flex container */
+      border-radius: 25px;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .navbar-nav .nav-item .btn:hover {
+      background-color: #0056b3;
+      color: #ffffff;
+    }
+    .navbar-nav .nav-item .btn:active {
+      background-color: #003d79;
+      color: #ffffff;
+    }
+    .img-fluid {
+      max-height: 40px;
+      width: auto;
+    }
+    .animated-graphic {
+      font-size: 1.5rem;
+      animation: rotate 20s linear infinite;
+    }
+    @keyframes rotate {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* Responsive behavior for small devices */
+    @media (max-width: 768px) {
+      .navbar-collapse {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        display: none;
+        z-index: 9998;
+        overflow-y: auto;
+        transition: opacity 0.3s;
+      }
+
+      .navbar-collapse.show {
+        display: block;
+      }
+
+      /* Navbar toggle (hamburger) icon changes to X when opened */
+      .navbar-toggler {
+        border: none;
+        color: white;
+        font-size: 30px;
+        background: transparent;
+      }
+
+      .navbar-toggler.open {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        font-size: 40px;
+        z-index: 10000;
+      }
+
+      .navbar-toggler.open:before {
+        content: "×"; /* Close icon (X) */
+        color: white;
+        font-size: 40px;
+      }
+
+      /* Adjust navbar links for small devices */
+      .navbar-nav {
+        flex-direction: column;
+        margin-top: 60px;
+      }
+      .navbar-nav .nav-item {
+        flex: 1 1 calc(50% - 20px); /* Two buttons per row on small screens */
+      }
+
+      /* Ensure the navbar toggles correctly when clicked */
+      .navbar-toggler-icon {
+        display: block;
+      }
+    }
+
+    /* One button per row on extra small screens */
+    @media (max-width: 576px) {
+      .navbar-nav .nav-item {
+        flex: 1 1 calc(100% - 20px); /* One button per row on extra small screens */
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-light">
+    <a class="navbar-brand" href="/searchtimetable">
+      <img src="/images/atc.jpg" alt="ATC Logo" class="img-fluid" />
+    </a>
+    <button
+      class="navbar-toggler"
+      type="button"
+      data-toggle="collapse"
+      data-target="#navbarNav"
+      aria-controls="navbarNav"
+      aria-expanded="false"
+      aria-label="Toggle navigation"
+    >
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav">
+        <li class="nav-item"><a href="/timetables" class="btn btn-dark">Settings</a></li>
+        <li class="nav-item"><a href="/tmaster" class="btn btn-dark">Assign</a></li>
+        <li class="nav-item"><a href="/venues" class="btn btn-dark">Venues</a></li>
+        <li class="nav-item"><a href="/searchtimetable" class="btn btn-dark">View</a></li>
+        <li class="nav-item"><a href="/programs" class="btn btn-dark">Programs</a></li>
+        <li class="nav-item"><a href="/subjects" class="btn btn-dark">HODS Asgn</a></li>
+        <li class="nav-item"><a href="/users" class="btn btn-dark">Staff</a></li>
+        <li class="nav-item"><a href="/registered_subjects" class="btn btn-dark">Subjects Reg</a></li>
+        <li class="nav-item"><a href="/departments" class="btn btn-dark">Departments</a></li>
+        <li class="nav-item"><a href="/logout" class="btn btn-dark">Logout</a></li>
+        <li class="nav-item"><div class="animated-graphic">🕑</div></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container mt-4">
+    <!-- Page content -->
+  </div>
+
+  <!-- Bootstrap JS and dependencies -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+  <script>
+    // Toggle the navbar on small devices
+    document.querySelector('.navbar-toggler').addEventListener('click', function() {
+      this.classList.toggle('open');
+    });
+  </script>
+</body>
+</html>
