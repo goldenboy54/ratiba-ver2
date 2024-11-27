@@ -19,7 +19,7 @@
       100% { transform: rotate(360deg); }
     }
     .table thead {
-      background-color: #c7e1d3;
+      background: linear-gradient(45deg, #28a745, #007bff); /* Green-blue gradient */
       color: #fff;
     }
     .table th, .table td {
@@ -27,13 +27,7 @@
       text-align: center;
       font-size: 1.1rem;
     }
-    .table tbody tr {
-      background-color: #f8f9fa;
-      transition: background-color 0.3s ease-in-out;
-    }
-    .table tbody tr:hover {
-      background-color: #e2e6ea;
-    }
+  
     .btn-primary {
       background-color: #007bff;
       border-color: #007bff;
@@ -44,6 +38,60 @@
       border-color: #004085;
     }
   </style>
+
+  <style>
+    /* Gradient Background */
+    body {
+      background: linear-gradient(to bottom, green, #66cc66, blue);
+      background-size: cover;
+      height: 100vh;  /* Ensure the background covers the full viewport height */
+      margin: 0;
+      color: #fff;  /* Ensure text stands out on the background */
+    }
+  
+    .fixed-size-btn {
+      width: 80px;
+      height: 35px;
+    }
+  
+    .modal-dialog {
+      max-width: 90%;
+    }
+  
+    /* Responsive button size */
+    @media (max-width: 768px) {
+      .fixed-size-btn {
+        width: 100px;
+        height: 40px;
+      }
+    }
+  
+    /* Additional custom styling for readability */
+    h2, h1, label {
+      color: #fff;  /* White text to stand out against the background */
+    }
+  
+    .btn-primary {
+      background-color: #007bff; /* Blue buttons */
+      border-color: #007bff;
+    }
+  
+    /* Make table headers and rows stand out */
+    .table th, .table td {
+      color: #fff;  /* White text for table */
+    }
+  
+    /* Ensure form controls are more visible */
+    .form-control {
+      background-color: #f8f9fa;
+      color: #495057;
+    }
+    
+    .thead-dark {
+      background-color: #343a40;
+    }
+  </style>
+  
 </head>
 <body>
   <%- include('partials/nav') %>
@@ -150,90 +198,48 @@
           <table class="table table-bordered table-striped">
             <thead>
               <tr>
-                <th>DAY</th>
                 <th>TIME</th>
-                <th>VENUE</th>
-                <th>SUBJECT</th>
-                <th>TUTOR</th>  
-                <th>PROGRAM</th>
-                
+                <% 
+                  // Extract unique days from the timetable
+                  const uniqueDays = [...new Set(timetables.map(t => t.day))];
+                  uniqueDays.forEach(day => { 
+                %>
+                  <th><%= day.toUpperCase() %></th>
+                <% }); %>
               </tr>
             </thead>
             <tbody>
-              <% timetables.forEach(timetable => { %>
+              <% 
+                // Extract unique time slots
+                const uniqueTimes = [...new Set(timetables.map(t => `${t.start_time} - ${t.end_time}`))];
+                uniqueTimes.forEach(timeSlot => { 
+              %>
                 <tr>
-                  <td>
-                    <%= timetable.day %> <br>
-                  
-                  </td>
-
-
-                  <td>
-                    <b><%= timetable.start_time %> - <%= timetable.end_time %></b>
-                  </td>
-
-                  <td>
-                venue name  <b><%= timetable.venue_name %></b> <br>
-                venue type  <%= timetable.venue_type %><br>
-                venue location <%= timetable.venue_location %><br>
-                venue status  <%= timetable.venue_status %>
-                venue capacity  <%= timetable.venue_capacity %> students
-
-                  </td>
-
-
-                  <td>
-                   subject name  <b> <%= timetable.subject_name %> </b> <br>
-                   subject code  <%= timetable.subject_code %><br>
-                  subject credit <%= timetable.subject_credit %><br>
-                   original department for subject  <%= timetable.department_name %><br>
-
-                  </td>
-
-                  <td>
-                  tutor name <b> <%= timetable.tutor_name %> </b><br> 
-              
-                  </td>
-
-                  
-                  <td>
-                    
-                  program name  <b><%= timetable.program_name %></b><br> 
-                  program level   <%= timetable.program_level %><br>
-                  program type <%= timetable.program_type %><br>
-                  program capacity <%= timetable.program_capacity %> students<br>
-                  program duration <%= timetable.year %> yrs <br>
-
-
-                    
-                  </td>
+                  <td><b><%= timeSlot %></b></td>
+                  <% 
+                    // Loop through each day and match data
+                    uniqueDays.forEach(day => { 
+                      const entry = timetables.find(t => `${t.start_time} - ${t.end_time}` === timeSlot && t.day === day);
+                  %>
+                    <td>
+                      <% if (entry) { %>
+                        <b>Venue:</b> <%= entry.venue_name %> (<%= entry.venue_type %>)<br>
+                        <b>Subject:</b> <%= entry.subject_name %> (<%= entry.subject_code %>)<br>
+                        <b>Tutor:</b> <%= entry.tutor_name %><br>
+                        <b>Program:</b> <%= entry.program_name %> (<%= entry.program_level %>)<br>
+                      <% } else { %>
+                        <i>---</i>
+                      <% } %>
+                    </td>
+                  <% }); %>
                 </tr>
-
-                <!-- Update Modal -->
-                <div class="modal fade" id="updateModal<%= timetable.id %>" tabindex="-1" role="dialog" aria-labelledby="updateModalLabel<%= timetable.id %>" aria-hidden="true">
-                  <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                      <div class="modal-header">
-                        <h5 class="modal-title" id="updateModalLabel<%= timetable.id %>">Update Timetable</h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                          <span aria-hidden="true">&times;</span>
-                        </button>
-                      </div>
-                      <div class="modal-body">
-                        <!-- Update form content here -->
-                      </div>
-                    </div>
-                  </div>
-                </div>
               <% }); %>
             </tbody>
           </table>
         </div>
       <% } else { %>
-        <p>No timetables found for the selected filters.</p>
+        <p class="text-center">No timetables found for the selected filters.</p>
       <% } %>
-    <% } else { %>
-      <p>Please select filters to view timetables.</p>
     <% } %>
 
     <!-- Download Button -->

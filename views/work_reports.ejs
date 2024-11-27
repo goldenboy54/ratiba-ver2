@@ -1,0 +1,268 @@
+<%- include('layout') %>
+<%- include('partials/nav') %>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Work Load Report</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <link rel="stylesheet" href="../public/css/styles.css">
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+  /* Gradient Background */
+  body {
+    background: linear-gradient(to bottom, green, #66cc66, blue);
+    background-size: cover;
+    height: 100vh;  /* Ensure the background covers the full viewport height */
+    margin: 0;
+    color: #011d0c;  /* Ensure text stands out on the background */
+  }
+
+  .fixed-size-btn {
+    width: 80px;
+    height: 35px;
+  }
+
+  .modal-dialog {
+    max-width: 90%;
+  }
+
+  /* Responsive button size */
+  @media (max-width: 768px) {
+    .fixed-size-btn {
+      width: 100px;
+      height: 40px;
+    }
+  }
+
+  /* Additional custom styling for readability */
+  h2, h1, label {
+    color: #fff;  /* White text to stand out against the background */
+  }
+
+  .btn-primary {
+    background-color: #007bff; /* Blue buttons */
+    border-color: #007bff;
+  }
+
+  /* Make table headers and rows stand out */
+  .table th, .table td {
+    color: #fff;  /* White text for table */
+  }
+
+  /* Ensure form controls are more visible */
+  .form-control {
+    background-color: #f8f9fa;
+    color: #495057;
+  }
+  
+  .thead-dark {
+    background-color: #343a40;
+  }
+</style>
+<style>
+    .fixed-size-btn {
+      width: 80px;
+      height: 35px;
+    }
+    .modal-dialog {
+      max-width: 800px;
+    }
+    .table-container {
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+
+  
+
+  
+<div class="container mt-5">
+<!--   
+  <a href="/subjects/form" class="btn btn-success mb-3"><i class="fas fa-plus"></i> Assign new informations here</a>
+
+  <div id="successAlert" class="alert alert-success d-none" role="alert">
+     updated successfully!
+  </div> -->
+
+
+    <% if (locals.subjects) { %>
+
+      <div class="container mt-5">
+        <h2 class="text-center text-primary mb-4">FILTER BELOW TO CUSTOMIZE VIEWS</h2>
+        
+        <form method="get" action="/work_reports" class="mb-4">
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label for="user">User:</label>
+              <select id="user" name="user" class="form-control select2">
+                <option value="">Select user</option>
+                <% users.forEach(user => { %>
+                  <option value="<%= user.full_name %>" <%= user_name === user.full_name ? 'selected' : '' %>><%= user.full_name %></option>
+                <% }); %>
+              </select>
+            </div>
+            
+         
+            <div class="col-md-4 mb-3">
+              <label for="program_name">Program Name:</label>
+              <select id="program_name" name="program_name" class="form-control select2">
+                <option value="">Select program</option>
+                <% pname.forEach(program => { %>
+                  <option value="<%= program.program_name %>" <%= program_name === program.program_name ? 'selected' : '' %>><%= program.program_name %></option>
+                <% }); %>
+              </select>
+            </div>
+            
+            <div class="col-md-4 mb-3">
+              <label for="category">Mother Program Department:</label>
+              <select id="category" name="category" class="form-control select2">
+                <option value="">Select program department</option>
+                <% pcategory.forEach(program => { %>
+                  <option value="<%= program.category %>" <%= category === program.category ? 'selected' : '' %>><%= program.category %></option>
+                <% }); %>
+              </select>
+            </div>
+          </div>
+          
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label for="level">Level:</label>
+              <select id="level" name="level" class="form-control select2">
+                <option value="">Select level</option>
+                <% plevel.forEach(program => { %>
+                  <option value="<%= program.level %>" <%= level === program.level ? 'selected' : '' %>><%= program.level %></option>
+                <% }); %>
+              </select>
+            </div>
+        
+            <div class="col-md-4 mb-3">
+              <label for="title">Subject Name:</label>
+              <select id="title" name="title" class="form-control select2">
+                <option value="">Select subject name</option>
+                <% sname.forEach(subject => { %>
+                  <option value="<%= subject.title %>" <%= title === subject.title ? 'selected' : '' %>><%= subject.title %></option>
+                <% }); %>
+              </select>
+            </div>
+            
+            <div class="col-md-4 mb-3">
+              <label for="subject_department">Mother Subject Department:</label>
+              <select id="subject_department" name="subject_department" class="form-control select2">
+                <option value="">Select subject department</option>
+                <% idara.forEach(department => { %>
+                  <option value="<%= department.subject_department %>" <%= subject_department === department.subject_department ? 'selected' : '' %>><%= department.subject_department %></option>
+                
+                  <% }); %>
+              </select>
+            </div>
+          </div>
+          
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label for="semester">Semester:</label>
+              <select id="semester" name="semester" class="form-control select2">
+                <option value="">Select semester</option>
+                <% semesters.forEach(semester => { %>
+                  <option value="<%= semester.semester %>" <%= semester === semester.semester ? 'selected' : '' %>><%= semester.semester %></option>
+                <% }); %>
+              </select>
+            </div>
+            
+            <div class="col-md-4 mb-3">
+              <label for="program_type">Program Type:</label>
+              <select id="program_type" name="program_type" class="form-control select2">
+                <option value="">Select type</option>
+                <% ptypes.forEach(type => { %>
+                  <option value="<%= type.program_type %>" <%= program_type === type.program_type ? 'selected' : '' %>><%= type.program_type %></option>
+                <% }); %>
+              </select>
+            </div>
+          </div>
+          
+          <div class="text-center">
+            <button type="submit" class="btn btn-primary">Filter</button>
+          </div>
+        </form>
+      </div>
+      
+
+
+    <!-- Display timetables -->
+    <% if (user_name || semester ||program_type|| program_name || level ||  subject_department || title || category) { %>
+    
+      <h2 class="mb-4">WORK LOAD REPORT </h2>
+      <table class="table table-bordered table-responsive">
+        <thead class="thead-dark">
+          <tr>
+            <th>TUTOR/STAFF INFORMATION</th>
+            <th>TOTAL HOURS PER WEEK</th>
+            <th>PROGRAM ASSIGNED </th>
+            <!-- <th>Actions</th> -->
+          </tr>
+        </thead>
+        <tbody>
+          <% subjects.forEach(subject => { %>
+            <tr>
+
+              <td>
+               Name <b><%= subject.full_name %></b> <br>
+               Email <%= subject.user_email %> <br>
+               Mother department <%= subject.user_department %> <br>
+               Original role <%= subject.user_role %> <br>
+               Status <%= subject.user_status %>
+
+              </td>
+
+              <td>
+                sname <%= subject.title %> <br>
+                scode  <%= subject.subject_code %><br>
+                <!-- mother Subject department <%= subject.subject_department %> <br>
+                SCredit: <%= subject.credit %> <br> -->
+               <h1>TOTAL HOURS PER WEEK: <%= subject.total_hours_per_week %> <br> </h1>      <!-- ltpa assigned by tmaster: <%= subject.ltpa %> <br> -->
+                <!-- Type: <%= subject.type_prac_or_theory %> <br> -->
+              </td>
+              <td>
+                program name <%= subject.program_name %>  <br>
+                 program code <%= subject.program_code %> <br>
+                 mother program department <%= subject.category %> <br>
+                 program type <%= subject.program_type %> <br>
+                 program level  <%= subject.program_level %> <br>
+                 program capacity <%= subject.program_capacity %> <br>
+                 program Duration <%= subject.program_duration %> yrs <br>
+                </td>
+
+              <!-- <td>
+                <button type="button" class="btn btn-warning btn-sm fixed-size-btn" data-toggle="modal" data-target="#updateModal<%= subject.subject_id %>">
+                  Edit
+                </button>
+                <a href="/subjects/delete/<%= // subject.subject_id %>" class="btn btn-danger btn-sm fixed-size-btn" onclick="return confirm('Are you sure you want to delete this subject?');">
+                  Delete
+                </a>
+              </td> -->
+
+            </tr>
+
+          <% }); %>
+     
+    <% } } else { %>
+      <h1>NO INFOMATIONS AVAILABLE</h1>
+    <% } %>
+    
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+  <script>
+    $(document).ready(function() {
+      $('.select2').select2();
+    });
+  </script>
+</body>
+</html>

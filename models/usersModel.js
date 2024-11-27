@@ -168,3 +168,31 @@ export const getuserById = async (id) => {
     throw err;
   }
 };
+
+
+
+
+export const addUsersFromFile = async (users) => {
+  // We assume that the password for the users is provided or can be set here
+  const password = "123"; // Replace with a mechanism to set the password
+
+  const query = `INSERT INTO users (full_name, department, user_email, role, password, status)
+                 VALUES ?`;
+
+  const values = await Promise.all(users.map(async (user) => {
+    // Hash the password for each user
+    const hashedPassword = await bcrypt.hash(password, saltRounds); // Hash the password before inserting
+
+    return [
+      user.full_name,
+      user.mother_department,
+      user.work_email,
+      user.staff_role,
+      hashedPassword,  // Use the hashed password
+      user.status
+    ];
+  }));
+
+  // Insert the users into the database
+  await pool.query(query, [values]);
+};

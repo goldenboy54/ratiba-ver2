@@ -52,3 +52,24 @@ export const deletevenue = async (id) => {
   const [matokeoYaQuery]= await pool.execute(dbquery,valuesArray);
   return matokeoYaQuery;
 };
+
+
+
+
+
+export const addVenuesFromFile = async (venues) => {
+  const query = `INSERT INTO venues (venue_name,capacity,location,type,quality,department,status)
+                 VALUES ?`;
+
+  const values = venues.map((venue) => [
+    venue.venue_name,
+    venue.venue_capacity,
+    venue.venue_location,
+    venue.venue_type,
+    venue.venue_quality,
+    venue.venue_department,
+    venue.venue_status,
+  ]);
+
+  await pool.query(query, [values]);
+};

@@ -9,7 +9,7 @@
   <title>departments Management</title>
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
   <link rel="stylesheet" href="../public/css/styles.css">
-  <style>
+  <!-- <style>
     .fixed-size-btn {
       width: 80px;
       height: 35px;
@@ -17,7 +17,62 @@
     .modal-dialog {
       max-width: 800px;
     }
+  </style> -->
+
+  <style>
+    /* Gradient Background */
+    body {
+      background: linear-gradient(to bottom, green, #66cc66, blue);
+      background-size: cover;
+      height: 100vh;  /* Ensure the background covers the full viewport height */
+      margin: 0;
+      color: #fff;  /* Ensure text stands out on the background */
+    }
+  
+    .fixed-size-btn {
+      width: 80px;
+      height: 35px;
+    }
+  
+    .modal-dialog {
+      max-width: 90%;
+    }
+  
+    /* Responsive button size */
+    @media (max-width: 768px) {
+      .fixed-size-btn {
+        width: 100px;
+        height: 40px;
+      }
+    }
+  
+    /* Additional custom styling for readability */
+    h2, h1, label {
+      color: #fff;  /* White text to stand out against the background */
+    }
+  
+    .btn-primary {
+      background-color: #007bff; /* Blue buttons */
+      border-color: #007bff;
+    }
+  
+    /* Make table headers and rows stand out */
+    .table th, .table td {
+      color: #fff;  /* White text for table */
+    }
+  
+    /* Ensure form controls are more visible */
+    .form-control {
+      background-color: #f8f9fa;
+      color: #495057;
+    }
+    
+    .thead-dark {
+      background-color: #343a40;
+    }
+    
   </style>
+  
 </head>
 <body>
   <div class="container mt-5">
@@ -107,8 +162,25 @@
       </table>
 
     <% }  else { %>
+
+
       <!-- Display Add department Form -->
       <h2 class="mb-4">Add department</h2>
+
+
+      
+    <!-- Form for uploading CSV/Excel -->
+    <h3>Upload CSV/Excel File</h3>
+
+    <form action="/departments/uploads" method="post" enctype="multipart/form-data">
+      <div class="form-group">
+        <label for="file">Choose CSV/Excel File:</label>
+        <input type="file" name="file" class="form-control" required>
+      </div>
+      <button type="submit" class="btn btn-success">Upload</button>
+    </form>
+
+
       <form action="/departments" method="post">
 
         <div class="form-group">

@@ -24,6 +24,7 @@ import timetablesRoutes from "./routes/timetables.js";
 import searchTimetables from './routes/searchtimatable.js';
 import  viewtimetable from "./routes/viewtimetable.js";
 import  tmasterRoutes from "./routes/tmaster.js";
+import  work_reportsRoutes from "./routes/work_reports.js";
 
 //import searchRouter from './routes/searchtimetable.js';
 // Initialize dotenv
@@ -94,6 +95,7 @@ app.use("/timetables", anaruhusa, timetablesRoutes);
 app.use("/venues", anaruhusa, routes_za_TMASTER, venuesRoutes);
 app.use("/users", anaruhusa, routes_za_TMASTER, usersRoutes);
 app.use("/tmaster", anaruhusa, routes_za_TMASTER, tmasterRoutes);
+app.use("/work_reports", anaruhusa, routes_za_TMASTER, work_reportsRoutes);
 
 
 // Routes

@@ -4,6 +4,55 @@ import { getAllprograms } from '../models/programsModel.js';
 import { getAllusers } from '../models/usersModel.js';
 import { getAllvenues } from '../models/venuesModel.js';
 import { getAlldepartments } from '../models/departmentsModel.js';
+
+
+import xlsx from 'xlsx'; // for parsing Excel files
+import csvtojson from 'csvtojson'; // for parsing CSV files
+
+export const handleUploadCSV = async (req, res) => {
+  const file = req.file;
+  try {
+    let jsonData;
+
+    // Check file extension and parse accordingly
+    if (file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
+      // Excel file
+      const workbook = xlsx.readFile(file.path);
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      jsonData = xlsx.utils.sheet_to_json(worksheet);
+    } else if (file.mimetype === 'text/csv') {
+      // CSV file
+      jsonData = await csvtojson().fromFile(file.path);
+    } else {
+      return res.status(400).send('Invalid file type. Please upload CSV or Excel.');
+    }
+
+    // Add parsed data to the database
+    for (const row of jsonData) {
+      const newRegisteredSubject = {
+        registered_subject_name: row.registered_subject_name,
+        registered_subject_code: row.registered_subject_code,
+        credit: row.credit,
+        total_hours_per_week: row.total_hours_per_week,
+        registered_subject_department: row.registered_subject_department,
+      };
+      await addregistered_subject(newRegisteredSubject);
+    }
+
+    res.redirect('/registered_subjects');
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error uploading file.');
+  }
+};
+
+
+
+
+
+
+
 export const showregistered_subjectForm = async (req, res) => {
   const { id } = req.params;
   try {

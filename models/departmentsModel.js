@@ -53,3 +53,20 @@ export const deletedepartment = async (id) => {
     throw err;
   }
 };
+
+
+
+export const addDepartmentsFromFile = async (departments) => {
+  const query = `INSERT INTO departments (department_name,department_code,hod_name,hod_email)
+                 VALUES ?`;
+
+  const values = departments.map((department) => [
+    department.department_name,
+    department.department_code,
+    department.hod_name,
+    department.hod_email,
+  ]);
+
+  await pool.query(query, [values]);
+};
+
