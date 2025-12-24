@@ -1,0 +1,311 @@
+<%- include('partials/nav') %>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registered Subjects Management</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+  <style>
+    .table-container { overflow-x: auto; margin-top: 20px; }
+    th, td { text-align: center; vertical-align: middle; }
+    th { background-color: #343a40; color: white; }
+    .btn-download { margin: 5px; }
+  </style>
+</head>
+<body>
+  <div class="container mt-5">
+
+    <!-- Add registered_subject Button -->
+    <a href="/registered_subjects/form" class="btn btn-primary mb-3"><i class="fas fa-plus"></i> Add registered_subject</a>
+
+    <% if (locals.Viewregistered_subject) { %>
+
+    <!-- Search Form -->
+    <form method="get" action="/registered_subjects" class="mb-4" id="filterForm">
+      <div class="form-row">
+        <div class="form-group col-md-4">
+          <label for="registered_subject_name">registered_subject_name:</label>
+          <select id="registered_subject_name" name="registered_subject_name" class="form-control select2 filterInput">
+            <option value="">registered_subject_name</option>
+            <% Rsname.forEach(registered_subject_name => { %>
+              <option value="<%= registered_subject_name.registered_subject_name %>"><%= registered_subject_name.registered_subject_name %></option>
+            <% }); %>
+          </select>
+        </div>
+
+        <div class="form-group col-md-4">
+          <label for="registered_subject_code">registered_subject_code:</label>
+          <select id="registered_subject_code" name="registered_subject_code" class="form-control select2 filterInput">
+            <option value="">registered_subject_code</option>
+            <% Rscode.forEach(registered_subject_code => { %>
+              <option value="<%= registered_subject_code.registered_subject_code %>"><%= registered_subject_code.registered_subject_code %></option>
+            <% }); %>
+          </select>
+        </div>
+
+        <div class="form-group col-md-4">
+          <label for="credit">credit:</label>
+          <select id="credit" name="credit" class="form-control select2 filterInput">
+            <option value="">credit</option>
+            <% Rscredit.forEach(credit => { %>
+              <option value="<%= credit.credit %>"><%= credit.credit %></option>
+            <% }); %>
+          </select>
+        </div>
+
+        <div class="form-group col-md-4">
+          <label for="total_hours_per_week">total_hours_per_week:</label>
+          <select id="total_hours_per_week" name="total_hours_per_week" class="form-control select2 filterInput">
+            <option value="">total_hours_per_week</option>
+            <% Rsltpa.forEach(total_hours_per_week => { %>
+              <option value="<%= total_hours_per_week.total_hours_per_week %>"><%= total_hours_per_week.total_hours_per_week %></option>
+            <% }); %>
+          </select>
+        </div>
+
+        <div class="form-group col-md-4">
+          <label for="registered_subject_department">registered_subject_department:</label>
+          <select id="registered_subject_department" name="registered_subject_department" class="form-control select2 filterInput">
+            <option value="">registered_subject_department</option>
+            <% Rsdepartment.forEach(registered_subject_department => { %>
+              <option value="<%= registered_subject_department.registered_subject_department %>"><%= registered_subject_department.registered_subject_department %></option>
+            <% }); %>
+          </select>
+        </div>
+      </div>
+    </form>
+
+    <!-- Buttons for CSV, PDF, Print -->
+    <div class="text-center mb-3">
+      <button id="downloadCSV" class="btn btn-info btn-download">Download CSV (Front-end)</button>
+      <button id="downloadPDF" class="btn btn-warning btn-download">Download PDF (Front-end)</button>
+      <button id="printTable" class="btn btn-success btn-download">Print Table (Front-end)</button>
+    </div>
+
+    <!-- Display registered_subjects -->
+    <% if (Viewregistered_subject.length > 0) { %>
+      <div class="table-container" id="subjectsTableContainer">
+        <table class="table table-bordered table-striped" id="subjectsTable">
+          <thead class="thead-dark bg-dark text-light">
+            <tr>
+              <th>registered_subject</th>
+              <th>registered_subject Department</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% Viewregistered_subject.forEach(registered_subject => { %>
+              <tr>
+                <td>
+                  <%= registered_subject.registered_subject_name %> (<%= registered_subject.registered_subject_code %>)<br>
+                  Credit: <%= registered_subject.credit %><br>
+                  Total_hours_per_week: <%= registered_subject.total_hours_per_week %>
+                </td>
+                <td><%= registered_subject.registered_subject_department %></td>
+                <td>
+                  <button type="button" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#updateModal<%= registered_subject.registered_subject_id %>">Edit</button>
+                  <a href="/registered_subjects/delete/<%= registered_subject.registered_subject_id %>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this registered_subject?');">Delete</a>
+                </td>
+              </tr>
+
+              <!-- Update Modal -->
+              <div class="modal fade" id="updateModal<%= registered_subject.registered_subject_id %>" tabindex="-1" role="dialog" aria-labelledby="updateModalLabel<%= registered_subject.registered_subject_id %>" aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <h5 class="modal-title" id="updateModalLabel<%= registered_subject.registered_subject_id %>">Update registered_subject</h5>
+                      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                      </button>
+                    </div>
+                    <div class="modal-body">
+                      <form action="/registered_subjects/edit/<%= registered_subject.registered_subject_id %>" method="post">
+                        <div class="form-group">
+                          <label for="registered_subject_name" class="text-info">registered_subject Name:</label>
+                          <input type="text" id="registered_subject_name" name="registered_subject_name" class="form-control" value="<%= registered_subject.registered_subject_name %>" required>
+                        </div>
+                        <div class="form-group">
+                          <label for="registered_subject_code" class="text-info">registered_subject_code:</label>
+                          <input type="text" id="registered_subject_code" name="registered_subject_code" class="form-control" value="<%= registered_subject.registered_subject_code %>" required>
+                        </div>
+                        <div class="form-group">
+                          <label for="credit" class="text-info">registered_subject Credit:</label>
+                          <input type="number" id="credit" name="credit" class="form-control" value="<%= registered_subject.credit %>" required>
+                        </div>
+                        <div class="form-group">
+                          <label for="total_hours_per_week" class="text-info">total_hours_per_week:</label>
+                          <input type="text" id="total_hours_per_week" name="total_hours_per_week" class="form-control" value="<%= registered_subject.total_hours_per_week %>" required>
+                        </div>
+                        <div class="form-group">
+                          <label for="registered_subject_department" class="text-info">registered_subject_department:</label>
+                          <select id="registered_subject_department" name="registered_subject_department" class="form-control" required>
+                            <% departments.forEach(department => { %>
+                              <option value="<%= department.department_name %>" <%= registered_subject.registered_subject_department === department.department_name ? 'selected' : '' %>><%= department.department_name %></option>
+                            <% }); %>
+                          </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Submit Changes</button>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+    <% } else { %>
+       <h2 class="mb-4">Add registered_subject</h2>
+
+
+      
+    <!-- Form for uploading CSV/Excel -->
+    <h3>Upload CSV/Excel File</h3>
+    <form action="/registered_subjects/upload" method="post" enctype="multipart/form-data">
+      <div class="form-group">
+        <label for="file">Choose CSV/Excel File:</label>
+        <input type="file" name="file" class="form-control" required>
+      </div>
+      <button type="submit" class="btn btn-primary">Upload</button>
+    </form>
+
+      <form action="/registered_subjects" method="post">
+
+        <div class="form-group">
+     
+
+        <div class="form-group">
+          <label for="registered_subject_name">registered_subject Name:</label>
+          <input type="text" id="registered_subject_name" name="registered_subject_name" class="form-control" required>
+        </div>
+    
+
+        <div class="form-group">
+          <label for="registered_subject_code">registered_subject_code:</label>
+          <input type="text" id="registered_subject_code" name="registered_subject_code" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+          <label for="credit">registered_subject Credit:</label>
+          <input type="number" id="credit" name="credit" class="form-control">
+        </div>
+
+
+        <div class="form-group">
+          <label for="total_hours_per_week">total_hours_per_week:</label>
+          <input type="text" id="total_hours_per_week" name="total_hours_per_week" class="form-control" >
+        </div>
+
+               
+        <div class="form-group">
+          <label for="registered_subject_department">registered_subject_department::</label>
+          <select id="registered_subject_department" name="registered_subject_department" class="form-control select2" required>
+            <% departments.forEach(department => { %>
+              <option value="<%= department.department_name %>"><%= department.department_name %> </option>
+            <% }); %>
+          </select>
+        </div>
+
+
+        <button type="submit" name="submit" class="btn btn-primary">Add registered_subject</button>
+      </form>
+    <% } %>
+  </div>
+
+  <!-- JS Libraries -->
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+
+  <script>
+    $(document).ready(function() {
+      $('.select2').select2();
+
+      // Auto filter
+      $('.filterInput').on('change', function(){
+        const form = $('#filterForm');
+        const url = new URL(window.location.href);
+        form.find('select').each(function(){
+          const val = $(this).val();
+          if(val) url.searchParams.set($(this).attr('name'), val);
+          else url.searchParams.delete($(this).attr('name'));
+        });
+        window.location.href = url.toString();
+      });
+
+      function getFileName(prefix){
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0,10) + '_' + now.getHours() + '-' + now.getMinutes() + '-' + now.getSeconds();
+        return `${prefix}_filteredData_${dateStr}`;
+      }
+
+      // CSV Download
+      $('#downloadCSV').click(function(){
+        const rows = [];
+        $('#subjectsTable tr').each(function(){
+          const cols = [];
+          $(this).find('th, td').each(function(){ cols.push('"' + $(this).text().trim() + '"'); });
+          rows.push(cols.join(','));
+        });
+        const csvContent = rows.join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = getFileName('ATC') + '.csv';
+        link.click();
+      });
+
+      // Print Table
+      $('#printTable').click(function(){
+        const printContents = document.getElementById('subjectsTableContainer').innerHTML;
+        const win = window.open('', '', 'width=1000,height=800');
+        win.document.write('<html><head><title>' + getFileName('ATC') + '</title>');
+        win.document.write('<style>table{width:100%;border-collapse:collapse;} th,td{border:1px solid #000;padding:6px;text-align:center;} th{background:#343a40;color:#fff;}</style>');
+        win.document.write('</head><body>');
+        win.document.write(printContents);
+        win.document.write('</body></html>');
+        win.document.close();
+        win.print();
+      });
+
+      // PDF Download (multi-page)
+      $('#downloadPDF').click(function(){
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('l', 'pt', 'a4');
+        const tableEl = document.getElementById('subjectsTableContainer');
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        html2canvas(tableEl, { scale: 2 }).then(canvas => {
+          const imgData = canvas.toDataURL('image/png');
+          const imgWidth = pageWidth - 40; // margin
+          const imgHeight = canvas.height * imgWidth / canvas.width;
+          let heightLeft = imgHeight;
+          let position = 20;
+          doc.addImage(imgData, 'PNG', 20, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+          while(heightLeft > 0){
+            position = heightLeft - imgHeight + 20;
+            doc.addPage();
+            doc.addImage(imgData, 'PNG', 20, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+          }
+          doc.save(getFileName('ATC') + '.pdf');
+        });
+      });
+
+    });
+  </script>
+
+  <%- include('partials/footer') %>
+
+</body>
+</html>

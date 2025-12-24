@@ -1,0 +1,199 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title><%= title || "Collision Monitor" %></title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    table th, table td { font-size: 0.9rem; white-space: nowrap; }
+    .overflow-auto { overflow-x:auto; }
+    body { padding: 20px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1 class="mb-3">Collision Monitor</h1>
+  <p>Run the collision monitor. Full information on relocated, skipped, failed, exchanged slots and collisions is shown below.</p>
+
+  <button id="runBtn" class="btn btn-danger mb-3">Run Collision Monitor</button>
+  <div id="status" class="mb-3"></div>
+
+  <div id="results"></div>
+
+  <!-- Exchanged / Swapped Slots Table -->
+  <h5>Exchanged / Swapped Slots</h5>
+  <div class="overflow-auto mb-4">
+    <table class="table table-striped table-bordered table-hover">
+      <thead>
+        <tr>
+          <th>Slot ID</th>
+          <th>Tutor</th>
+          <th>Program(s)</th>
+          <th>Subject</th>
+          <th>From Venue</th>
+          <th>From Day</th>
+          <th>From Time</th>
+          <th>To Day</th>
+          <th>To Time</th>
+          <th>Consecutive</th>
+        </tr>
+      </thead>
+      <tbody id="exchangeBody"></tbody>
+    </table>
+  </div>
+
+  <!-- Collision Details Table -->
+  <h5>Collision Details</h5>
+  <div class="overflow-auto mb-4">
+    <table class="table table-striped table-bordered table-hover">
+      <thead>
+        <tr>
+          <th>Slot 1 ID</th>
+          <th>Tutor 1</th>
+          <th>Program 1</th>
+          <th>Subject 1</th>
+          <th>Slot 2 ID</th>
+          <th>Tutor 2</th>
+          <th>Program 2</th>
+          <th>Subject 2</th>
+          <th>Venue</th>
+          <th>Day</th>
+        </tr>
+      </thead>
+      <tbody id="collisionBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+document.getElementById("runBtn").addEventListener("click", async () => {
+  const btn = document.getElementById("runBtn");
+  btn.disabled = true;
+  btn.innerText = "Running...";
+  document.getElementById("status").innerText = "Working...";
+
+  try {
+    const resp = await fetch("/collision-monitor/run", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user: "admin" })
+    });
+    const data = await resp.json();
+    if (!data.ok) {
+      document.getElementById("status").innerText = "Error: " + (data.error || "unknown");
+      btn.disabled = false;
+      btn.innerText = "Run Collision Monitor";
+      return;
+    }
+
+    const r = data.result;
+    document.getElementById("status").innerText = `Scanned ${r.scanned}. Collisions found: ${r.collisionsFound}. Relocated: ${r.relocated.length}. Skipped: ${r.skipped.length}. Failed: ${r.failedToRelocate.length}.`;
+
+    const out = document.getElementById("results");
+    out.innerHTML = "";
+
+    const createTable = (title, items, type="primary")=>{
+      if(!items || !items.length) return;
+      const h = document.createElement("h5"); h.innerText = title; out.appendChild(h);
+      const wrapper = document.createElement("div"); wrapper.className="overflow-auto mb-4";
+      const table = document.createElement("table"); table.className=`table table-striped table-bordered table-${type} table-hover`;
+      const thead = document.createElement("thead");
+      thead.innerHTML=`<tr>
+        <th>Slot ID</th>
+        <th>Program Type</th>
+        <th>Tutor</th>
+        <th>Program(s)</th>
+        <th>Subject</th>
+        <th>Venue</th>
+        <th>Day</th>
+        <th>Start</th>
+        <th>End</th>
+        <th>Slot Nos</th>
+        <th>Reason</th>
+      </tr>`;
+      table.appendChild(thead);
+      const tbody=document.createElement("tbody");
+      items.forEach(item=>{
+        const oldSlot=item.old||item;
+        const newSlot=item.new||{};
+        const tr=document.createElement("tr");
+        tr.innerHTML=`
+          <td>${item.movedSlotId||item.slotId}</td>
+          <td>${item.program_type||oldSlot.program_type||"-"}</td>
+          <td>${oldSlot.tutor_name||"-"}</td>
+          <td>${oldSlot.program_code||"-"}</td>
+          <td>${oldSlot.subject_code||"-"}</td>
+          <td>${oldSlot.venue_name||"-"}</td>
+          <td>${oldSlot.day||"-"}</td>
+          <td>${oldSlot.start_time||"-"} ${newSlot.start_time?"-> "+newSlot.start_time:""}</td>
+          <td>${oldSlot.end_time||"-"} ${newSlot.end_time?"-> "+newSlot.end_time:""}</td>
+          <td>${item.slotNos?item.slotNos.join(","):"-"}</td>
+          <td>${item.reason||item.note||"-"}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      wrapper.appendChild(table);
+      out.appendChild(wrapper);
+    };
+
+    // Render tables
+    createTable("Relocated Slots", r.relocated, "success");
+    createTable("Skipped Slots (No Safe Slot)", r.skipped, "warning");
+    createTable("Failed Moves", r.failedToRelocate, "danger");
+
+    // Populate exchanged/swapped slots
+    const exchangeBody = document.getElementById("exchangeBody");
+    exchangeBody.innerHTML = "";
+    if(r.exchanges && r.exchanges.length){
+      r.exchanges.forEach(e=>{
+        const slot = r.relocated.concat(r.skipped).concat(r.failedToRelocate).find(s=>s.movedSlotId===e.movedSlotId) || {};
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${e.movedSlotId}</td>
+          <td>${slot.tutor_name||"-"}</td>
+          <td>${slot.program_code||"-"}</td>
+          <td>${slot.subject_code||"-"}</td>
+          <td>${e.old.venue||"-"}</td>
+          <td>${e.old.day||"-"}</td>
+          <td>${e.old.start} - ${e.old.end}</td>
+          <td>${e.new.day||"-"}</td>
+          <td>${e.new.start} - ${e.new.end}</td>
+          <td>${e.consecutive}</td>
+        `;
+        exchangeBody.appendChild(tr);
+      });
+    }
+
+    // Populate collision details
+    const collisionBody = document.getElementById("collisionBody");
+    collisionBody.innerHTML = "";
+    if(r.collisionDetails && r.collisionDetails.length){
+      r.collisionDetails.forEach(c=>{
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${c.slot1_id}</td>
+          <td>${c.tutor1||"-"}</td>
+          <td>${c.program1||"-"}</td>
+          <td>${c.subject1||"-"}</td>
+          <td>${c.slot2_id}</td>
+          <td>${c.tutor2||"-"}</td>
+          <td>${c.program2||"-"}</td>
+          <td>${c.subject2||"-"}</td>
+          <td>${c.venue||"-"}</td>
+          <td>${c.day||"-"}</td>
+        `;
+        collisionBody.appendChild(tr);
+      });
+    }
+
+  } catch (err) {
+    document.getElementById("status").innerText = "Unexpected error: " + err;
+  } finally {
+    btn.disabled = false;
+    btn.innerText = "Run Collision Monitor";
+  }
+});
+</script>
+</body>
+</html>

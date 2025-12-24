@@ -1,0 +1,470 @@
+Kazi Kuu ya Code
+
+Code hii inahusika na kusasisha ratiba (timetable) ya masomo.
+
+Inapokea taarifa mpya ya kipindi (req.body) kama: siku, muda wa kuanza na kumaliza, somo, darasa, mwalimu, chumba (venue), nk.
+
+Kisha inajaribu kuangalia kama kuna mgongano (collision) na masomo mengine yaliyo pangwa siku hiyo na semesta hiyo.
+
+Ikiwa hakuna mgongano, inasasisha ratiba.
+
+Ikiwa kuna mgongano, inatoa matokeo matatu yanayowezekana:
+
+Cancel – haiwezi kusasisha, lazima ufute.
+
+Mix – somo linaweza kuchanganywa na darasa/jumla nyingine.
+
+Exchange – kuna uwezekano wa kubadilisha nafasi mbili bila kuingiliana.
+
+2️⃣ Normalization na Validation
+t.start_time = normalizeTime(t.start_time);
+t.end_time = normalizeTime(t.end_time);
+
+
+Normalization: Inabadilisha muda kutoka HH:MM → HH:MM:SS (mfano: 10:30 → 10:30:00).
+
+Validation: Inakagua kama kila field muhimu ipo, kama haina inatoa error.
+
+Mfano wa maisha:
+
+Kama unapanga meza kwenye ukumbi, lazima uandike saa ya kuanza, kuisha, na mtu anayesimamia.
+
+Kama unakosa kuandika mtu au muda, huwezi kupanga meza, basi system inakuambia: “Missing required field.”
+
+3️⃣ Angalia mgongano (Collision)
+const overlap = (s1, e1, s2, e2) => (s1 < e2 && e1 > s2);
+
+
+Hii inachunguza kama kipindi kipya kinaingiliana na kipindi kilicho tayari kimepangwa.
+
+Mfano wa maisha:
+
+Unataka kukutana na rafiki 10:00–11:00.
+
+Rafiki mwingine tayari amepanga kukutana 10:30–11:30.
+
+Kuna mgongano, hutaweza kukutana wote kwa wakati huo huo.
+
+4️⃣ Jinsi mgongano unavyochunguzwa
+
+Program Conflict (Darasa)
+
+Kama program_name (mfano: “Form One Science”) tayari ipo kipindi hicho, haiwezi kuwekwa mahali pengine.
+
+Mfano wa maisha:
+
+Haiwezekani darasa la Form One kupewa mwalimu mmoja kwenye vyumba viwili tofauti kwa wakati mmoja.
+
+Tutor Conflict (Mwalimu)
+
+Mwalimu hawezi kufundisha masomo mawili tofauti kwa wakati huo huo.
+
+Mfano:
+
+Mwalimu A hawezi kufundisha “Maths Form One” na “Physics Form Two” kwa saa moja.
+
+Mix Conflict (Somo)
+
+Somo moja linaweza kuchanganywa na program nyingine ikiwa linatokea program tofauti lakini somo linabakia sawa.
+
+Mfano:
+
+Math Form One na Math Form Two zinaweza kuunganishwa kwa somo moja kama hakuna mgongano wa mwalimu au darasa.
+
+Strict Exchange (Badilisha nafasi)
+
+Inajaribu kubadilisha vipindi viwili kama vinaweza kuingiliana.
+
+Mfano:
+
+Darasa A lina kipindi cha 10–11, Darasa B lina 11–12.
+
+System inaangalia kama Darasa A linaweza kwenda 11–12 na Darasa B linaweza kwenda 10–11 bila kuingiliana na vingine.
+
+5️⃣ Hali ya Cancel
+
+Cancel inatokea pale ambapo hakuna njia ya kubadilisha au kuchanganya vipindi bila kuingiliana na darasa lingine, mwalimu, au program.
+
+Inatokea hasa kama:
+
+Kipindi kipya kina mgongano na program nyingine (darasa limeshachukuliwa).
+
+Kipindi kipya kina mgongano na mwalimu aliye tayari anafundisha sehemu nyingine.
+
+Exchange fails – vipindi vya “swap” havifanyi kazi kwa sababu kipindi kingine hakingeweza kuhamishwa bila kuingiliana.
+
+Mfano wa maisha:
+
+Unataka kuhamisha meza ya mkutano 10:00–11:00.
+
+Lakini meza yote mahali pengine zimepangwa na mwalimu yupo mahali pengine.
+
+Haina nafasi ya kubadilisha au kuunganishwa.
+
+System inasema: “Impossible, cancel required.”
+
+6️⃣ Kutengeneza ujumbe kwa UI
+
+Ikiwa cancel, system inaeleza:
+
+Ni somo gani limeingiliana.
+
+Ni mwalimu gani au darasa limekabiliwa.
+
+Kwa nini haiwezi kubadilishwa.
+
+Ikiwa mix, system inaonyesha fursa ya kuchanganya somo.
+
+Ikiwa exchange, system inaonyesha fomu ya kubadilisha vipindi.
+
+7️⃣ Update ya ratiba bila collision
+await pool.execute(sql, values);
+
+
+Ikiwa hakuna mgongano, taarifa mpya ya somo inahifadhiwa kwenye database.
+
+Mfano:
+
+Baada ya kuona hakuna mgongano, unaruhusiwa kusogeza somo la Math Form One kwenye chumba B kuanzia 10:00–11:00.
+
+🔹 Muhtasari Rahisi wa Mtiririko
+
+Pata taarifa mpya (start_time, end_time, subject_name…).
+
+Angalia kama kila field muhimu ipo.
+
+Pata masomo mengine ya siku hiyo na semesta hiyo.
+
+Angalia overlap ya muda.
+
+Kwa kila mgongano, angalia:
+
+Program conflict → cancel
+
+Tutor conflict → cancel
+
+Mix → mix
+
+Exchange possible → exchange
+
+Tuma matokeo kwenye UI: cancel, mix, au exchange.
+
+Ikiwa hakuna mgongano → update ratiba salama.
+
+
+
+
+
+
+
+=================YANATEKELEZWA NA======================
+export const handleUpdatetimetable = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const t = req.body || {};
+
+    // Normalize "HH:MM" => "HH:MM:SS"
+    const normalizeTime = v => {
+      if (!v) return null;
+      const s = String(v).trim();
+      return s.length === 5 ? s + ':00' : s;
+    };
+    t.start_time = normalizeTime(t.start_time);
+    t.end_time = normalizeTime(t.end_time);
+
+    // Empty → null
+    const sanitize = v => (v === undefined || v === "" ? null : v);
+
+    // Required fields
+    const requiredFields = [
+      'day','start_time','end_time','subject_code','subject_name',
+      'department_name','venue_name','tutor_name','venue_location',
+      'program_name','subject_credit','program_level','year',
+      'venue_type','venue_status','semester'
+    ];
+
+    for (const f of requiredFields) {
+      if (!t[f] || t[f].toString().trim() === "") {
+        return res.status(400).send(`Missing required field: '${f}'`);
+      }
+    }
+
+    // Fetch current row
+    const [[current]] = await pool.query(
+      `SELECT * FROM extracted_timetables WHERE id = ?`,
+      [id]
+    );
+    if (!current) return res.status(404).send("Timetable entry not found");
+
+    // Get all other entries same day & semester
+    const [others] = await pool.query(
+      `SELECT * FROM extracted_timetables
+       WHERE id != ? AND semester = ? AND day = ?`,
+      [id, t.semester, t.day]
+    );
+
+    let action = null;
+    let collisionEntry = null;
+
+    // Time overlap
+    const overlap = (s1, e1, s2, e2) => (s1 < e2 && e1 > s2);
+
+    // Can payload fit in slot safely?
+    const canPlacePayloadInSlot = async (payload, slotTarget, excludes = []) => {
+      const params = [
+        slotTarget.semester,
+        slotTarget.day,
+        slotTarget.end_time,
+        slotTarget.start_time,
+      ];
+
+      let q = `
+        SELECT * FROM extracted_timetables
+        WHERE semester = ? AND day = ?
+        AND start_time < ? AND end_time > ?
+      `;
+
+      if (excludes.length) {
+        const ph = excludes.map(_ => "?").join(",");
+        q += ` AND id NOT IN (${ph})`;
+        params.push(...excludes);
+      }
+
+      const [rows] = await pool.query(q, params);
+
+      for (const r of rows) {
+        if (r.venue_name === slotTarget.venue_name)
+          return { ok: false, reason: "venue_conflict", row: r };
+
+        if (payload.tutor_name && payload.tutor_name === r.tutor_name)
+          return { ok: false, reason: "tutor_conflict", row: r };
+
+        if (payload.program_name && payload.program_name === r.program_name)
+          return { ok: false, reason: "program_conflict", row: r };
+      }
+
+      return { ok: true };
+    };
+
+    // COLLISION SCAN
+      // COLLISION SCAN
+    for (const e of others) {
+
+      // skip kama hakuna overlap
+      if (!overlap(t.start_time, t.end_time, e.start_time, e.end_time))
+        continue;
+
+      /* =========================================================
+         VENUE OVERLAP: Not a problem (ignore venue conflict here)
+         ========================================================= */
+
+      // 1️⃣ PROGRAM CONFLICT — program haijigawi
+      if (e.program_name === t.program_name) {
+        action = "cancel";
+        collisionEntry = e;
+        break;
+      }
+
+      // 2️⃣ TUTOR CONFLICT — tutor hawezi fundisha sehemu mbili
+      if (e.tutor_name === t.tutor_name) {
+        action = "cancel";
+        collisionEntry = e;
+        break;
+      }
+
+      // 3️⃣ MIX — subject code ile ile lakini program tofauti
+      if (e.subject_code === t.subject_code && e.program_name !== t.program_name) {
+        action = "mix";
+        collisionEntry = e;
+        break;
+      }
+
+      // 4️⃣ STRICT EXCHANGE CHECK
+      const payloadA = {
+        tutor_name: t.tutor_name,
+        program_name: t.program_name,
+      };
+
+      const payloadB = {
+        tutor_name: e.tutor_name,
+        program_name: e.program_name,
+      };
+
+      // slot definitions
+      const slotE = {
+        semester: e.semester,
+        day: e.day,
+        start_time: e.start_time,
+        end_time: e.end_time,
+        venue_name: e.venue_name
+      };
+
+      const slotT = {
+        semester: t.semester,
+        day: t.day,
+        start_time: t.start_time,
+        end_time: t.end_time,
+        venue_name: t.venue_name
+      };
+
+      // check both sides
+      const chA = await canPlacePayloadInSlot(payloadA, slotE, [id, e.id]);
+      const chB = await canPlacePayloadInSlot(payloadB, slotT, [id, e.id]);
+
+      if (chA.ok && chB.ok) {
+        action = "exchange";
+        collisionEntry = e;
+        break;
+      }
+
+      // If reverse side fails due to tutor/program (NOT venue)
+      if (!chB.ok && (chB.reason === "tutor_conflict" || chB.reason === "program_conflict")) {
+        action = "cancel";
+        collisionEntry = chB.row || e;
+        break;
+      }
+
+    }
+
+
+    // RETURN UI COLLISION RESPONSES
+    if (action && collisionEntry) {
+      let msg = "";
+
+if (action === 'cancel') {
+    msg = `
+<h3 style="color:#b30000;">Exchange Impossible — Cancel Required</h3>
+
+<p>
+The system applied the <strong>Strict Two-Side Exchange Rule</strong> which requires that:
+</p>
+
+<ul>
+  <li><strong>(1)</strong> Your updated session must fit correctly inside the target slot 
+      <em>without causing tutor, program, or venue collisions</em>.</li>
+
+  <li><strong>(2)</strong> The other session must also fit inside your original slot 
+      using the <strong>same non-collision checks</strong>.</li>
+</ul>
+
+<p>
+During the validation, the system detected that placing 
+<strong>${t.subject_name}</strong> (${t.subject_code}) into 
+<strong>${t.venue_name}</strong> at 
+<strong>${t.start_time} – ${t.end_time}</strong> 
+creates a <strong>hard collision</strong> with an already scheduled session:
+</p>
+
+<div style="padding:10px;border:1px solid #ddd;border-radius:5px;">
+  <strong>${collisionEntry.subject_name}</strong> 
+  (${collisionEntry.subject_code})<br>
+  Program: <strong>${collisionEntry.program_name}</strong><br>
+  Tutor: <strong>${collisionEntry.tutor_name}</strong><br>
+  Venue: <strong>${collisionEntry.venue_name}</strong><br>
+  Time: <strong>${collisionEntry.start_time} – ${collisionEntry.end_time}</strong>
+</div>
+
+<br>
+
+<h4>Why Strict Exchange Failed:</h4>
+
+<p>At least one of the following conflicts was detected when simulating the swap:</p>
+
+<ul>
+  <li>
+    <strong>Program Conflict:</strong> The program for the above session is already in another class 
+    within the same time window — a program cannot exist in two venues at once.
+  </li>
+
+  <li>
+    <strong>Tutor Conflict:</strong> The tutor involved is already teaching somewhere else during 
+    the same interval — tutors cannot split sessions.
+  </li>
+
+  <li>
+    <strong>Venue Conflict:</strong> The venue is already booked and cannot host two sessions simultaneously.
+  </li>
+
+  <li>
+    <strong>Reverse-Side Failure:</strong> Even if your class could move to the other slot, the other class 
+    cannot move into your current slot without causing a new collision.  
+    (<em>Strict rule: Both sides MUST fit — not one side only.</em>)
+  </li>
+</ul>
+
+<br>
+
+<p style="color:#b30000;">
+Therefore it is <strong>impossible</strong> for these two sessions to exchange positions without violating timetable integrity.  
+The system must <strong>cancel</strong> this exchange request.
+</p>
+
+<p><a href="/timetables" class="btn btn-secondary">Back to Timetables</a></p>
+`;
+}
+
+      if (action === "mix") {
+        msg = `
+<h4>Mix Programs</h4>
+<p>Subject <b>${t.subject_name}</b> (${t.subject_code}) appears in another program (${collisionEntry.program_name}).</p>
+
+<a href="/manageTimetable">Go to mixing timetable page</a>
+
+<a href="/timetables">Cancel / Back</a>
+`;
+      }
+
+      if (action === "exchange") {
+        msg = `
+<h4>Exchange Possible</h4>
+<p>A strict two-way exchange can be applied.</p>
+
+<form method="POST" action="/timetables/exchange">
+  <input type="hidden" name="first_id" value="${id}">
+  <input type="hidden" name="second_id" value="${collisionEntry.id}">
+  <button class="btn btn-warning">Exchange Slots</button>
+</form>
+<a href="/timetables">Back</a>
+`;
+      }
+
+      return res.status(409).send(msg);
+    }
+
+    // NO COLLISION → UPDATE SAFELY (NO FREED SLOT)
+    const sql = `
+      UPDATE extracted_timetables SET
+        day=?, start_time=?, end_time=?, subject_code=?, subject_name=?,
+        department_name=?, venue_name=?, tutor_name=?, venue_location=?,
+        program_name=?, subject_credit=?, program_level=?, year=?,
+        venue_type=?, venue_status=?, semester=?
+      WHERE id=?`;
+
+    const values = [
+      sanitize(t.day), sanitize(t.start_time), sanitize(t.end_time),
+      sanitize(t.subject_code), sanitize(t.subject_name),
+      sanitize(t.department_name), sanitize(t.venue_name),
+      sanitize(t.tutor_name), sanitize(t.venue_location),
+      sanitize(t.program_name), sanitize(t.subject_credit),
+      sanitize(t.program_level), sanitize(t.year),
+      sanitize(t.venue_type), sanitize(t.venue_status),
+      sanitize(t.semester), id
+    ];
+
+    await pool.execute(sql, values);
+
+    // SUCCESS
+    return res.status(200).send(`
+<h4>Updated Successfully</h4>
+<b>${t.subject_name}</b> (${t.subject_code})<br>
+${t.day} | ${t.start_time} - ${t.end_time}<br>
+Venue: ${t.venue_name} | Tutor: ${t.tutor_name}
+<br><br>
+<a href="/timetables">Back</a>
+`);
+
+  } catch (err) {
+    console.error("Error updating timetable:", err);
+    return res.status(500).send("Internal Error: " + err.message);
+  }
+};

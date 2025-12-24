@@ -32,28 +32,30 @@ router.get('/', async (req, res) => {
       level: req.query.level,
       subject_department: req.query.subject_department,
       title: req.query.title,
+      subject_code: req.query.subject_code,
 
     };
 
     const subjects = await searchTimetables(criteria);
-    const users = await getDistinctValues('u.full_name');
+    const uname = await getDistinctValues('u.full_name');
     const semesters = await getDistinctValues('s.semester');
-    const ptypes = await getDistinctValues('p.program_type');
-    const pname = await getDistinctValues('p.program_name');
-    const plevel = await getDistinctValues('p.level');
+    const ptypes = await getDistinctValues('program_type');
+    const pname = await getDistinctValues('program_name');
+    const plevel = await getDistinctValues('program_level');
     const idara = await getDistinctValues('s.subject_department');
     const sname = await getDistinctValues('s.title');
-    const pcategory = await getDistinctValues('p.category');
-
+    const scode = await getDistinctValues('s.subject_code');
+    const pcategory = await getDistinctValues('program_category');
     const venues = await getAllvenues(); // Fetch venues here
     const programs = await getAllprograms();
-
+    const users = await getAllusers();
     const departments = await getAlldepartments()
     const registered_subjects = await getAllregistered_subjects();
 
     res.render('subjects', {
       subjects,
       users,
+      uname,
       semesters,
       venues, // Pass venues to the view
       ptypes,
@@ -64,6 +66,7 @@ router.get('/', async (req, res) => {
       plevel,
       idara,
       sname,
+      scode,
       pcategory,
       ...criteria,
     });

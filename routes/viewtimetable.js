@@ -1,13 +1,14 @@
 import express from 'express';
-import { viewtimetable, getDistinctValues } from '../logics/viewtimetableLogic.js';
-import pdf from 'html-pdf'; // Ensure this line is present
+// import { viewtimetable, getDistinctValues } from '../logics/viewtimetableLogic.js';
+import { viewtimetable, getDistinctValues, getDistinctPrograms } from '../logics/viewtimetableLogic.js';
+
+import pdf from 'html-pdf'; // html-pdf-node instead of puppeteer
 
 const router = express.Router();
 
-// Route to search for timetables based on various criteria
+// Route to search for timetables
 router.get('/viewtimetable', async (req, res) => {
   try {
-    // Extract search criteria from query parameters
     const criteria = {
       department_name: req.query.department,
       program_name: req.query.program,
@@ -17,14 +18,13 @@ router.get('/viewtimetable', async (req, res) => {
       program_level: req.query.level,
       program_type: req.query.program_type,
       semester: req.query.semester,
-
     };
 
-    // Perform search based on criteria
     const timetables = await viewtimetable(criteria);
 
-    // Fetch distinct values for filters
-    const programs = await getDistinctValues('program_name');
+    
+    // const programs = await getDistinctValues('program_name');
+    const programs = await getDistinctPrograms();  // Hii ndiyo sahihi
     const venues = await getDistinctValues('venue_name');
     const subjects = await getDistinctValues('subject_name');
     const tutors = await getDistinctValues('tutor_name');
@@ -33,7 +33,6 @@ router.get('/viewtimetable', async (req, res) => {
     const semesters = await getDistinctValues('semester');
     const ptypes = await getDistinctValues('program_type');
 
-    // Render the search results page with the fetched data
     res.render('viewtimetable', {
       timetables,
       programs,
@@ -47,49 +46,52 @@ router.get('/viewtimetable', async (req, res) => {
       ...criteria,
     });
   } catch (error) {
-    // Handle and log errors
     res.status(500).send('Error searching timetables: ' + error.message);
   }
 });
 
-// Route to download timetables as a CSV file
+// Route to download CSV
 router.get('/download-timetable', async (req, res) => {
   try {
-    // Extract search criteria from query parameters
     const criteria = {
       department_name: req.query.department,
       program_name: req.query.program,
       venue_name: req.query.venue,
       tutor_name: req.query.tutor,
       subject_name: req.query.subject,
+      semester: req.query.semester,
     };
 
-    // Perform search based on criteria
     const timetables = await viewtimetable(criteria);
 
-    // Convert timetables data to CSV format
-    const csvContent = 'Program, Venue, Tutor, Department\n' + 
-      timetables.map(t => `${t.program_name}, ${t.venue_name}, ${t.tutor_name}, ${t.department_name}, ${t.subject_name}`).join('\n');
+    const csvContent =
+      'Program, Venue, Tutor, Department, Subject, Semester\n' +
+      timetables
+        .map(
+          t =>
+            `${t.program_name}, ${t.venue_name}, ${t.tutor_name}, ${t.department_name}, ${t.subject_name}, ${t.semester}`
+        )
+        .join('\n');
 
-    // Send the CSV file as response
+    // Generate dynamic file name with datetime
+    const now = new Date();
+    const datetime = now.toISOString().replace(/:/g, '-').split('.')[0]; // YYYY-MM-DDTHH-MM-SS
+    const programPart = criteria.program_name ? criteria.program_name.replace(/\s+/g, '_') : 'AllPrograms';
+    const semesterPart = criteria.semester ? criteria.semester.replace(/\s+/g, '_') : 'AllSemesters';
+
+    const fileName = `ATC-${programPart}-${semesterPart}-${datetime}.csv`;
+
     res.header('Content-Type', 'text/csv');
-    res.attachment('timetables.csv');
+    res.attachment(fileName);
     res.send(csvContent);
   } catch (error) {
-    // Handle and log errors
     res.status(500).send('Error downloading timetable: ' + error.message);
   }
 });
 
-
-
-
-
-
-// Route to download timetables as a PDF file
+// Route to download PDF using html-pdf-node with datetime in filename
 router.get('/download-timetable-pdf', async (req, res) => {
   try {
-    // Extract search criteria from query parameters
     const criteria = {
       department_name: req.query.department,
       program_name: req.query.program,
@@ -97,55 +99,48 @@ router.get('/download-timetable-pdf', async (req, res) => {
       venue_name: req.query.venue,
       tutor_name: req.query.tutor,
       program_level: req.query.level,
+      semester: req.query.semester,
     };
 
-    // Perform search based on criteria
     const timetables = await viewtimetable(criteria);
 
-    // Create an array of unique days from the timetable data
     const uniqueDays = [...new Set(timetables.map(t => t.day))];
-    
-    // Create an array of unique timeslots from the timetable data
     const uniqueTimes = [...new Set(timetables.map(t => `${t.start_time} - ${t.end_time}`))];
 
-    // Generate the timetable HTML content dynamically
     let timetableHTML = `
       <html>
         <head>
-          <title>Timetable PDF</title>
+          <title>ATC Timetable PDF</title>
           <style>
-            body { font-family: Arial, sans-serif; }
-            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-            th, td { border: 1px solid #000; padding: 8px; text-align: center; }
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            h1, h2 { text-align: center; margin: 5px 0; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #000; padding: 8px; text-align: center; font-size: 12px; }
             th { background-color: #343a40; color: #fff; }
             tbody tr:nth-child(even) { background-color: #f2f2f2; }
+            .logo { width: 80px; height: 80px; display: block; margin: 0 auto; }
           </style>
         </head>
         <body>
+          <img src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Tanzania_Coat_of_Arms.png" class="logo" />
           <h1>ARUSHA TECHNICAL COLLEGE</h1>
-          <h1>TIMETABLE</h1>
+          <h2>TIMETABLE ${criteria.semester ? ' - SEMESTER ' + criteria.semester : ''}</h2>
           <table>
             <thead>
               <tr>
                 <th>TIME</th>`;
 
-    // Add the days as columns in the table header
     uniqueDays.forEach(day => {
       timetableHTML += `<th>${day.toUpperCase()}</th>`;
     });
 
-    timetableHTML += `</tr>
-            </thead>
-            <tbody>`;
+    timetableHTML += `</tr></thead><tbody>`;
 
-    // Loop through each unique time slot and fill the timetable rows
     uniqueTimes.forEach(timeSlot => {
       timetableHTML += `<tr><td><b>${timeSlot}</b></td>`;
 
-      // For each unique day, find if there's an entry for the current time slot and day
       uniqueDays.forEach(day => {
         const entry = timetables.find(t => `${t.start_time} - ${t.end_time}` === timeSlot && t.day === day);
-
         timetableHTML += `<td>`;
         if (entry) {
           timetableHTML += `
@@ -155,7 +150,7 @@ router.get('/download-timetable-pdf', async (req, res) => {
             <b>Program:</b> ${entry.program_name} (${entry.program_level})<br>
           `;
         } else {
-          timetableHTML += `<i>          </i>`;
+          timetableHTML += `<i>-</i>`;
         }
         timetableHTML += `</td>`;
       });
@@ -163,22 +158,26 @@ router.get('/download-timetable-pdf', async (req, res) => {
       timetableHTML += `</tr>`;
     });
 
-    timetableHTML += `</tbody>
-          </table>
-        </body>
-      </html>`;
+    timetableHTML += `</tbody></table></body></html>`;
 
-    // Generate the PDF from the HTML content
-    pdf.create(timetableHTML).toStream((err, stream) => {
-      if (err) {
-        return res.status(500).send('Error generating PDF: ' + err.message);
-      }
-      res.setHeader('Content-disposition', 'attachment; filename="ATC-timetable.pdf"');
-      res.setHeader('Content-type', 'application/pdf');
-      stream.pipe(res);
-    });
+    const file = { content: timetableHTML };
+    const options = { format: 'A4', margin: { top: '20px', bottom: '20px' } };
+    const pdfBuffer = await pdf.generatePdf(file, options);
 
+    // Dynamic file name with datetime
+    const now = new Date();
+    const datetime = now.toISOString().replace(/:/g, '-').split('.')[0]; // YYYY-MM-DDTHH-MM-SS
+    const programPart = criteria.program_name ? criteria.program_name.replace(/\s+/g, '_') : 'AllPrograms';
+    const semesterPart = criteria.semester ? criteria.semester.replace(/\s+/g, '_') : 'AllSemesters';
+    const fileName = `ATC-${programPart}-${semesterPart}-${datetime}.pdf`;
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+
+    return res.end(pdfBuffer);
   } catch (error) {
+    console.error(error);
     res.status(500).send('Error downloading timetable as PDF: ' + error.message);
   }
 });

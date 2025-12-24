@@ -1,259 +1,148 @@
+<%- include('partials/outerheader') %>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Search Timetables</title>
+  <title>View Timetables</title>
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/css/select2.min.css" />
-  
-  
-  
-  
   <style>
-    /* Global Styles */
-    body {
-      font-family: 'Arial', sans-serif;
-      background-color: #f4f7fb;
-      color: #333;
-      margin: 0;
-      padding: 0;
-    }
-
-    .container {
-      max-width: 1200px;
-      margin-top: 30px;
-    }
-
-    .animated-graphic {
-      font-size: 3rem;
-      animation: spin 3s linear infinite;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    .btn-primary {
-      background-color: #007bff;
-      border-color: #007bff;
-      transition: background-color 0.3s ease, border-color 0.3s ease;
-    }
-
-    .btn-primary:hover {
-      background-color: #0056b3;
-      border-color: #004085;
-    }
-
-    /* Table Styles */
-    .table-container {
-      overflow-x: auto;
-    }
-
-    .table thead {
-      background-color: #007bff;
-      color: white;
-    }
-
-    .table th, .table td {
-      vertical-align: middle;
-      text-align: center;
-      font-size: 1rem;
-      padding: 12px;
-    }
-
-    .table tbody tr {
-      background-color: #fff;
-      transition: background-color 0.3s ease-in-out;
-    }
-
-    .table tbody tr:hover {
-      background-color: #f1f8ff;
-    }
-
-    .table th {
-      font-weight: bold;
-    }
-
-    /* Form Styles */
-    .form-group label {
-      font-weight: bold;
-    }
-
-    .form-control {
-      border-radius: 0.375rem;
-      padding: 10px;
-      font-size: 1rem;
-    }
-
-    /* Button Styles */
-    .btn-secondary {
-      background-color: #6c757d;
-      border-color: #6c757d;
-    }
-
-    .btn-secondary:hover {
-      background-color: #5a6268;
-      border-color: #545b62;
-    }
-
-    /* Responsive Styles */
-    @media (max-width: 768px) {
-      .table th, .table td {
-        font-size: 0.9rem;
-      }
-
-      .form-row {
-        flex-direction: column;
-      }
-
-      .form-group.col-md-4 {
-        width: 100%;
-        margin-bottom: 15px;
-      }
-
-      .btn-primary, .btn-secondary {
-        width: 100%;
-        margin-top: 10px;
-      }
-
-      .table-container {
-        padding-left: 10px;
-        padding-right: 10px;
-      }
-    }
-    .table-container {
-      overflow-x: auto; /* Ensures horizontal scrolling if table overflows */
-    }
-    .animated-graphic {
-      font-size: 3rem; /* Adjust as needed */
-      animation: spin 3s linear infinite; /* Add a spinning animation */
-    }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    .table thead {
-      background: linear-gradient(45deg, #28a745, #007bff); /* Green-blue gradient */
-      color: #fff;
-    }
-    .table th, .table td {
-      vertical-align: middle;
-      text-align: center;
-      font-size: 1.1rem;
-    }
-    .table tbody tr {
-      background-color: #f8f9fa;
-      transition: background-color 0.3s ease-in-out;
-    }
-    .table tbody tr:hover {
-      background-color: #e2e6ea;
-    }
-    .btn-primary {
-      background-color: #007bff;
-      border-color: #007bff;
-      transition: background-color 0.3s ease, border-color 0.3s ease;
-    }
-    .btn-primary:hover {
-      background-color: #0056b3;
-      border-color: #004085;
-    }
+    body { background: #f7f9fc; font-family: "Segoe UI", sans-serif; }
+    h1, h2 { text-align: center; }
+    .animated-graphic { font-size: 40px; animation: spin 2s linear infinite; margin-bottom: 20px; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .table-container { overflow-x: auto; margin-top: 20px; }
+    th { background-color: #007bff; color: #fff; text-align: center; }
+    td { vertical-align: middle; text-align: center; }
+    .select2-container .select2-selection--single { height: 38px; border: 1px solid #007bff; }
+    .select2-selection__rendered { line-height: 38px !important; }
+    .select2-selection__arrow { height: 38px !important; }
+    .btn-download { margin-left: 5px; }
   </style>
-  
 </head>
 <body>
-  <div class="container mt-5">
-    <div class="text-center mb-4">
-      <div class="animated-graphic" title="Timetable autogenerating system">🕑</div> 
-    </div> 
-    <a href="/" class="btn btn-secondary mb-4">BACK</a>
+<div class="container mt-4">
+  <div class="text-center">
+    <div class="animated-graphic" title="Timetable autogenerating system">🕑</div>
+    <h2 class="text-primary">FILTER YOUR TIMETABLE</h2>
+  </div>
 
-    <!-- Search Form -->
-    <form method="get" action="/viewtimetable" class="mb-4">
-      <div class="form-row">
-        <div class="form-group col-md-4">
-          <label for="program">Program:</label>
-          <select id="program" name="program" class="form-control select2">
-            <option value="">Select Program</option>
-            <% programs.forEach(program => { %>
-              <option value="<%= program.program_name %>" <%= program_name === program.program_name ? 'selected' : '' %>><%= program.program_name %></option>
-            <% }); %>
-          </select>
-        </div>
+  <!-- SEMESTER FORM -->
+  <form id="semesterForm" method="get" action="/viewtimetable" class="mb-4">
+    <div class="form-group col-md-4 mx-auto">
+      <label for="semester" class="font-weight-bold">Semester:</label>
+      <select id="semester" name="semester" class="form-control select2" required>
+        <option value="">-- Select Semester --</option>
+        <% semesters.forEach(sem => { %>
+          <option value="<%= sem.semester %>" <%= semester === sem.semester ? 'selected' : '' %>><%= sem.semester %></option>
+        <% }); %>
+      </select>
+    </div>
+  </form>
 
-        <div class="form-group col-md-4">
-          <label for="program_type">Program Type:</label>
-          <select id="program_type" name="program_type" class="form-control select2">
-            <option value="">Select Type</option>
-            <% ptypes.forEach(program => { %>
-              <option value="<%= program.program_type %>" <%= program_type === program.program_type ? 'selected' : '' %>><%= program.program_type %></option>
-            <% }); %>
-          </select>
-        </div>
-
-        <div class="form-group col-md-4">
-          <label for="level">Level:</label>
-          <select id="level" name="level" class="form-control select2">
-            <option value="">Select Level</option>
-            <% levels.forEach(level => { %>
-              <option value="<%= level.program_level %>" <%= program_level === level.program_level ? 'selected' : '' %>><%= level.program_level %></option>
-            <% }); %>
-          </select>
-        </div>
-
-        <div class="form-group col-md-4">
-          <label for="semester">Semester:</label>
-          <select id="semester" name="semester" class="form-control select2">
-            <option value="">Select Semester</option>
-            <% semesters.forEach(semester => { %>
-              <option value="<%= semester.semester %>" <%= semester === semester.semester ? 'selected' : '' %>><%= semester.semester %></option>
-            <% }); %>
-          </select>
-        </div>
+  <!-- FILTER FORM -->
+  <form id="filterForm" method="get" action="/viewtimetable" class="mb-4">
+    <input type="hidden" name="semester" value="<%= semester %>"/>
+    <div class="form-row">
+      <div class="form-group col-md-4">
+        <label>Program:</label>
+        <select id="program" name="program" class="form-control select2">
+          <option value="">Select Program</option>
+          <% programs.forEach(p => { %>
+            <option value="<%= p.program_name %>" <%= program_name === p.program_name ? 'selected' : '' %>><%= p.program_name %></option>
+          <% }); %>
+        </select>
       </div>
 
-      <div class="form-group">
-        <button type="submit" class="btn btn-primary btn-block">Filter</button>
+      <div class="form-group col-md-4">
+        <label>Program Type:</label>
+        <select id="program_type" name="program_type" class="form-control select2">
+          <option value="">Select Type</option>
+          <% ptypes.forEach(pt => { %>
+            <option value="<%= pt.program_type %>" <%= program_type === pt.program_type ? 'selected' : '' %>><%= pt.program_type %></option>
+          <% }); %>
+        </select>
       </div>
-    </form>
 
-    <% if (program_name || program_level) { %> 
-      <% if (timetables.length > 0) { %>
-        <h1 class="text-center">Arusha Technical College Timetable</h1>
-        <div class="table-container">
+      <div class="form-group col-md-4">
+        <label>Level:</label>
+        <select id="level" name="level" class="form-control select2">
+          <option value="">Select Level</option>
+          <% levels.forEach(l => { %>
+            <option value="<%= l.program_level %>" <%= program_level === l.program_level ? 'selected' : '' %>><%= l.program_level %></option>
+          <% }); %>
+        </select>
+      </div>
+    </div>
+  </form>
+
+  <!-- TIMETABLE RESULTS -->
+  <div class="container">
+    <% if (semester && (tutor_name || (program_name && program_level))) { %>
+      <% if (timetables && timetables.length > 0) { %>
+
+        <h3 class="text-center mt-4 text-primary">ARUSHA TECHNICAL COLLEGE</h3>
+        <h5 class="text-center text-dark mb-3">TIMETABLE - SEMESTER <%= semester %></h5>
+
+        <% 
+          const weekdayOrder = ["MONDAY","TUESDAY","WEDNESDAY","THURSDAY","FRIDAY","SATURDAY","SUNDAY"];
+          const uniqueDays = weekdayOrder.filter(day => timetables.some(t => t.day === day));
+
+          const grouped = timetables.reduce((acc, t) => {
+            const start = t.start_time ? t.start_time.split(":").slice(0,2).join(":") : null;
+            const end = t.end_time ? t.end_time.split(":").slice(0,2).join(":") : null;
+            if(start && end){
+              const slot = `${start} - ${end}`;
+              if(!acc[slot]) acc[slot] = [];
+              acc[slot].push(t);
+            }
+            return acc;
+          }, {});
+
+          const breaks = [
+            {nos:5, time:"10:35 - 11:00", type:"Tea Break"},
+            {nos:6, time:"12:30 - 13:15", type:"Lunch Break"}
+          ];
+
+          const allSlots = [...new Set([...Object.keys(grouped), ...breaks.map(b => b.time)])]
+            .sort((a,b) => {
+              const getMinutes = time => {
+                const [start] = time.split(" - ");
+                const [h,m] = start.split(":").map(Number);
+                return h*60 + m;
+              };
+              return getMinutes(a) - getMinutes(b);
+            });
+        %>
+
+        <div class="table-container" id="timetableContent">
           <table class="table table-bordered table-striped">
             <thead>
               <tr>
                 <th>TIME</th>
-                <% 
-                  // Extract unique days from the timetable
-                  const uniqueDays = [...new Set(timetables.map(t => t.day))];
-                  uniqueDays.forEach(day => { 
-                %>
-                  <th><%= day.toUpperCase() %></th>
+                <% uniqueDays.forEach(day => { %>
+                  <th><%= day %></th>
                 <% }); %>
               </tr>
             </thead>
             <tbody>
-              <% 
-                // Extract unique time slots
-                const uniqueTimes = [...new Set(timetables.map(t => `${t.start_time} - ${t.end_time}`))];
-                uniqueTimes.forEach(timeSlot => { 
-              %>
+              <% allSlots.forEach(slot => { %>
                 <tr>
-                  <td><b><%= timeSlot %></b></td>
-                  <% 
-                    // Loop through each day and match data
-                    uniqueDays.forEach(day => { 
-                      const entry = timetables.find(t => `${t.start_time} - ${t.end_time}` === timeSlot && t.day === day);
+                  <td><b><%= slot %></b></td>
+                  <% uniqueDays.forEach(day => {
+                      const entry = grouped[slot] ? grouped[slot].find(t => t.day === day) : null;
+                      const brk = breaks.find(b => b.time === slot);
                   %>
                     <td>
-                      <% if (entry) { %>
-                        <b>Venue:</b> <%= entry.venue_name %> (<%= entry.venue_type %>)<br>
-                        <b>Subject:</b> <%= entry.subject_name %> (<%= entry.subject_code %>)<br>
-                        <b>Tutor:</b> <%= entry.tutor_name %><br>
-                        <b>Program:</b> <%= entry.program_name %> (<%= entry.program_level %>)<br>
+                      <% if(entry){ %>
+                        <b>Venue:</b> <%= entry.venue_name || '---' %> (<%= entry.venue_type || '---' %>)<br>
+                        <b>Subject:</b> <%= entry.subject_name || '---' %> (<%= entry.subject_code || '---' %>)<br>
+                        <b>Tutor:</b> <%= entry.tutor_name || '---' %><br>
+                        <b>Program:</b> <%= entry.program_code || '---' %> (<%= entry.program_level || '---' %>)
+                      <% } else if(brk){ %>
+                        <i><%= brk.type %></i>
                       <% } else { %>
                         <i>---</i>
                       <% } %>
@@ -264,28 +153,45 @@
             </tbody>
           </table>
         </div>
+
+        <div class="text-center my-4">
+          <button id="frontendPrintBtn" class="btn btn-secondary mx-2">Print Timetable</button>
+        </div>
+
       <% } else { %>
-        <p class="text-center">No timetables found for the selected filters.</p>
+        <p class="text-center text-danger mt-4">No timetables found for the selected filters.</p>
       <% } %>
-    <% } %>
-    
-    <!-- Download Button only if filters are applied -->
-    <% if (program_name || program_level) { %>
-      <div class="text-center mt-4">
-        <a href="/download-timetable?program=<%= program_name %>&level=<%= program_level %>&venue=<%= venue_name %>&tutor=<%= tutor_name %>&department=<%= department_name %>" class="btn btn-primary">Download Timetables (CSV)</a>
-        <a href="/download-timetable-pdf?program=<%= program_name %>&level=<%= program_level %>&venue=<%= venue_name %>&tutor=<%= tutor_name %>&department=<%= department_name %>" class="btn btn-secondary">Download Timetables (PDF)</a>
-      </div>
+    <% } else { %>
+      <p class="text-center text-danger mt-4">Filter to view the timetable.</p>
     <% } %>
   </div>
+</div>
 
-  <!-- Bootstrap JS and dependencies -->
-  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/js/select2.min.js"></script>
-  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
-  <script>
-    $(document).ready(function() {
-      $('.select2').select2(); // Initialize Select2 dropdown
-    });
-  </script>
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/js/select2.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+<script>
+$(document).ready(function(){
+  $('.select2').select2();
+
+  $('#semester').on('change', function(){ $('#semesterForm').submit(); });
+  $('#filterForm select').on('change', function(){ $('#filterForm').submit(); });
+
+  $('#frontendPrintBtn').on('click', function(){
+    const content = document.getElementById('timetableContent').innerHTML;
+    const win = window.open('', '', 'width=1000,height=800');
+    win.document.write('<html><head><title>Timetable</title>');
+    win.document.write('<style>body{font-family:Arial,sans-serif;margin:20px;} table{width:100%;border-collapse:collapse;} th,td{border:1px solid #000;padding:6px;text-align:center;} th{background:#007bff;color:#fff;} tbody tr:nth-child(even){background:#f2f2f2;}</style>');
+    win.document.write('</head><body>');
+    win.document.write('<h1 style="text-align:center;">ARUSHA TECHNICAL COLLEGE</h1>');
+    win.document.write('<h2 style="text-align:center;">Timetable - Semester <%= semester %></h2>');
+    win.document.write(content);
+    win.document.write('</body></html>');
+    win.document.close();
+    win.focus();
+    win.print();
+  });
+});
+</script>
 </body>
 </html>

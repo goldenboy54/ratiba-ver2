@@ -1,0 +1,19 @@
+<% if (Viewprograms.length > 0) { %>
+  <% Viewprograms.forEach(program => { %>
+    <tr>
+      <td><%= program.program_name %></td>
+      <td><%= program.program_code %></td>
+      <td><%= program.duration %></td>
+      <td><%= program.level %></td>
+      <td><%= program.category %></td>
+      <td><%= program.program_capacity %></td>
+      <td><%= program.program_type %></td>
+      <td>
+        <button class="btn btn-warning btn-sm" data-toggle="modal" data-target="#updateModal<%= program.program_id %>">Edit</button>
+        <a href="/programs/delete/<%= program.program_id %>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?')">Delete</a>
+      </td>
+    </tr>
+  <% }) %>
+<% } else { %>
+  <tr><td colspan="8" class="text-center">No programs found</td></tr>
+<% } %>

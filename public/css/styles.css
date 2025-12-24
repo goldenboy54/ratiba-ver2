@@ -2,100 +2,154 @@
 
 /* Navigation Bar */
 nav {
-    background-color: #333; /* Dark grey navigation bar */
-    
-  padding-top: 20px;
+  background-color: #333; /* Dark grey navigation bar */
+  
+padding-top: 20px;
 
-    padding: 10px;
+  padding: 10px;
 }
 
 
 
 nav ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    justify-content: center;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  justify-content: center;
 }
 
 nav ul li {
-    margin: 0 15px;
+  margin: 0 15px;
 }
 
 nav a {
-    color: #fff;
-    text-decoration: none;
-    padding: 10px 15px;
-    display: inline-block;
+  color: #fff;
+  text-decoration: none;
+  padding: 10px 15px;
+  display: inline-block;
 }
 
 nav a:hover {
-    background-color: #575757; /* Darker grey on hover */
+  background-color: #575757; /* Darker grey on hover */
 }
 
 body {
-    font-family: Arial, sans-serif;
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+.container {
+  width: 80%;
+  margin: auto;
+  overflow: hidden;
+}
+
+h1 {
+  text-align: center;
+  margin: 20px 0;
+}
+
+.table {
+  width: 100%;
+  margin: 20px 0;
+  border-collapse: collapse;
+}
+
+.table th, .table td {
+  border: 1px solid #ccc;
+  padding: 10px;
+  text-align: left;
+}
+
+.table th {
+  background-color: #f4f4f4;
+}
+
+.btn {
+  display: inline-block;
+  padding: 10px 20px;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 5px;
+}
+
+.btn-primary {
+  background-color: #5cb85c;
+}
+
+.btn-warning {
+  background-color: #f0ad4e;
+}
+
+.btn-danger {
+  background-color: #d9534f;
+}
+
+.fixed-size-btn {
+  width: 150px; /* Set the desired fixed width */
+}
+
+.fixed-size-btn a {
+  color: white; /* Ensure the text color inside the anchor is white */
+  text-decoration: none; /* Remove underline */
+  display: block; /* Make the anchor fill the button */
+  width: 100%; /* Ensure the anchor fills the button width */
+  height: 100%; /* Ensure the anchor fills the button height */
+}
+
+
+/* PROGRAMS VIEWS CSS START */
+  /* Gradient Background */
+  body {
+    background: #374151;
+    background-size: cover;
+    height: 100vh;  /* Ensure the background covers the full viewport height */
     margin: 0;
-    padding: 0;
-  }
-  
-  .container {
-    width: 80%;
-    margin: auto;
-    overflow: hidden;
-  }
-  
-  h1 {
-    text-align: center;
-    margin: 20px 0;
-  }
-  
-  .table {
-    width: 100%;
-    margin: 20px 0;
-    border-collapse: collapse;
-  }
-  
-  .table th, .table td {
-    border: 1px solid #ccc;
-    padding: 10px;
-    text-align: left;
-  }
-  
-  .table th {
-    background-color: #f4f4f4;
-  }
-  
-  .btn {
-    display: inline-block;
-    padding: 10px 20px;
-    color: #fff;
-    text-decoration: none;
-    border-radius: 5px;
-  }
-  
-  .btn-primary {
-    background-color: #5cb85c;
-  }
-  
-  .btn-warning {
-    background-color: #f0ad4e;
-  }
-  
-  .btn-danger {
-    background-color: #d9534f;
+    color: #fff;  /* Ensure text stands out on the background */
   }
 
   .fixed-size-btn {
-    width: 150px; /* Set the desired fixed width */
+    width: 80px;
+    height: 35px;
   }
 
-  .fixed-size-btn a {
-    color: white; /* Ensure the text color inside the anchor is white */
-    text-decoration: none; /* Remove underline */
-    display: block; /* Make the anchor fill the button */
-    width: 100%; /* Ensure the anchor fills the button width */
-    height: 100%; /* Ensure the anchor fills the button height */
+  .modal-dialog {
+    max-width: 90%;
+  }
+
+  /* Responsive button size */
+  @media (max-width: 768px) {
+    .fixed-size-btn {
+      width: 100px;
+      height: 40px;
+    }
+  }
+
+  /* Additional custom styling for readability */
+  h2, h1, label {
+    color: #fff;  /* White text to stand out against the background */
+  }
+
+  .btn-primary {
+    background-color: #007bff; /* Blue buttons */
+    border-color: #007bff;
+  }
+
+  /* Make table headers and rows stand out */
+  .table th, .table td {
+    color: #fff;  /* White text for table */
+  }
+
+  /* Ensure form controls are more visible */
+  .form-control {
+    background-color: #f8f9fa;
+    color: #495057;
   }
   
+  .thead-dark {
+    background-color: #343a40;
+  }
+
+    /* PROGRAMS VIEWS CSS END */

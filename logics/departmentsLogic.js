@@ -1,43 +1,33 @@
 // logics/departmentsLogic.js
-import { getAlldepartments, adddepartment,addDepartmentsFromFile, updatedepartment, deletedepartment } from '../models/departmentsModel.js';
+import { getAlldepartments, adddepartment,addDepartmentsFromFile, updatedepartment, deletedepartment,getDepartmentsFromDB,getDistinctValues1, getDepartmentByCode } from '../models/departmentsModel.js';
 import { getAllprograms } from '../models/programsModel.js';
 import { getAllusers } from '../models/usersModel.js';
 import { getAllvenues } from '../models/venuesModel.js';
 
-
-
-
-// import {
-//   getAllprograms,
-//   getprogramById,
-//   addprogram,
-//   updateprogram,
-//   deleteprogram,
-//   addProgramsFromFile,
-// } from '../models/programsModel.js';
 
 import csvParser from 'csv-parser';
 import xlsx from 'xlsx';
 import fs from 'fs';
 import path from 'path';
 
-// export const listPrograms = async (req, res) => {
-//   try {
-//     const programs = await getAllprograms();
-//     res.render('programs', { programs });
-//   } catch (error) {
-//     res.status(500).send('Error fetching programs: ' + error.message);
-//   }
-// };
 
-// export const handleAddprogram = async (req, res) => {
-//   try {
-//     await addprogram(req.body);
-//     res.redirect('/programs');
-//   } catch (error) {
-//     res.status(500).send('Error adding program: ' + error.message);
-//   }
-// };
+export const searchDepartments = async (filters) => {
+  try {
+    const departments = await getDepartmentsFromDB(filters);
+    return departments;
+  } catch (error) {
+    throw new Error('Error fetching Departments this is in departmentsLogic.js: ' + error.message);
+  }
+};
+
+export const getDistinctValues = async (column) => {
+  try {
+    const values = await getDistinctValues1(column);
+    return values;
+  } catch (error) {
+    throw new Error('Error fetching distinct values: ' + error.message);
+  }
+};
 
 
 
@@ -49,30 +39,61 @@ export const handleAddDepartmerntFromFile = async (req, res) => {
 
   try {
     const filePath = path.resolve('uploads', file.filename);
-    const departments = [];
+    let departments = [];
 
     if (file.mimetype === 'text/csv') {
-      fs.createReadStream(filePath)
-        .pipe(csvParser())
-        .on('data', (row) => departments.push(row))
-        .on('end', async () => {
-          await addDepartmentsFromFile(departments);
-          res.redirect('/departments');
-        });
+      departments = await new Promise((resolve, reject) => {
+        const rows = [];
+        fs.createReadStream(filePath)
+          .pipe(csvParser())
+          .on('data', (row) => rows.push(row))
+          .on('end', () => resolve(rows))
+          .on('error', (err) => reject(err));
+      });
     } else if (file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
       const workbook = xlsx.readFile(filePath);
       const sheetName = workbook.SheetNames[0];
-      const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
-      await addDepartmentsFromFile(data);
-      res.redirect('/departments');
+      departments = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
     } else {
-      res.status(400).send('Invalid file type. Please upload a CSV or Excel file.');
+      return res.status(400).send('Invalid file type. Please upload a CSV or Excel file.');
     }
+
+    const duplicates = [];
+
+    for (const dept of departments) {
+      const code = dept.department_code;
+
+      if (!code || code.trim() === '') {
+        console.log('Skipping row with missing or empty department_code.');
+        continue; // Skip this row
+      }
+
+      const existingDept = await getDepartmentByCode(code);
+
+      if (existingDept) {
+        console.log(`Duplicate found: ${code} already exists.`);
+        duplicates.push(code);
+        continue; // Skip inserting duplicate
+      }
+
+      const newDepartment = {
+        department_name: dept.department_name,
+        department_code: dept.department_code,
+        hod_name: dept.hod_name,
+        hod_email: dept.hod_email,
+      };
+
+      await addDepartmentsFromFile(newDepartment);
+    }
+
+    console.log('Upload complete. Duplicates:', duplicates);
+
+    res.redirect('/departments');
   } catch (error) {
+    console.error(error);
     res.status(500).send('Error processing file: ' + error.message);
   }
 };
-
 
 
 export const showdepartmentForm = async (req, res) => {

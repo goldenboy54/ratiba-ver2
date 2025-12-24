@@ -3,99 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Manual Generate timetable</title>
+  <title>Auto Generate timetable</title>
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" />
-  <style>
-    .table-container {
-      overflow-x: auto; /* Ensures horizontal scrolling if table overflows */
-    }
-    .animated-graphic {
-      font-size: 3rem; /* Adjust as needed */
-      animation: spin 3s linear infinite; /* Add a spinning animation */
-    }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    .table thead {
-      background-color: #343a40;
-      color: #fff;
-    }
-    .table th, .table td {
-      vertical-align: middle;
-      text-align: center;
-      font-size: 1.1rem;
-    }
-    .table tbody tr {
-      background-color: #f8f9fa;
-      transition: background-color 0.3s ease-in-out;
-    }
-    .table tbody tr:hover {
-      background-color: #e2e6ea;
-    }
-    .btn-primary {
-      background-color: #007bff;
-      border-color: #007bff;
-      transition: background-color 0.3s ease, border-color 0.3s ease;
-    }
-    .btn-primary:hover {
-      background-color: #0056b3;
-      border-color: #004085;
-    }
-  </style>
-  <style>
-    /* Gradient Background */
-    body {
-      background: linear-gradient(to bottom, green, #66cc66, blue);
-      background-size: cover;
-      height: 100vh;  /* Ensure the background covers the full viewport height */
-      margin: 0;
-      color: #fff;  /* Ensure text stands out on the background */
-    }
-  
-    .fixed-size-btn {
-      width: 80px;
-      height: 35px;
-    }
-  
-    .modal-dialog {
-      max-width: 90%;
-    }
-  
-    /* Responsive button size */
-    @media (max-width: 768px) {
-      .fixed-size-btn {
-        width: 100px;
-        height: 40px;
-      }
-    }
-  
-    /* Additional custom styling for readability */
-    h2, h1, label {
-      color: #fff;  /* White text to stand out against the background */
-    }
-  
-    .btn-primary {
-      background-color: #007bff; /* Blue buttons */
-      border-color: #007bff;
-    }
-  
-    /* Make table headers and rows stand out */
-    .table th, .table td {
-      color: #fff;  /* White text for table */
-    }
-  
-    /* Ensure form controls are more visible */
-    .form-control {
-      background-color: #f8f9fa;
-      color: #495057;
-    }
-    
-    .thead-dark {
-      background-color: #343a40;
-    }
-  </style>
+
+ 
   
 </head>
 <body>
@@ -106,50 +18,10 @@
       <div class="animated-graphic" title="Timetable autogenerating system">🕑</div> 
     </div> 
 
-    <h2 class="text-center text-primary">FILTER BELOW TO CONTINUE</h2>
-
-    <!-- Search Form -->
-    <form method="get" action="/tmaster" class="mb-4">
-
-     <div class="form-row">
-        <div class="form-group col-md-4">
-          <label for="tutor">Tutor:</label>
-          <select id="tutor" name="tutor" class="form-control select2">
-            <option value="">Select Tutor</option>
-            <% tutors.forEach(tutor => { %>
-              <option value="<%= tutor.full_name %>" <%= tutor_name === tutor.full_name ? 'selected' : '' %>><%= tutor.full_name %></option>
-            <% }); %>
-          </select>
-        </div>
-        
-        <div class="form-group col-md-4">
-          <label for="semester">Semester:</label>
-          <select id="semester" name="semester" class="form-control select2">
-            <option value="">Select semester</option>
-            <% semesters.forEach(semester => { %>
-              <option value="<%= semester.semester %>" <%= semester === semester.semester ? 'selected' : '' %>> <%= semester.semester %></option>
-            <% }); %>
-          </select>
-        </div>
-
-     
-     <div class="form-group col-md-4">
-      <label for="program_type">program_type:</label>
-      <select id="program_type" name="program_type" class="form-control select2">
-        <option value="">Select type</option>
-        <% ptypes.forEach(type => { %>
-          <option value="<%= type.program_type %>" <%= program_type === type.program_type ? 'selected' : '' %>><%= type.program_type %></option>
-        <% }); %>
-      </select>
-    </div>
-     </div>
-      <button type="submit" class="btn btn-primary">Filter</button>
-    </form>
-<br>
-    <!-- Display Timetables -->
-    <% if ( tutor_name ) { %> 
+    <h2 class="text-center text-primary">AUTO GENERATION OF TIMETABLE</h2>
     
-     <% if (timetables.length > 0) { %>
+    
+   
   
 <br>
         <p class="text-primary text-center">ARUSHA TECHNICAL COLLEGE</p>
@@ -159,53 +31,23 @@
           <table class="table table-bordered table-striped">
             <thead>
               <tr>
-               
+                
                <form action="/tmaster/add" method="post">
 
                     <div class="form-group">
-                         <label for="day">day:</label>
-                         <select id="day" name="day" class="form-control select2" required>
+                         <label for="semester">SEMESTER:</label>
+                         <select id="semester" name="semester" class="form-control select2" required>
                         
-                              <option value="MONDAY">MONDAY</option>
-                           <option value="TUESDAY">TUESDAY</option>    
-                           <option value="WEDNESSDAY">WEDNESSDAY</option>
-                           <option value="THURSDAY">THURSDAY</option>    
-                           <option value="FRIDAY">FRIDAY</option>
-                           <option value="SATURDAY">SATURDAY</option>   
-                           <option value="SUNDAY">SUNDAY</option>
-      
+                              <option value="I">I</option>
+                           <option value="II">II</option>    
+                          
                          </select>
                        </div>
-                       <label for="venue">Venue Selection:</label>
-                       <select id="venue_id" name="venue_id" class="form-control select2" required>
-                         <% venues.forEach(venue => { %>
-                          <mark>
-                           <option value="<%= venue.venue_id %>">
-                             <mark>Vname: <%= venue.venue_name %> Vcapacity : <%= venue.capacity %></mark>   Vtype: <%= venue.department %> </mark> <%= venue.type %></mark>
-                           </option>                           
-                          </mark>
-
-
-                         <% }); %>
-                       </select>
+                      
                        
-                       
-                       <div class="form-group">
-                         <label for="subject_ids">Assign to:</label>
-                     <select id="subject_ids" name="subject_ids[]" class="form-control select2" multiple required>
-  
-                           <% timetables.forEach(timetable => { %>
-                             <option value="<%= timetable.subject_id %>">
-                               <mark> <%= timetable.tutor_name %></mark>
-                               (     Subject <mark><%= timetable.subject_name %></mark>, Scode: <%= timetable.subject_code %>, Stype: <%= timetable.department_name %>  <%= timetable.subject_type %>,ltpa: <%= timetable.total_hours_per_week %> hours ,pname: <%= timetable.program_name %>,ptype: <%= timetable.program_type %>,Pcapacity : <%= timetable.program_capacity %>, dname: <%= timetable.subject_department %> semester <%= timetable.semester %>,)
-                             </option>
-                           <% }); %>
-                         </select>
-                       </div>
-                       
-     
+                     
 
-                 <button type="submit" class="btn btn-primary">Assign</button>
+                 <button type="submit" class="btn btn-primary">GENERATE</button>
                </form>
      
      
@@ -214,48 +56,9 @@
      
               </tr>
             </thead>
-            <tbody>
-               <p style="color: chartreuse;">Number of programs Assigned to that tutor </p>
-               
-               <%
-              x=1;
-              timetables.forEach(timetable => { %>
-                <tr>
-                    <mark style="color: chartreuse;">
-
-                    <%= x  %> Program   
-               </mark>
-                </tr>
-
-                <% x++  %>
-                <!-- Update Modal -->
-                <div class="modal fade" id="updateModal<%= timetable.id %>" tabindex="-1" role="dialog" aria-labelledby="updateModalLabel<%= timetable.id %>" aria-hidden="true">
-                  <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                      <div class="modal-header">
-                        <h5 class="modal-title" id="updateModalLabel<%= timetable.id %>">Update Timetable</h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                          <span aria-hidden="true">&times;</span>
-                        </button>
-                      </div>
-                      <div class="modal-body">
-                        <!-- Update form content here -->
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-
-              <% }); %>
-            </tbody>
-          </table>
-        </div>
-      <% } else { %>
-        <p>No timetables found for the selected filters.</p>
-      <% } %>
-    <% } else { %>
-      <p>Please select filters to view timetables.</p>
-    <% } %>
+            <h3>Auto timetable Generation "IT CAN NOT ALLOW MIXING TWO PROGRAMS IN SAME ROOM.,,! 
+              INORDER TO MIX WE PERFORM MANUAL MIXING TO ENSURE EVERYTHING POSSIBLE </h3>
+          
 
   <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.0.7/dist/umd/popper.min.js"></script>

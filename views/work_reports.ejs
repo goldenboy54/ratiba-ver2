@@ -1,4 +1,3 @@
-<%- include('layout') %>
 <%- include('partials/nav') %>
 
 <!DOCTYPE html>
@@ -8,72 +7,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Work Load Report</title>
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-  <link rel="stylesheet" href="../public/css/styles.css">
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-<style>
-  /* Gradient Background */
-  body {
-    background: linear-gradient(to bottom, green, #66cc66, blue);
-    background-size: cover;
-    height: 100vh;  /* Ensure the background covers the full viewport height */
-    margin: 0;
-    color: #011d0c;  /* Ensure text stands out on the background */
-  }
 
-  .fixed-size-btn {
-    width: 80px;
-    height: 35px;
-  }
-
-  .modal-dialog {
-    max-width: 90%;
-  }
-
-  /* Responsive button size */
-  @media (max-width: 768px) {
-    .fixed-size-btn {
-      width: 100px;
-      height: 40px;
-    }
-  }
-
-  /* Additional custom styling for readability */
-  h2, h1, label {
-    color: #fff;  /* White text to stand out against the background */
-  }
-
-  .btn-primary {
-    background-color: #007bff; /* Blue buttons */
-    border-color: #007bff;
-  }
-
-  /* Make table headers and rows stand out */
-  .table th, .table td {
-    color: #fff;  /* White text for table */
-  }
-
-  /* Ensure form controls are more visible */
-  .form-control {
-    background-color: #f8f9fa;
-    color: #495057;
-  }
-  
-  .thead-dark {
-    background-color: #343a40;
-  }
-</style>
-<style>
-    .fixed-size-btn {
-      width: 80px;
-      height: 35px;
-    }
-    .modal-dialog {
-      max-width: 800px;
-    }
-    .table-container {
-      overflow-x: auto;
-    }
-  </style>
 </head>
 <body>
 
@@ -188,8 +123,6 @@
           </div>
         </form>
       </div>
-      
-
 
     <!-- Display timetables -->
     <% if (user_name || semester ||program_type|| program_name || level ||  subject_department || title || category) { %>
@@ -253,6 +186,7 @@
     <% } %>
     
   </div>
+
 
   <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>

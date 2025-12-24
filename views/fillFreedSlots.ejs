@@ -1,0 +1,159 @@
+<%- include('partials/nav') %>
+
+<!-- ✅ Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+<style>
+  body {
+    background: #f4f6f9;
+    font-family: 'Segoe UI', Roboto, sans-serif;
+  }
+
+  .card {
+    border: none;
+    background: white;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    transition: 0.3s ease;
+  }
+
+  .card:hover {
+    transform: translateY(-3px);
+  }
+
+  .select2-container--default .select2-selection--multiple {
+    background-color: #f9f9f9;
+    border: 1px solid #ced4da;
+    border-radius: 12px;
+    min-height: 48px;
+    padding: 6px 8px;
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .select2-selection__choice {
+    background-color: #0078d7 !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: 20px !important;
+    padding: 5px 10px !important;
+    font-size: 13px;
+    margin-top: 3px;
+  }
+
+  .select2-selection__choice__remove {
+    color: #fff !important;
+    margin-right: 6px;
+  }
+
+  .select2-results__option--highlighted {
+    background-color: #0078d7 !important;
+    color: white !important;
+  }
+
+  .select2-container--default .select2-selection--single {
+    border-radius: 12px;
+    border: 1px solid #ced4da;
+    height: 48px;
+    padding-top: 8px;
+  }
+
+  button.btn-primary {
+    background-color: #0078d7;
+    border: none;
+    transition: background 0.3s ease;
+  }
+
+  button.btn-primary:hover {
+    background-color: #005a9e;
+  }
+
+  .select2-search__field {
+    border-radius: 8px !important;
+  }
+</style>
+
+<div class="container mt-5">
+  <div class="card shadow p-4 rounded-4">
+    <h2 class="text-center text-primary mb-4">🧭 Fill Freed Slot into Timetable</h2>
+
+    <% if (error) { %>
+      <div class="alert alert-danger"><%= error %></div>
+    <% } %>
+    <% if (success) { %>
+      <div class="alert alert-success"><%= success %></div>
+    <% } %>
+
+    <form method="POST" action="/fillFreedSlots/add" id="timetableForm">
+      <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+          <label class="form-label fw-bold">Select Eligible Subject(s)</label>
+          <select name="subject_id" id="subjectSelect" class="form-select" multiple required>
+            <% subjects.forEach(s => { %>
+              <option value="<%= s.subject_id %>">
+                <%= s.subject_name %> | <%= s.subject_code %> <%= s.type_prac_or_theory %> | <%= s.program_name %> <%= s.program_type %>| <%= s.tutor_name %>
+                (LTPA: <%= s.projected_ltpa %>/<%= s.total_hours_per_week %>)
+              </option>
+            <% }) %>
+          </select>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label class="form-label fw-bold">Select Freed Slot</label>
+          <select name="freed_slot_id" id="slotSelect" class="form-select" required>
+            <option value="">-- Choose Available Slot --</option>
+            <% slots.forEach(slot => { %>
+              <option value="<%= slot.id %>">
+                <%= slot.day %> | <%= slot.start_time %> - <%= slot.end_time %> | <%= slot.venue_name %>
+              </option>
+            <% }) %>
+          </select>
+        </div>
+      </div>
+
+      <div class="text-center">
+        <button type="submit" class="btn btn-primary px-5 py-2 rounded-pill shadow-sm">➕ Add to Timetable</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ✅ jQuery + Select2 JS -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+  $(document).ready(function() {
+    // Optimized Select2 initialization for large datasets
+    $('#subjectSelect').select2({
+      placeholder: "Search or select subject(s)",
+      width: '100%',
+      allowClear: true,
+      closeOnSelect: false,
+      minimumInputLength: 1,
+      matcher: function(params, data) {
+        // Case-insensitive search
+        if ($.trim(params.term) === '') return data;
+        if (typeof data.text === 'undefined') return null;
+        return data.text.toLowerCase().includes(params.term.toLowerCase()) ? data : null;
+      }
+    });
+
+    $('#slotSelect').select2({
+      placeholder: "Select a freed slot",
+      width: '100%',
+      allowClear: true
+    });
+
+    // Validation
+    document.getElementById("timetableForm").addEventListener("submit", (e) => {
+      const subjects = $('#subjectSelect').val();
+      const slot = $('#slotSelect').val();
+      if (!subjects || !slot) {
+        e.preventDefault();
+        alert("⚠ Please select both subject(s) and a freed slot before submitting.");
+      }
+    });
+  });
+</script>
+
+<%- include('partials/footer') %>

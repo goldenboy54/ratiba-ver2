@@ -1,171 +1,242 @@
+<!-- partials/nav.ejs -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Timetable Management System</title>
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
+  <title>ATC Timetable Management System</title>
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+   <style>
+    body {
+      background: linear-gradient(to right, #e0eafc, #cfdef3);
+      min-height: 100vh;
+      display: flex;
+      overflow-x: hidden;
+      color: #333;
+    }
+
+    .table-container {
+      overflow-x: auto; /* Enables horizontal scrolling if table overflows */
+    }
+
+    .key {
+      font-weight: bold;
+      color: #e91e63;
+    }
+    .slot {
+      padding: 5px;
+      margin: 5px 0;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    .sidebar {
+      min-width: 250px;
+      max-width: 250px;
+      background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+      color: white;
+      padding: 20px 0;
+      position: fixed;
+      height: 100vh;
+      overflow-y: auto;
+      box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    }
+
+    .sidebar a {
+      color: white;
+      padding: 15px 25px;
+      display: flex;
+      align-items: center;
+      font-size: 16px;
+      text-decoration: none;
+      transition: all 0.3s;
+    }
+
+    .sidebar a:hover {
+      background-color: rgba(255, 255, 255, 0.2);
+      text-decoration: none;
+      border-left: 4px solid #fff;
+    }
+
+    .sidebar a i {
+      margin-right: 10px;
+      font-size: 18px;
+    }
+
+    .main-content {
+      margin-left: 250px;
+      padding: 20px;
+      width: 100%;
+      animation: fadeIn 1s ease-in;
+    }
+
+    .logo {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .logo img {
+      width: 120px;
+      border-radius: 50%;
+      border: 3px solid white;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Responsive Sidebar */
+    @media (max-width: 768px) {
+      .sidebar {
+        position: relative;
+        height: auto;
+        width: 100%;
+      }
+      .main-content {
+        margin-left: 0;
+      }
+    }
+
+  </style>
+  
   <style>
     body {
-      background-color: #f8f9fa;
-      color: #343a40;
-      font-family: 'Arial', sans-serif;
-    }
-    .navbar {
-      background: linear-gradient(45deg, #28a745, #007bff); /* Green-blue gradient */
-      z-index: 9999; /* Ensure navbar is on top */
-    }
-    .navbar-nav {
+      background: linear-gradient(to right, #e0eafc, #cfdef3);
+      color: #333;
+      overflow-x: hidden;
+      min-height: 100vh;
       display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-    .navbar-nav .nav-item {
-      flex: 1 1 calc(20% - 20px); /* Five buttons per row with margins */
-      margin: 10px;
-    }
-    .navbar-nav .nav-item .btn {
-      width: 100%; /* Ensure buttons take up full width of flex container */
-      border-radius: 25px;
-      transition: background-color 0.3s, color 0.3s;
-    }
-    .navbar-nav .nav-item .btn:hover {
-      background-color: #0056b3;
-      color: #ffffff;
-    }
-    .navbar-nav .nav-item .btn:active {
-      background-color: #003d79;
-      color: #ffffff;
-    }
-    .img-fluid {
-      max-height: 40px;
-      width: auto;
-    }
-    .animated-graphic {
-      font-size: 1.5rem;
-      animation: rotate 20s linear infinite;
-    }
-    @keyframes rotate {
-      from {
-        transform: rotate(0deg);
-      }
-      to {
-        transform: rotate(360deg);
-      }
     }
 
-    /* Responsive behavior for small devices */
+    .sidebar {
+      width: 250px;
+      background: linear-gradient(135deg, #2575fc 0%, #6a11cb 100%);
+      color: white;
+      position: fixed;
+      height: 100vh;
+      padding-top: 20px;
+      box-shadow: 2px 0 6px rgba(0, 0, 0, 0.15);
+    }
+
+    .sidebar .logo {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+
+    .sidebar .logo img {
+      width: 100px;
+      border-radius: 50%;
+      border: 3px solid #fff;
+      transition: transform 0.3s;
+    }
+
+    .sidebar .logo img:hover {
+      transform: scale(1.08);
+    }
+
+    .sidebar a {
+      display: flex;
+      align-items: center;
+      padding: 12px 25px;
+      color: white;
+      text-decoration: none;
+      font-size: 15px;
+      transition: all 0.3s ease;
+    }
+
+    .sidebar a:hover {
+      background-color: rgba(255, 255, 255, 0.15);
+      border-left: 4px solid #fff;
+    }
+
+    .sidebar a i {
+      margin-right: 10px;
+      font-size: 18px;
+    }
+
+    .main-content {
+      margin-left: 250px;
+      padding: 25px;
+      width: 100%;
+      animation: fadeIn 0.8s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Responsive */
     @media (max-width: 768px) {
-      .navbar-collapse {
-        position: fixed;
-        top: 0;
-        left: 0;
+      .sidebar {
+        position: relative;
         width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.7);
-        display: none;
-        z-index: 9998;
-        overflow-y: auto;
-        transition: opacity 0.3s;
+        height: auto;
       }
-
-      .navbar-collapse.show {
-        display: block;
-      }
-
-      /* Navbar toggle (hamburger) icon changes to X when opened */
-      .navbar-toggler {
-        border: none;
-        color: white;
-        font-size: 30px;
-        background: transparent;
-      }
-
-      .navbar-toggler.open {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        font-size: 40px;
-        z-index: 10000;
-      }
-
-      .navbar-toggler.open:before {
-        content: "×"; /* Close icon (X) */
-        color: white;
-        font-size: 40px;
-      }
-
-      /* Adjust navbar links for small devices */
-      .navbar-nav {
-        flex-direction: column;
-        margin-top: 60px;
-      }
-      .navbar-nav .nav-item {
-        flex: 1 1 calc(50% - 20px); /* Two buttons per row on small screens */
-      }
-
-      /* Ensure the navbar toggles correctly when clicked */
-      .navbar-toggler-icon {
-        display: block;
-      }
-    }
-
-    /* One button per row on extra small screens */
-    @media (max-width: 576px) {
-      .navbar-nav .nav-item {
-        flex: 1 1 calc(100% - 20px); /* One button per row on extra small screens */
+      .main-content {
+        margin-left: 0;
       }
     }
   </style>
 </head>
 <body>
-  <nav class="navbar navbar-expand-lg navbar-light">
-    <a class="navbar-brand" href="/searchtimetable">
-      <img src="/images/atc.jpg" alt="ATC Logo" class="img-fluid" />
-    </a>
-    <button
-      class="navbar-toggler"
-      type="button"
-      data-toggle="collapse"
-      data-target="#navbarNav"
-      aria-controls="navbarNav"
-      aria-expanded="false"
-      aria-label="Toggle navigation"
-    >
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav">
-        <li class="nav-item"><a href="/timetables" class="btn btn-dark">Settings</a></li>
-        <li class="nav-item"><a href="/tmaster" class="btn btn-dark">Assign</a></li>
-        <li class="nav-item"><a href="/venues" class="btn btn-dark">Venues</a></li>
-        <li class="nav-item"><a href="/searchtimetable" class="btn btn-dark">View</a></li>
-        <li class="nav-item"><a href="/programs" class="btn btn-dark">Programs</a></li>
-        <li class="nav-item"><a href="/subjects" class="btn btn-dark">HODS Asgn</a></li>
-        <li class="nav-item"><a href="/users" class="btn btn-dark">Staff</a></li>
-        <li class="nav-item"><a href="/registered_subjects" class="btn btn-dark">Subjects Reg</a></li>
-        <li class="nav-item"><a href="/departments" class="btn btn-dark">Departments</a></li>
-        <li class="nav-item"><a href="/work_reports" class="btn btn-dark">WORK REPORTS</a>
-        <a href="/logout" class="btn btn-dark">Logout</a></li>
-        <li class="nav-item"><div class="animated-graphic">🕑</div></li>
-      </ul>
-    </div>
-  </nav>
 
-  <div class="container mt-4">
-    <!-- Page content -->
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="logo">
+    <a href="/dashboard">
+      <img src="/images/atc.jpg" alt="ATC Logo">
+    </a>
+    <h5 class="mt-2">ATC Timetable  (<script>document.write(`${((d=>d.getMonth()+1>=8?d.getFullYear():d.getFullYear()-1)(new Date()))}/${((d=>d.getMonth()+1>=8?d.getFullYear()+1:d.getFullYear())(new Date()))}`)</script>)</h5>
   </div>
 
-  <!-- Bootstrap JS and dependencies -->
-  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
-  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <% if (user && (user.role === "tmaster" || user.role === "admin")) { %>
+    <a href="/timetables"><i class="fas fa-gear"></i> System Settings</a>
+    <a href="/manageTimetable"><i class="fas fa-layer-group"></i> Mix Programmes</a>
+    <a href="/manageTimetable/freed-slots"><i class="fas fa-clock"></i> Freed Slots</a>
+    <a href="/fillFreedSlots"><i class="fas fa-plus-circle"></i> Assign Freed Slots</a>
+    <a href="/tmaster"><i class="fas fa-robot"></i> Auto Generate Timetable <span class="text-warning small">(Recommended)</span></a>
+    <a href="/manualtimetable"><i class="fas fa-table"></i> Manual Timetable <span class="text-warning small">(Time-Consuming)</span></a>
+    <a href="/programs"><i class="fas fa-graduation-cap"></i> Programmes</a>
+    <a href="/venues"><i class="fas fa-school"></i> Venues</a>
+    <a href="/users"><i class="fas fa-user-tie"></i> Tutors</a>
+    <a href="/registered_subjects"><i class="fas fa-book"></i> Modules</a>
+    <a href="/work_reports"><i class="fas fa-clipboard-check"></i> Tutor Workload</a>
+    <a href="/departments"><i class="fas fa-building"></i> Departments</a>
+    <a href="/subjects"><i class="fas fa-book-open-reader"></i> Allocated Modules</a>
+     <a href="/searchtimetable"><i class="fas fa-calendar-alt"></i> VIew timetable</a>
+    <a href="/collision-report"><i class="fas fa-clipboard-check"></i> Collision Report</a>
 
-  <script>
-    // Toggle the navbar on small devices
-    document.querySelector('.navbar-toggler').addEventListener('click', function() {
-      this.classList.toggle('open');
-    });
-  </script>
-</body>
-</html>
+  <% } %>
+
+  <% if (user && user.role === "hod") { %>
+    <!-- <a href="/programs"><i class="fas fa-graduation-cap"></i> Programmes</a> -->
+    <a href="/subjects"><i class="fas fa-book-open"></i> Allocate Modules</a>
+    <!-- <a href="/registered_subjects"><i class="fas fa-book"></i> Modules</a>
+    <a href="/departments"><i class="fas fa-building-columns"></i> Departments</a>
+    <a href="/venues"><i class="fas fa-school"></i> Venues</a>
+    <a href="/users"><i class="fas fa-user-tie"></i> Tutors</a>
+    <a href="/manageTimetable"><i class="fas fa-layer-group"></i> Mix Programmes</a>
+    <a href="/manageTimetable/freed-slots"><i class="fas fa-clock"></i> Freed Slots</a>
+    <a href="/fillFreedSlots"><i class="fas fa-plus-circle"></i> Assign Freed Slots</a> -->
+     <a href="/searchtimetable"><i class="fas fa-calendar-alt"></i> VIew timetable</a>
+
+  <% } %>
+
+  <% if (user && ["student", "tutor", "hod", "tmaster"].includes(user.role)) { %>
+    <!-- <a href="/searchtimetable"><i class="fas fa-calendar-alt"></i> View Timetable</a> -->
+    <a href="/profile"><i class="fas fa-user-cog"></i> Profile Settings</a>
+    <a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+  <% } %>
+
+  <% if (!user) { %>
+    <a href="/"><i class="fas fa-arrow-left"></i> Back to Home</a>
+  <% } %>
+</div>
+
+<!-- Main Content -->
+<div class="main-content">

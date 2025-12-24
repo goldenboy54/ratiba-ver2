@@ -1,0 +1,157 @@
+<%- include('partials/nav') %>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Profile</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"/>
+  <style>
+    body { background-color: #f0f2f5; }
+    .profile-container { display: flex; flex-wrap: wrap; gap: 30px; margin-top: 40px; }
+    .profile-form, .profile-info { flex: 1; min-width: 300px; max-width: 600px; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+    #strengthMessage { font-weight: bold; margin-top: 5px; }
+    .strength-weak { color: red; }
+    .strength-medium { color: orange; }
+    .strength-strong { color: green; }
+    .info-matrix { font-family: monospace; background-color: #0f0f0f; color: #0f0; padding: 15px; border-radius: 8px; overflow-x: auto; }
+    .info-matrix p { margin-bottom: 0.5rem; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2 class="text-center text-success mb-4">User Profile</h2>
+
+  <div class="profile-container">
+
+    <!-- Form Section -->
+    <div class="profile-form">
+      <% const alertMsg = typeof msg !== 'undefined' ? msg : null; %>
+      <% if(alertMsg === 'change_password') { %>
+        <div class="alert alert-info text-center">You must set a new password before proceeding!</div>
+      <% } else if(alertMsg === 'update_password') { %>
+        <div class="alert alert-info text-center">It has been 3 months since your last password change. Please update it.</div>
+      <% } %>
+
+      <% if(error){ %><div class="alert alert-danger"><%= error %></div><% } %>
+      <% if(success){ %><div class="alert alert-success"><%= success %></div><% } %>
+
+      <form action="/profile/update" method="POST" id="profileForm">
+        <div class="form-group">
+          <label class="text-success">Full Name</label>
+          <input type="text" name="full_name" class="form-control" value="<%= user.full_name %>" required>
+        </div>
+
+        <div class="form-group">
+          <label class="text-success"><b>Department</b></label>
+          <input type="text" name="department" class="form-control" value="<%= user.department %>">
+        </div>
+
+        <div class="form-group">
+          <label class="text-success">Email</label>
+          <input type="email" name="user_email" class="form-control" value="<%= user.user_email %>" required>
+        </div>
+
+        <div class="form-group">
+          <label class="text-success">New Password 
+            <% if(user.must_change_password) { %>
+              <span class="text-danger">(Required)</span>
+            <% } else { %>
+              <small>(leave blank to keep current)</small>
+            <% } %>
+          </label>
+          <div class="input-group">
+            <input type="password" name="password" class="form-control" id="password" <%= user.must_change_password ? 'required' : '' %>>
+            <div class="input-group-append">
+              <button type="button" class="btn btn-outline-secondary" id="togglePassword">Show</button>
+            </div>
+          </div>
+          <div id="strengthMessage"></div>
+        </div>
+
+        <button type="submit" class="btn btn-info w-100 mt-3" id="submitBtn">Update Profile</button>
+      </form>
+    </div>
+
+    <!-- Info / Matrix Section -->
+    <div class="profile-info">
+      <h5 class="text-success mb-3">Importance of Strong Passwords & Timetable System</h5>
+      <div class="info-matrix">
+        <p>• Strong passwords protect your data from unauthorized access.</p>
+        <p>• Include uppercase, lowercase, numbers, and special characters.</p>
+        <p>• Minimum 8 characters recommended for strong protection.</p>
+        <p>• Regularly update passwords every 3 months.</p>
+        <p>• The timetable system ensures accurate, conflict-free scheduling.</p>
+        <p>• Educated users benefit from efficient academic planning using this system.</p>
+        <p>• Keeping your account secure maintains integrity of all scheduling operations.</p>
+        <p>• Remember: strong passwords + well-managed timetable = safe & efficient workflow.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const passwordInput = document.getElementById('password');
+  const strengthMessage = document.getElementById('strengthMessage');
+  const submitBtn = document.getElementById('submitBtn');
+  const profileForm = document.getElementById('profileForm');
+  const togglePassword = document.getElementById('togglePassword');
+
+  // Password strength checker
+  passwordInput.addEventListener('input', updateStrength);
+
+  function updateStrength() {
+    const val = passwordInput.value;
+    const strongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+    const mediumRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{6,}$/;
+
+    if(val === "") {
+      strengthMessage.textContent = "";
+      submitBtn.disabled = <%= user.must_change_password ? 'true' : 'false' %>;
+    } else if(strongRegex.test(val)) {
+      strengthMessage.textContent = "Strong password";
+      strengthMessage.className = "strength-strong";
+      submitBtn.disabled = false;
+    } else if(mediumRegex.test(val)) {
+      strengthMessage.textContent = "Medium strength (add special char for strong)";
+      strengthMessage.className = "strength-medium";
+      submitBtn.disabled = true;
+    } else {
+      strengthMessage.textContent = "Weak password";
+      strengthMessage.className = "strength-weak";
+      submitBtn.disabled = true;
+    }
+  }
+
+  // Toggle password visibility
+  togglePassword.addEventListener('click', () => {
+    const type = passwordInput.type === "password" ? "text" : "password";
+    passwordInput.type = type;
+    togglePassword.textContent = type === "password" ? "Show" : "Hide";
+  });
+
+  // Form validation
+  profileForm.addEventListener('submit', function(e){
+    const val = passwordInput.value;
+    const strongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+    
+    <% if(user.must_change_password) { %>
+      if(!val || val.trim() === "") {
+        e.preventDefault();
+        alert("You are required to set a new password.");
+        return;
+      }
+    <% } %>
+
+    if(val && !strongRegex.test(val)){
+      e.preventDefault();
+      alert("Password must be strong! Include uppercase, lowercase, number, special character, min 8 chars.");
+    }
+  });
+</script>
+
+</body>
+</html>
