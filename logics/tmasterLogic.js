@@ -1,21 +1,25 @@
-
 import { addtimetable } from '../models/tmasterModel.js';
 
 export const handleAddtimetable = async (req, res) => {
-  let {semester} = req.body;
-
-
-console.log(semester)
+  const { semester } = req.body;
 
   if (!semester) {
-      return res.status(400).send('Missing required field:SEMESTER');
+    return res.status(400).json({ error: 'Missing semester' });
   }
 
-  try {
-      // Pass the parameters correctly to the model function
-      await addtimetable({semester }); // Pass as an object
-      res.redirect('/tmaster');
-  } catch (error) {
-      res.status(500).send('Error adding timetable: ' + error.message);
-  }
+  console.log(`🚀 Timetable generation STARTED for semester ${semester}`);
+
+  // Run in background
+  addtimetable({ semester })
+    .then(() => {
+      console.log(`✅ Timetable generation completed for semester ${semester}`);
+    })
+    .catch(err => {
+      console.error(`❌ Timetable generation FAILED for semester ${semester}:`, err.message);
+    });
+
+  res.json({ 
+    message: 'Timetable generation started successfully',
+    semester 
+  });
 };

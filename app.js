@@ -38,7 +38,7 @@ import fillFreedSlotsRoutes from "./routes/fillFreedSlotsRoutes.js";
 import manualTimetableRoutes from "./routes/manualTimetableRoutes.js";
 import collisionRoutes from "./routes/collisionMonitorRoutes.js";
 import collisionReportRoutes from "./routes/collisionReportRoutes.js";
-
+import venueManagerRoutes from "./routes/venueManagerRoutes.js";
 
 // Initialize dotenv
 dotenv.config();
@@ -120,6 +120,8 @@ app.use("/manageTimetable", anaruhusa, forcePasswordChange, manageTimetableRoute
 app.use("/manageTimetable/freed-slots", anaruhusa, forcePasswordChange, freedSlotsRoutes);
 app.use("/fillFreedSlots", anaruhusa, forcePasswordChange, routes_za_HOD_TMASTER, fillFreedSlotsRoutes);
 app.use("/manualTimetable", anaruhusa,forcePasswordChange, routes_za_TMASTER, manualTimetableRoutes);
+
+app.use("/venueManager", anaruhusa, forcePasswordChange, venueManagerRoutes);
 
 // Search & View Timetable
 app.use('/searchtimetable', searchTimetables);

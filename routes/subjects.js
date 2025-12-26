@@ -13,11 +13,17 @@ import {
   getEditSubjectForm,
   handleUpdateSubject,
   handleDeleteSubject,
-  listSubjects
+  listSubjects,
+  handleUploadSubjectsCSV
 } from '../logics/subjectsLogic.js';
 
+
 import { searchTimetables, getDistinctValues} from '../logics/subjectsLogic.js';
+
 import { getAllvenues } from '../models/venuesModel.js';
+// routes/subjects.js
+import multer from 'multer';
+
 
 const router = express.Router();
 
@@ -39,9 +45,9 @@ router.get('/', async (req, res) => {
     const subjects = await searchTimetables(criteria);
     const uname = await getDistinctValues('u.full_name');
     const semesters = await getDistinctValues('s.semester');
-    const ptypes = await getDistinctValues('program_type');
-    const pname = await getDistinctValues('program_name');
-    const plevel = await getDistinctValues('program_level');
+    const ptypes = await getDistinctValues('s.program_type');
+    const pname = await getDistinctValues('s.program_name');
+    const plevel = await getDistinctValues('s.program_level');
     const idara = await getDistinctValues('s.subject_department');
     const sname = await getDistinctValues('s.title');
     const scode = await getDistinctValues('s.subject_code');
@@ -81,6 +87,11 @@ router.post('/form', handleAddSubject);
 router.get('/edit/:id', getEditSubjectForm);
 router.post('/edit/:id', handleUpdateSubject);
 router.get('/delete/:id', handleDeleteSubject);
+
+const upload = multer({ dest: 'uploads/' });
+
+// upload CSV/Excel
+router.post('/upload', upload.single('file'), handleUploadSubjectsCSV);
 
 
 export default router;

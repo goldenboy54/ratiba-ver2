@@ -3,70 +3,221 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Auto Generate timetable</title>
+  <title>Auto Generate Timetable | ATC</title>
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 
- 
-  
+  <style>
+    body {
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      min-height: 100vh;
+    }
+    .card {
+      border: none;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    .spinner-wheel {
+      width: 80px;
+      height: 80px;
+      border: 8px solid #f3f3f3;
+      border-top: 8px solid #007bff;
+      border-radius: 50%;
+      animation: spin 1.2s linear infinite;
+      margin: 0 auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .log-output {
+      background: #1e1e1e;
+      color: #00ff00;
+      border-radius: 10px;
+      padding: 15px;
+      max-height: 400px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      border: 1px solid #333;
+    }
+    .status-icon {
+      font-size: 4rem;
+      margin-bottom: 20px;
+    }
+    .completion-message {
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
   <%- include('partials/nav') %>
 
-  <div class="container mt-5">
+  <div class="container mt-5 mb-5">
     <div class="text-center mb-4">
-      <div class="animated-graphic" title="Timetable autogenerating system">🕑</div> 
-    </div> 
+      <h1 class="display-4 text-primary">
+        <i class="fas fa-calendar-alt mr-3"></i> Auto Timetable Generator
+      </h1>
+      <p class="lead text-muted">Arusha Technical College</p>
+    </div>
 
-    <h2 class="text-center text-primary">AUTO GENERATION OF TIMETABLE</h2>
-    
-    
-   
-  
-<br>
-        <p class="text-primary text-center">ARUSHA TECHNICAL COLLEGE</p>
-       
-        <p class="text-success text-center">TIMETABLE GENERATION</p>
-        <div class="table-container">
-          <table class="table table-bordered table-striped">
-            <thead>
-              <tr>
-                
-               <form action="/tmaster/add" method="post">
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
+        <div class="card">
+          <div class="card-body p-5">
 
-                    <div class="form-group">
-                         <label for="semester">SEMESTER:</label>
-                         <select id="semester" name="semester" class="form-control select2" required>
-                        
-                              <option value="I">I</option>
-                           <option value="II">II</option>    
-                          
-                         </select>
-                       </div>
-                      
-                       
-                     
+            <!-- Form -->
+            <form id="generateForm" class="text-center">
+              <div class="form-group">
+                <label for="semester" class="font-weight-bold">
+                  <i class="fas fa-graduation-cap"></i> Select Semester
+                </label>
+                <select id="semester" name="semester" class="form-control select2" required>
+                  <option value="">-- Choose Semester --</option>
+                  <option value="I">Semester I</option>
+                  <option value="II">Semester II</option>
+                </select>
+              </div>
 
-                 <button type="submit" class="btn btn-primary">GENERATE</button>
-               </form>
-     
-     
-     
-          
-     
-              </tr>
-            </thead>
-            <h3>Auto timetable Generation "IT CAN NOT ALLOW MIXING TWO PROGRAMS IN SAME ROOM.,,! 
-              INORDER TO MIX WE PERFORM MANUAL MIXING TO ENSURE EVERYTHING POSSIBLE </h3>
-          
+              <button type="submit" id="generateBtn" class="btn btn-success btn-lg px-5">
+                <i class="fas fa-magic mr-2"></i> GENERATE TIMETABLE
+              </button>
+            </form>
 
+            <!-- Generation Status -->
+            <div id="generationStatus" class="text-center mt-5" style="display: none;">
+              <div class="spinner-wheel" id="spinner"></div>
+              <h3 class="mt-4 text-primary">
+                <i class="fas fa-cog fa-spin mr-2"></i> Generating Timetable...
+              </h3>
+              <p class="text-muted">Please wait while we assign classes automatically</p>
+            </div>
+
+            <!-- Completion Message -->
+            <div id="completionMessage" class="text-center mt-5" style="display: none;">
+              <div class="status-icon text-success">
+                <i class="fas fa-check-circle"></i>
+              </div>
+              <h2 class="completion-message text-success">
+                Timetable Generated Successfully!
+              </h2>
+              <p class="lead" id="successText"></p>
+              <a href="/searchtimetable" class="btn btn-primary btn-lg mt-3">
+                <i class="fas fa-eye mr-2"></i> View Timetable
+              </a>
+            </div>
+
+            <!-- Error Message -->
+            <div id="errorMessage" class="text-center mt-5" style="display: none;">
+              <div class="status-icon text-danger">
+                <i class="fas fa-times-circle"></i>
+              </div>
+              <h3 class="text-danger">Generation Failed</h3>
+              <p id="errorText"></p>
+            </div>
+
+            <!-- Live Logs -->
+            <div id="logsSection" class="mt-5" style="display: none;">
+              <h5 class="text-info">
+                <i class="fas fa-terminal mr-2"></i> Live Generation Logs
+              </h5>
+              <pre id="logOutput" class="log-output"></pre>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
   <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.0.7/dist/umd/popper.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+
   <script>
     $(document).ready(function() {
       $('.select2').select2();
+
+      $('#generateForm').on('submit', function(e) {
+        e.preventDefault();
+
+        const semester = $('#semester').val();
+        if (!semester) {
+          alert("Please select a semester");
+          return;
+        }
+
+        // Show UI
+        $('#generationStatus').show();
+        $('#logsSection').show();
+        $('#completionMessage').hide();
+        $('#errorMessage').hide();
+        $('#logOutput').text('Initializing timetable generation...\n');
+        $('#generateBtn').prop('disabled', true);
+
+        // Clear previous
+        let generationComplete = false;
+
+        // Start log streaming
+        const eventSource = new EventSource(`/tmaster/stream-logs?semester=${semester}`);
+
+        eventSource.onmessage = function(event) {
+          const data = event.data.trim();
+
+          if (data === '[DONE]') {
+            finishSuccess(`Timetable generation completed for semester ${semester}`);
+            eventSource.close();
+          } else if (data.startsWith('[ERROR]')) {
+            finishError(data.substring(7));
+            eventSource.close();
+          } else if (data.includes('All subjects assigned successfully')) {
+            // Extra confirmation from log
+            finishSuccess(`Timetable generation completed for semester ${semester}`);
+            eventSource.close();
+          } else {
+            $('#logOutput').append(data + '\n');
+            $('#logOutput').scrollTop($('#logOutput')[0].scrollHeight);
+          }
+        };
+
+        eventSource.onerror = function() {
+          if (!generationComplete) {
+            finishError("Connection lost during generation.");
+            eventSource.close();
+          }
+        };
+
+        function finishSuccess(message) {
+          generationComplete = true;
+          $('#spinner').hide();
+          $('#generationStatus').hide();
+          $('#completionMessage').show();
+          $('#successText').text(message);
+          $('#generateBtn').prop('disabled', false);
+        }
+
+        function finishError(message) {
+          generationComplete = true;
+          $('#spinner').hide();
+          $('#generationStatus').hide();
+          $('#errorMessage').show();
+          $('#errorText').text(message || "Unknown error occurred");
+          $('#generateBtn').prop('disabled', false);
+        }
+
+        // Trigger generation
+        fetch('/tmaster/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ semester })
+        }).catch(err => {
+          finishError("Failed to start generation: " + err.message);
+        });
+      });
     });
   </script>
 </body>

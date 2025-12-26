@@ -68,9 +68,9 @@
           </div>
 
           <div class="form-group col-md-4">
-            <label for="category">Program Department:</label>
+            <label for="category">category:</label>
             <select id="category" name="category" class="form-control select2">
-              <option value="">Program Department</option>
+              <option value="">category</option>
               <% pcategory.forEach(item => { %>
                 <option value="<%= item.category %>" <%= locals.query?.category === item.category ? 'selected' : '' %>><%= item.category %></option>
               <% }); %>
