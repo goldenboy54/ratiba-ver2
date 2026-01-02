@@ -1,77 +1,100 @@
 <%- include('partials/nav') %>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Registered Subjects Management</title>
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-  <style>
-    .table-container { overflow-x: auto; margin-top: 20px; }
-    th, td { text-align: center; vertical-align: middle; }
-    th { background-color: #343a40; color: white; }
-    .btn-download { margin: 5px; }
-  </style>
-</head>
-<body>
-  <div class="container mt-5">
+<div class="container registered-subjects-container">
 
-    <a href="/registered_subjects/form" class="btn btn-primary mb-3"><i class="fas fa-plus"></i> Add registered_subject</a>
+  <% if (locals.Viewregistered_subject) { %>
+    <!-- ==================================================
+         LIST VIEW - Display all registered subjects
+         ================================================== -->
 
-    <% if (locals.Viewregistered_subject) { %>
+    <!-- Page Header -->
+    <div class="page-header">
+      <h2><i class="fas fa-book"></i> Registered Subjects</h2>
+      <a href="/registered_subjects/form" class="btn-add-subject">
+        <i class="fas fa-plus"></i> Add Subject
+      </a>
+    </div>
 
-    <!-- FILTER FORM -->
-    <form method="get" action="/registered_subjects" class="mb-4" id="filterForm">
-      <div class="form-row">
+    <!-- Filter Form -->
+    <form method="get" action="/registered_subjects" class="filter-form" id="filterForm">
+      <div class="row g-3">
 
-        <div class="form-group col-md-4">
-          <label>registered_subject_name:</label>
-          <select name="registered_subject_name" class="form-control select2 filterInput">
-            <option value="">registered_subject_name</option>
+        <div class="col-md-4">
+          <label for="filter_name" class="form-label">Subject Name</label>
+          <select 
+            name="registered_subject_name" 
+            id="filter_name" 
+            class="form-select select2 filterInput"
+          >
+            <option value="">All Subjects</option>
             <% Rsname.forEach(r => { %>
-              <option value="<%= r.registered_subject_name %>"><%= r.registered_subject_name %></option>
+              <option value="<%= r.registered_subject_name %>">
+                <%= r.registered_subject_name %>
+              </option>
             <% }) %>
           </select>
         </div>
 
-        <div class="form-group col-md-4">
-          <label>registered_subject_code:</label>
-          <select name="registered_subject_code" class="form-control select2 filterInput">
-            <option value="">registered_subject_code</option>
+        <div class="col-md-4">
+          <label for="filter_code" class="form-label">Subject Code</label>
+          <select 
+            name="registered_subject_code" 
+            id="filter_code" 
+            class="form-select select2 filterInput"
+          >
+            <option value="">All Codes</option>
             <% Rscode.forEach(r => { %>
-              <option value="<%= r.registered_subject_code %>"><%= r.registered_subject_code %></option>
+              <option value="<%= r.registered_subject_code %>">
+                <%= r.registered_subject_code %>
+              </option>
             <% }) %>
           </select>
         </div>
 
-        <div class="form-group col-md-4">
-          <label>credit:</label>
-          <select name="credit" class="form-control select2 filterInput">
-            <option value="">credit</option>
+        <div class="col-md-4">
+          <label for="filter_credit" class="form-label">Credit</label>
+          <select 
+            name="credit" 
+            id="filter_credit" 
+            class="form-select select2 filterInput"
+          >
+            <option value="">All Credits</option>
             <% Rscredit.forEach(r => { %>
-              <option value="<%= r.credit %>"><%= r.credit %></option>
+              <option value="<%= r.credit %>">
+                <%= r.credit %>
+              </option>
             <% }) %>
           </select>
         </div>
 
-        <div class="form-group col-md-4">
-          <label>total_hours_per_week:</label>
-          <select name="total_hours_per_week" class="form-control select2 filterInput">
-            <option value="">total_hours_per_week</option>
+        <div class="col-md-4">
+          <label for="filter_hours" class="form-label">Hours Per Week</label>
+          <select 
+            name="total_hours_per_week" 
+            id="filter_hours" 
+            class="form-select select2 filterInput"
+          >
+            <option value="">All Hours</option>
             <% Rsltpa.forEach(r => { %>
-              <option value="<%= r.total_hours_per_week %>"><%= r.total_hours_per_week %></option>
+              <option value="<%= r.total_hours_per_week %>">
+                <%= r.total_hours_per_week %>
+              </option>
             <% }) %>
           </select>
         </div>
 
-        <div class="form-group col-md-4">
-          <label>registered_subject_department:</label>
-          <select name="registered_subject_department" class="form-control select2 filterInput">
-            <option value="">registered_subject_department</option>
+        <div class="col-md-4">
+          <label for="filter_department" class="form-label">Department</label>
+          <select 
+            name="registered_subject_department" 
+            id="filter_department" 
+            class="form-select select2 filterInput"
+          >
+            <option value="">All Departments</option>
             <% Rsdepartment.forEach(r => { %>
-              <option value="<%= r.registered_subject_department %>"><%= r.registered_subject_department %></option>
+              <option value="<%= r.registered_subject_department %>">
+                <%= r.registered_subject_department %>
+              </option>
             <% }) %>
           </select>
         </div>
@@ -79,24 +102,30 @@
       </div>
     </form>
 
-    <!-- EXPORT BUTTONS -->
-    <div class="text-center mb-3">
-      <button id="downloadCSV" class="btn btn-info btn-download">Download CSV</button>
-      <button id="downloadPDF" class="btn btn-warning btn-download">Download PDF</button>
-      <button id="printTable" class="btn btn-success btn-download">Print Table</button>
+    <!-- Export Buttons -->
+    <div class="export-buttons">
+      <button id="downloadCSV" class="btn-export csv">
+        <i class="fas fa-file-csv"></i> Download CSV
+      </button>
+      <button id="downloadPDF" class="btn-export pdf">
+        <i class="fas fa-file-pdf"></i> Download PDF
+      </button>
+      <button id="printTable" class="btn-export print">
+        <i class="fas fa-print"></i> Print Table
+      </button>
     </div>
 
-    <!-- TABLE -->
+    <!-- Subjects Table -->
     <% if (Viewregistered_subject.length > 0) { %>
-      <div class="table-container" id="subjectsTableContainer">
-        <table class="table table-bordered table-striped" id="subjectsTable">
-          <thead class="thead-dark bg-dark text-light">
+      <div class="table-container">
+        <table class="table subjects-table" id="subjectsTable">
+          <thead>
             <tr>
-              <th>registered_subject_name</th>
-              <th>registered_subject_code</th>
-              <th>credit</th>
-              <th>total_hours_per_week</th>
-              <th>registered_subject_department</th>
+              <th>Subject Name</th>
+              <th>Subject Code</th>
+              <th>Credit</th>
+              <th>Hours/Week</th>
+              <th>Department</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -108,56 +137,132 @@
                 <td><%= s.credit %></td>
                 <td><%= s.total_hours_per_week %></td>
                 <td><%= s.registered_subject_department %></td>
-
                 <td>
-                  <button class="btn btn-warning btn-sm" data-toggle="modal" data-target="#updateModal<%= s.registered_subject_id %>">Edit</button>
-                  <a href="/registered_subjects/delete/<%= s.registered_subject_id %>" class="btn btn-danger btn-sm" onclick="return confirm('Delete this subject?');">Delete</a>
+                  <button 
+                    class="btn-action edit" 
+                    data-bs-toggle="modal" 
+                    data-bs-target="#updateModal<%= s.registered_subject_id %>"
+                  >
+                    <i class="fas fa-edit"></i> Edit
+                  </button>
+                  <a 
+                    href="/registered_subjects/delete/<%= s.registered_subject_id %>" 
+                    class="btn-action delete"
+                  >
+                    <i class="fas fa-trash"></i> Delete
+                  </a>
                 </td>
               </tr>
 
-              <!-- EDIT MODAL -->
-              <div class="modal fade" id="updateModal<%= s.registered_subject_id %>" tabindex="-1">
-                <div class="modal-dialog">
+              <!-- Edit Modal -->
+              <div 
+                class="modal fade" 
+                id="updateModal<%= s.registered_subject_id %>" 
+                tabindex="-1" 
+                aria-labelledby="updateModalLabel<%= s.registered_subject_id %>" 
+                aria-hidden="true"
+              >
+                <div class="modal-dialog modal-dialog-centered">
                   <div class="modal-content">
 
                     <div class="modal-header">
-                      <h5 class="modal-title">Update Subject</h5>
-                      <button type="button" class="close" data-dismiss="modal">&times;</button>
+                      <h5 class="modal-title" id="updateModalLabel<%= s.registered_subject_id %>">
+                        <i class="fas fa-edit"></i> Update Subject
+                      </h5>
+                      <button 
+                        type="button" 
+                        class="btn-close" 
+                        data-bs-dismiss="modal" 
+                        aria-label="Close"
+                      ></button>
                     </div>
 
                     <div class="modal-body">
-                      <form action="/registered_subjects/edit/<%= s.registered_subject_id %>" method="post">
+                      <form 
+                        action="/registered_subjects/edit/<%= s.registered_subject_id %>" 
+                        method="post"
+                      >
 
                         <div class="form-group">
-                          <label>Name</label>
-                          <input type="text" name="registered_subject_name" value="<%= s.registered_subject_name %>" class="form-control" required>
+                          <label for="edit_name_<%= s.registered_subject_id %>" class="form-label">
+                            Subject Name
+                          </label>
+                          <input 
+                            type="text" 
+                            name="registered_subject_name" 
+                            id="edit_name_<%= s.registered_subject_id %>"
+                            value="<%= s.registered_subject_name %>" 
+                            class="form-control" 
+                            required
+                          >
                         </div>
 
                         <div class="form-group">
-                          <label>Code</label>
-                          <input type="text" name="registered_subject_code" value="<%= s.registered_subject_code %>" class="form-control" required>
+                          <label for="edit_code_<%= s.registered_subject_id %>" class="form-label">
+                            Subject Code
+                          </label>
+                          <input 
+                            type="text" 
+                            name="registered_subject_code" 
+                            id="edit_code_<%= s.registered_subject_id %>"
+                            value="<%= s.registered_subject_code %>" 
+                            class="form-control" 
+                            required
+                          >
                         </div>
 
                         <div class="form-group">
-                          <label>Credit</label>
-                          <input type="number" name="credit" value="<%= s.credit %>" class="form-control" required>
+                          <label for="edit_credit_<%= s.registered_subject_id %>" class="form-label">
+                            Credit
+                          </label>
+                          <input 
+                            type="number" 
+                            name="credit" 
+                            id="edit_credit_<%= s.registered_subject_id %>"
+                            value="<%= s.credit %>" 
+                            class="form-control" 
+                            required
+                          >
                         </div>
 
                         <div class="form-group">
-                          <label>Total Hours Per Week</label>
-                          <input type="text" name="total_hours_per_week" value="<%= s.total_hours_per_week %>" class="form-control" required>
+                          <label for="edit_hours_<%= s.registered_subject_id %>" class="form-label">
+                            Total Hours Per Week
+                          </label>
+                          <input 
+                            type="text" 
+                            name="total_hours_per_week" 
+                            id="edit_hours_<%= s.registered_subject_id %>"
+                            value="<%= s.total_hours_per_week %>" 
+                            class="form-control" 
+                            required
+                          >
                         </div>
 
                         <div class="form-group">
-                          <label>Department</label>
-                          <select name="registered_subject_department" class="form-control" required>
+                          <label for="edit_dept_<%= s.registered_subject_id %>" class="form-label">
+                            Department
+                          </label>
+                          <select 
+                            name="registered_subject_department" 
+                            id="edit_dept_<%= s.registered_subject_id %>"
+                            class="form-select" 
+                            required
+                          >
                             <% departments.forEach(d => { %>
-                              <option value="<%= d.department_name %>" <%= s.registered_subject_department === d.department_name ? 'selected' : '' %>><%= d.department_name %></option>
+                              <option 
+                                value="<%= d.department_name %>" 
+                                <%= s.registered_subject_department === d.department_name ? 'selected' : '' %>
+                              >
+                                <%= d.department_name %>
+                              </option>
                             <% }) %>
                           </select>
                         </div>
 
-                        <button type="submit" class="btn btn-primary">Save</button>
+                        <button type="submit" class="btn-primary">
+                          <i class="fas fa-save"></i> Save Changes
+                        </button>
 
                       </form>
                     </div>
@@ -167,153 +272,123 @@
               </div>
 
             <% }) %>
-
           </tbody>
         </table>
       </div>
-    <% } %>
-
     <% } else { %>
-
-    <!-- ADD NEW SUBJECT PAGE -->
-    <h2 class="mb-4">Add registered_subject</h2>
-
-    <form action="/registered_subjects" method="post" enctype="multipart/form-data">
-
-      <h4>Upload CSV/Excel</h4>
-      <div class="form-group">
-        <input type="file" name="file" class="form-control" required>
+      <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> No subjects found matching your filters.
       </div>
-
-      <hr>
-
-      <div class="form-group">
-        <label>Name:</label>
-        <input type="text" name="registered_subject_name" class="form-control" required>
-      </div>
-
-      <div class="form-group">
-        <label>Code:</label>
-        <input type="text" name="registered_subject_code" class="form-control" required>
-      </div>
-
-      <div class="form-group">
-        <label>Credit:</label>
-        <input type="number" name="credit" class="form-control">
-      </div>
-
-      <div class="form-group">
-        <label>Total Hours Per Week:</label>
-        <input type="text" name="total_hours_per_week" class="form-control">
-      </div>
-
-      <div class="form-group">
-        <label>Department:</label>
-        <select name="registered_subject_department" class="form-control">
-          <% departments.forEach(d => { %>
-            <option value="<%= d.department_name %>"><%= d.department_name %></option>
-          <% }) %>
-        </select>
-      </div>
-
-      <button class="btn btn-primary">Add Subject</button>
-
-    </form>
-
     <% } %>
-  </div>
 
-  <!-- JS -->
-  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
-  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+  <% } else { %>
+    <!-- ==================================================
+         ADD VIEW - Add new registered subject
+         ================================================== -->
 
-  <script>
-    $(document).ready(function () {
-      $('.select2').select2();
+    <div class="add-form-container">
+      <h2><i class="fas fa-plus-circle"></i> Add Registered Subject</h2>
 
-      $('.filterInput').on('change', function () {
-        const form = $('#filterForm');
-        const url = new URL(window.location.href);
-        form.find('select').each(function () {
-          const val = $(this).val();
-          if (val) url.searchParams.set($(this).attr('name'), val);
-          else url.searchParams.delete($(this).attr('name'));
-        });
-        window.location.href = url.toString();
-      });
+      <form 
+        action="/registered_subjects" 
+        method="post" 
+        enctype="multipart/form-data"
+      >
 
-      function fileName(prefix) {
-        const d = new Date();
-        return `${prefix}_${d.toISOString().slice(0,10)}_${d.getHours()}-${d.getMinutes()}-${d.getSeconds()}`;
-      }
+        <h4><i class="fas fa-file-upload"></i> Upload CSV/Excel File</h4>
+        <div class="form-group">
+          <label for="file_upload" class="form-label">
+            Select file to import subjects (CSV or Excel format)
+          </label>
+          <input 
+            type="file" 
+            name="file" 
+            id="file_upload"
+            class="form-control" 
+            accept=".csv,.xlsx,.xls"
+            required
+          >
+        </div>
 
-      // CSV
-      $('#downloadCSV').click(function () {
-        let csv = [];
-        $('#subjectsTable tr').each(function () {
-          let row = [];
-          $(this).find('th,td').each(function () {
-            row.push('"' + $(this).text().trim() + '"');
-          });
-          csv.push(row.join(','));
-        });
-        const blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = fileName('ATC') + '.csv';
-        link.click();
-      });
+        <hr>
 
-      // PRINT
-      $('#printTable').click(function () {
-        const content = $('#subjectsTableContainer').html();
-        const win = window.open('', '', 'width=1000,height=800');
-        win.document.write(`
-          <html>
-          <head><title>${fileName('ATC')}</title></head>
-          <body>${content}</body>
-          </html>`);
-        win.document.close();
-        win.print();
-      });
+        <h4><i class="fas fa-keyboard"></i> Or Enter Manually</h4>
 
-      // PDF
-      $('#downloadPDF').click(function () {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF('l', 'pt', 'a4');
-        const el = document.getElementById('subjectsTableContainer');
+        <div class="form-group">
+          <label for="subject_name" class="form-label">Subject Name</label>
+          <input 
+            type="text" 
+            name="registered_subject_name" 
+            id="subject_name"
+            class="form-control" 
+            placeholder="Enter subject name"
+            required
+          >
+        </div>
 
-        html2canvas(el, { scale: 2 }).then(canvas => {
-          const img = canvas.toDataURL('image/png');
-          const w = doc.internal.pageSize.getWidth() - 40;
-          const h = canvas.height * w / canvas.width;
+        <div class="form-group">
+          <label for="subject_code" class="form-label">Subject Code</label>
+          <input 
+            type="text" 
+            name="registered_subject_code" 
+            id="subject_code"
+            class="form-control" 
+            placeholder="Enter subject code"
+            required
+          >
+        </div>
 
-          let left = h;
-          let pos = 20;
+        <div class="form-group">
+          <label for="subject_credit" class="form-label">Credit</label>
+          <input 
+            type="number" 
+            name="credit" 
+            id="subject_credit"
+            class="form-control" 
+            placeholder="Enter credit value"
+            min="0"
+            step="1"
+          >
+        </div>
 
-          doc.addImage(img, 'PNG', 20, pos, w, h);
-          left -= doc.internal.pageSize.getHeight();
+        <div class="form-group">
+          <label for="subject_hours" class="form-label">Total Hours Per Week</label>
+          <input 
+            type="text" 
+            name="total_hours_per_week" 
+            id="subject_hours"
+            class="form-control" 
+            placeholder="Enter hours per week"
+          >
+        </div>
 
-          while (left > 0) {
-            doc.addPage();
-            pos = left - h + 20;
-            doc.addImage(img, 'PNG', 20, pos, w, h);
-            left -= doc.internal.pageSize.getHeight();
-          }
+        <div class="form-group">
+          <label for="subject_department" class="form-label">Department</label>
+          <select 
+            name="registered_subject_department" 
+            id="subject_department"
+            class="form-select"
+            required
+          >
+            <option value="">Select Department</option>
+            <% departments.forEach(d => { %>
+              <option value="<%= d.department_name %>">
+                <%= d.department_name %>
+              </option>
+            <% }) %>
+          </select>
+        </div>
 
-          doc.save(fileName('ATC') + '.pdf');
-        });
-      });
+        <button type="submit" class="btn-submit">
+          <i class="fas fa-check"></i> Add Subject
+        </button>
 
-    });
-  </script>
+      </form>
+    </div>
 
-  <%- include('partials/footer') %>
+  <% } %>
 
-</body>
-</html>
+</div>
+
+</main>
+<%- include('partials/footer') %>

@@ -1,0 +1,494 @@
+/* =================================================================
+   Registered Subjects/Modules (registered_subjects.ejs) - Styles
+   ================================================================= */
+
+/* =================================================================
+   Page Layout
+   ================================================================= */
+
+.registered-subjects-container {
+  padding: var(--spacing-8) 0;
+}
+
+/* =================================================================
+   Header Section
+   ================================================================= */
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-6);
+}
+
+.page-header h2 {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.btn-add-subject {
+  padding: var(--spacing-3) var(--spacing-5);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  border-radius: var(--radius-md);
+  border: none;
+  background: var(--color-primary);
+  color: var(--color-white);
+  transition: var(--transition-base);
+  box-shadow: var(--shadow-md);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.btn-add-subject:hover {
+  background: var(--color-primary-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  color: var(--color-white);
+  text-decoration: none;
+}
+
+/* =================================================================
+   Filter Form
+   ================================================================= */
+
+.filter-form {
+  background: var(--color-white);
+  padding: var(--spacing-5);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--spacing-6);
+}
+
+.filter-form .form-label {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-2);
+  display: block;
+}
+
+.filter-form .form-select {
+  height: auto;
+  min-height: 45px;
+  padding: var(--spacing-3);
+  border: 1px solid var(--color-border-medium);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  transition: var(--transition-base);
+}
+
+.filter-form .form-select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 0.2rem rgba(37, 117, 252, 0.25);
+  outline: none;
+}
+
+/* =================================================================
+   Export Buttons
+   ================================================================= */
+
+.export-buttons {
+  text-align: center;
+  margin-bottom: var(--spacing-5);
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-3);
+  flex-wrap: wrap;
+}
+
+.btn-export {
+  padding: var(--spacing-2) var(--spacing-5);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--radius-md);
+  border: none;
+  color: var(--color-white);
+  transition: var(--transition-base);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+}
+
+.btn-export:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-export.csv {
+  background: var(--color-info);
+}
+
+.btn-export.csv:hover {
+  background: var(--color-info-dark);
+}
+
+.btn-export.pdf {
+  background: var(--color-warning);
+}
+
+.btn-export.pdf:hover {
+  background: var(--color-warning-dark);
+}
+
+.btn-export.print {
+  background: var(--color-success);
+}
+
+.btn-export.print:hover {
+  background: var(--color-success-dark);
+}
+
+/* =================================================================
+   Table Styles
+   ================================================================= */
+
+.table-container {
+  overflow-x: auto;
+  background: var(--color-white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--spacing-4);
+  margin-bottom: var(--spacing-6);
+}
+
+.subjects-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+}
+
+.subjects-table thead th {
+  background: var(--color-gray-800);
+  color: var(--color-white);
+  text-align: center;
+  padding: var(--spacing-3);
+  font-weight: var(--font-weight-bold);
+  border: 1px solid var(--color-border-dark);
+  white-space: nowrap;
+}
+
+.subjects-table tbody td {
+  text-align: center;
+  vertical-align: middle;
+  padding: var(--spacing-3);
+  border: 1px solid var(--color-border-medium);
+}
+
+.subjects-table tbody tr:nth-child(even) {
+  background: var(--color-gray-100);
+}
+
+.subjects-table tbody tr:hover {
+  background: var(--color-gray-200);
+  transition: var(--transition-fast);
+}
+
+/* Action buttons in table */
+.subjects-table .btn-action {
+  padding: var(--spacing-1) var(--spacing-3);
+  font-size: var(--font-size-sm);
+  border-radius: var(--radius-sm);
+  margin: 0 var(--spacing-1);
+  border: none;
+  color: var(--color-white);
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.subjects-table .btn-action.edit {
+  background: var(--color-warning);
+}
+
+.subjects-table .btn-action.edit:hover {
+  background: var(--color-warning-dark);
+}
+
+.subjects-table .btn-action.delete {
+  background: var(--color-danger);
+}
+
+.subjects-table .btn-action.delete:hover {
+  background: var(--color-danger-dark);
+}
+
+/* =================================================================
+   Add Subject Form
+   ================================================================= */
+
+.add-form-container {
+  background: var(--color-white);
+  padding: var(--spacing-6);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.add-form-container h2 {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-5);
+}
+
+.add-form-container h4 {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-3);
+}
+
+.add-form-container .form-group {
+  margin-bottom: var(--spacing-4);
+}
+
+.add-form-container .form-label {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-2);
+  display: block;
+}
+
+.add-form-container .form-control,
+.add-form-container .form-select {
+  padding: var(--spacing-3);
+  border: 1px solid var(--color-border-medium);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  transition: var(--transition-base);
+  width: 100%;
+}
+
+.add-form-container .form-control:focus,
+.add-form-container .form-select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 0.2rem rgba(37, 117, 252, 0.25);
+  outline: none;
+}
+
+.add-form-container hr {
+  border: none;
+  border-top: 2px solid var(--color-border-light);
+  margin: var(--spacing-5) 0;
+}
+
+.add-form-container .btn-submit {
+  padding: var(--spacing-3) var(--spacing-6);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  border-radius: var(--radius-md);
+  border: none;
+  background: var(--color-primary);
+  color: var(--color-white);
+  transition: var(--transition-base);
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+}
+
+.add-form-container .btn-submit:hover {
+  background: var(--color-primary-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* =================================================================
+   Modal Styles
+   ================================================================= */
+
+.modal-content {
+  border-radius: var(--radius-lg);
+  border: none;
+  box-shadow: var(--shadow-xl);
+}
+
+.modal-header {
+  background: var(--color-primary-gradient);
+  color: var(--color-white);
+  padding: var(--spacing-4) var(--spacing-5);
+  border-top-left-radius: var(--radius-lg);
+  border-top-right-radius: var(--radius-lg);
+  border-bottom: none;
+}
+
+.modal-header .modal-title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+}
+
+.modal-header .btn-close {
+  filter: brightness(0) invert(1);
+  opacity: 1;
+}
+
+.modal-body {
+  padding: var(--spacing-5);
+}
+
+.modal-body .form-group {
+  margin-bottom: var(--spacing-4);
+}
+
+.modal-body .form-label {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-2);
+  display: block;
+}
+
+.modal-body .form-control,
+.modal-body .form-select {
+  padding: var(--spacing-3);
+  border: 1px solid var(--color-border-medium);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  transition: var(--transition-base);
+}
+
+.modal-body .form-control:focus,
+.modal-body .form-select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 0.2rem rgba(37, 117, 252, 0.25);
+  outline: none;
+}
+
+.modal-body .btn-primary {
+  padding: var(--spacing-3) var(--spacing-6);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  border-radius: var(--radius-md);
+  border: none;
+  background: var(--color-primary);
+  color: var(--color-white);
+  transition: var(--transition-base);
+}
+
+.modal-body .btn-primary:hover {
+  background: var(--color-primary-dark);
+}
+
+/* =================================================================
+   Responsive Adjustments
+   ================================================================= */
+
+@media (max-width: 768px) {
+  .registered-subjects-container {
+    padding: var(--spacing-4) 0;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-3);
+  }
+
+  .btn-add-subject {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .filter-form {
+    padding: var(--spacing-4);
+  }
+
+  .export-buttons {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn-export {
+    width: 100%;
+  }
+
+  .table-container {
+    padding: var(--spacing-2);
+    margin-left: calc(var(--spacing-4) * -1);
+    margin-right: calc(var(--spacing-4) * -1);
+    border-radius: 0;
+  }
+
+  .subjects-table {
+    font-size: var(--font-size-sm);
+  }
+
+  .subjects-table thead th,
+  .subjects-table tbody td {
+    padding: var(--spacing-2);
+  }
+
+  .add-form-container {
+    padding: var(--spacing-4);
+  }
+}
+
+@media (max-width: 480px) {
+  .page-header h2 {
+    font-size: var(--font-size-xl);
+  }
+
+  .subjects-table {
+    font-size: var(--font-size-xs);
+  }
+
+  .subjects-table thead th,
+  .subjects-table tbody td {
+    padding: var(--spacing-1);
+  }
+
+  .subjects-table .btn-action {
+    display: block;
+    width: 100%;
+    margin: var(--spacing-1) 0;
+  }
+}
+
+/* =================================================================
+   Print Styles
+   ================================================================= */
+
+@media print {
+  .filter-form,
+  .export-buttons,
+  .btn-add-subject,
+  .subjects-table .btn-action {
+    display: none !important;
+  }
+
+  .table-container {
+    box-shadow: none;
+    padding: 0;
+    overflow: visible;
+  }
+
+  .subjects-table thead th {
+    background: #343a40 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .subjects-table tbody tr:nth-child(even) {
+    background: #f8f9fa !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+/* =================================================================
+   Animations
+   ================================================================= */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.table-container,
+.add-form-container {
+  animation: fadeIn 0.5s ease-out;
+}

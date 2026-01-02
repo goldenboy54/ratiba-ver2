@@ -87,7 +87,7 @@
       <div class="row mb-4">
         <div class="col-md-6 mb-3">
           <label class="form-label fw-bold">Select Eligible Subject(s)</label>
-          <select name="subject_id" id="subjectSelect" class="form-select" multiple required>
+          <select name="subject_id" id="subjectSelect" class="form-select select2" multiple required>
             <% subjects.forEach(s => { %>
               <option value="<%= s.subject_id %>">
                 <%= s.subject_name %> | <%= s.subject_code %> <%= s.type_prac_or_theory %> | <%= s.program_name %> <%= s.program_type %>| <%= s.tutor_name %>
@@ -99,7 +99,7 @@
 
         <div class="col-md-6 mb-3">
           <label class="form-label fw-bold">Select Freed Slot</label>
-          <select name="freed_slot_id" id="slotSelect" class="form-select" required>
+          <select name="freed_slot_id" id="slotSelect" class="form-select select2" required>
             <option value="">-- Choose Available Slot --</option>
             <% slots.forEach(slot => { %>
               <option value="<%= slot.id %>">

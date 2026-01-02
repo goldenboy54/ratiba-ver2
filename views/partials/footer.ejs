@@ -1,6 +1,50 @@
 <footer class="bg-light text-dark py-3 mt-5">
-  
-      &copy;  Arusha Technical College<br />
-      All Rights Reserved. <span class="animated-graphic"> (<script>document.write(`${((d=>d.getMonth()+1>=8?d.getFullYear():d.getFullYear()-1)(new Date()))}/${((d=>d.getMonth()+1>=8?d.getFullYear()+1:d.getFullYear())(new Date()))}`)</script>)</span>
-   
+  &copy; Arusha Technical College<br />
+  All Rights Reserved. (<script>document.write(`${((d=>d.getMonth()+1>=8?d.getFullYear():d.getFullYear()-1)(new Date()))}/${((d=>d.getMonth()+1>=8?d.getFullYear()+1:d.getFullYear())(new Date()))}`)</script>)
 </footer>
+
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<!-- Bootstrap 5 JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<!-- jsPDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!-- html2canvas -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<!-- Custom Navigation JS -->
+<script src="/js/navigation.js"></script>
+<!-- Tmaster JS -->
+<script src="/js/tmaster.js"></script>
+<!-- Manage Timetable JS -->
+<script src="/js/manageTimetable.js"></script>
+<!-- View Timetable JS -->
+<script src="/js/viewtimetable.js"></script>
+<!-- Registered Subjects JS -->
+<script src="/js/registered_subjects.js"></script>
+<!-- Manual Timetable JS -->
+<script src="/js/manualTimetable.js"></script>
+<!-- Timetables JS -->
+<script src="/js/timetables.js"></script>
+<!-- Collision Report JS -->
+<script src="/js/collisionReport.js"></script>
+<!-- Collision Monitor JS -->
+<script src="/js/collision_monitor.js"></script>
+<!-- Work Reports JS -->
+<script src="/js/work_reports.js"></script>
+<!-- Freed Slots JS -->
+<script src="/js/freedSlots.js"></script>
+
+<script>
+  $(document).ready(function() {
+    // Initialize Select2 on all select elements with select2 class
+    $('.select2').select2({
+      theme: 'bootstrap-5',
+      width: '100%'
+    });
+  });
+</script>
+
+</body>
+</html>

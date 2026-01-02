@@ -5,134 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Login - ATC TMS  <script>document.querySelector('h5').textContent = `TIMETABLE  — ${((d=>d.getMonth()+1>=8?d.getFullYear():d.getFullYear()-1)(new Date()))}/${((d=>d.getMonth()+1>=8?d.getFullYear()+1:d.getFullYear())(new Date()))}`</script></title>
 
-    <!-- Font Awesome & Bootstrap -->
-    <link
-      rel="stylesheet"
-      href="https://use.fontawesome.com/releases/v5.6.3/css/all.css"
-      integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/"
-      crossorigin="anonymous"
-    />
-    <link
-      rel="stylesheet"
-      href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css"
-      integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS"
-      crossorigin="anonymous"
-    />
-
-    <style>
-      html,
-      body {
-        height: 100%;
-        margin: 0;
-        display: flex;
-        flex-direction: column;
-        font-family: Arial, sans-serif;
-        background: linear-gradient(135deg, #0d1b2a, #1b263b);
-        color: #fff;
-      }
-
-      header {
-        background-color: #0d1b2a;
-        color: #3498db;
-        padding: 20px;
-        text-align: center;
-        border-bottom: 3px solid #3498db;
-      }
-
-      header h1 {
-        font-size: 32px;
-        font-weight: 700;
-      }
-
-      main {
-        flex: 1;
-      }
-
-      .card {
-        border-radius: 15px;
-        overflow: hidden;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-        animation: fadeInUp 0.8s ease;
-      }
-
-      .card-body {
-        background-color: #1b263b;
-        color: #fff;
-      }
-
-      .form-control {
-        background-color: #0d1b2a;
-        border: 1px solid #3498db;
-        color: #fff;
-      }
-
-      .form-control:focus {
-        border-color: #3498db;
-        box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
-        background-color: #0d1b2a;
-        color: #fff;
-      }
-
-      .btn-dark {
-        background-color: #3498db;
-        border: none;
-        width: 100%;
-        transition: background 0.3s ease, transform 0.2s ease;
-      }
-
-      .btn-dark:hover {
-        background-color: #2874a6;
-        transform: translateY(-2px);
-      }
-
-      .link-blue {
-        color: #3498db;
-        text-decoration: none;
-      }
-
-      .link-blue:hover {
-        color: #2874a6;
-        text-decoration: underline;
-      }
-
-      .password-toggle {
-        position: absolute;
-        right: 15px;
-        top: 37px;
-        color: #3498db;
-        cursor: pointer;
-      }
-
-      footer {
-        background-color: #0d1b2a;
-        color: #aaa;
-        text-align: center;
-        padding: 15px 10px;
-        border-top: 2px solid #3498db;
-        margin-top: auto;
-      }
-
-      footer a {
-        color: #3498db;
-        text-decoration: none;
-      }
-
-      footer a:hover {
-        color: #2874a6;
-        text-decoration: underline;
-      }
-
-      @keyframes fadeInUp {
-        from {
-          opacity: 0;
-          transform: translateY(30px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-    </style>
+    <!-- Bootstrap 5 & Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/login.css">
   </head>
   <body>
     <header>
@@ -141,14 +17,14 @@
 
     <main>
       <div class="container mt-5">
-        <h2 style="color: #3498db;">Enter Your Login Credentials</h2>
+        <h2 class="link-blue">Enter Your Login Credentials</h2>
 
         <div class="row justify-content-center mt-4">
           <div class="col-sm-8 col-md-6">
             <div class="card">
               <div class="card-body">
                 <% if (message) { %>
-                  <p style="color: red;"><%= message %></p>
+                  <p class="error-message"><%= message %></p>
                 <% } %>
 
                 <form action="/login" method="POST">

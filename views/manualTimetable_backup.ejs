@@ -1,0 +1,272 @@
+<%- include('partials/nav') %>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Manual Timetable Generator</title>
+
+<!-- Bootstrap & Select2 -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+
+<style>
+/* ===== Microsoft / Meta Clean Style ===== */
+body {
+    font-family: "Segoe UI", "Helvetica Neue", sans-serif;
+    background: #f3f3f3;
+    color: #1b1b1b;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    max-width: 1100px;
+}
+
+.header-icon {
+    font-size: 3rem;
+    color: #0078d4;
+    animation: rotate 4s linear infinite;
+}
+@keyframes rotate {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+h3 { color: #0078d4; font-weight: 600; }
+
+.form-section {
+    background: #fff;
+    border-radius: 12px;
+    padding: 25px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    transition: 0.3s;
+}
+.form-section:hover {
+    transform: translateY(-2px);
+}
+label { font-weight: 500; color: #0078d4; }
+
+.select2-container .select2-selection {
+    height: 42px !important;
+    padding: 5px 8px !important;
+    border-radius: 6px !important;
+    border: 1px solid #ced4da !important;
+}
+.select2-selection__rendered { font-size: 0.95rem; }
+
+.section-title { font-size: 1.2rem; font-weight: 600; color: #0078d4; }
+
+.logs-box {
+    max-height: 180px;
+    overflow-y: auto;
+    background: #e7f3ff;
+    border-left: 4px solid #0078d4;
+    padding: 10px 15px;
+    border-radius: 6px;
+}
+.logs-box li { margin-bottom: 3px; font-size: 0.9rem; }
+
+.btn-generate, .btn-success { font-weight: 500; letter-spacing: 0.5px; }
+
+@media (max-width: 768px) { .form-section { padding: 15px; } }
+</style>
+</head>
+
+<body>
+
+<div class="container mt-5 mb-5">
+
+    <!-- HEADER -->
+    <div class="text-center mb-4">
+        <div class="header-icon">🕒</div>
+        <h3>Manual Timetable Generation</h3>
+        <p class="text-muted">Assign timetable entries manually after filtering above.</p>
+    </div>
+
+    <!-- ALERTS -->
+    <% if(error){ %>
+        <div class="alert alert-danger"><i class="bi bi-exclamation-triangle-fill"></i> <%= error %></div>
+    <% } %>
+
+    <% if(success){ %>
+        <div class="alert alert-success"><i class="bi bi-check-circle-fill"></i> <%= success %></div>
+    <% } %>
+
+    <% if(logs && logs.length>0){ %>
+        <div class="logs-box mb-4">
+            <ul class="mb-0">
+                <% logs.forEach(l => { %>
+                    <li><i class="bi bi-chevron-right"></i> <%= l %></li>
+                <% }) %>
+            </ul>
+        </div>
+    <% } %>
+
+    <!-- ===== FILTER FORM ===== -->
+    <div class="form-section mb-4">
+        <div class="section-title mb-3"><i class="bi bi-funnel-fill"></i> Filter Options</div>
+        <form method="get" action="/manualTimetable">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label><i class="bi bi-person-badge"></i> Tutor</label>
+                    <select name="tutor" class="form-control select2" required>
+                        <option value="">Select Tutor</option>
+                        <% tutors.forEach(tutor=>{ %>
+                            <option value="<%= tutor.full_name %>" <%= tutor_name===tutor.full_name?'selected':'' %>>
+                                <%= tutor.full_name %>
+                            </option>
+                        <% }) %>
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label><i class="bi bi-layers"></i> Semester</label>
+                    <select name="semester" class="form-control select2" required>
+                        <option value="">Select Semester</option>
+                        <% semesters.forEach(sem=>{ %>
+                            <option value="<%= sem.semester %>" <%= semester===sem.semester?'selected':'' %>><%= sem.semester %></option>
+                        <% }) %>
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label><i class="bi bi-diagram-3"></i> Program Type</label>
+                    <select name="program_type" class="form-control select2" required>
+                        <option value="">Select Type</option>
+                        <% ptypes.forEach(type=>{ %>
+                            <option value="<%= type.program_type %>" <%= program_type===type.program_type?'selected':'' %>><%= type.program_type %></option>
+                        <% }) %>
+                    </select>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-generate mt-4">
+                <i class="bi bi-search"></i> Filter Timetable Data
+            </button>
+        </form>
+    </div>
+
+    <!-- ===== ASSIGN FORM ===== -->
+    <% if(tutor_name && timetables.length>0){ %>
+    <div class="form-section">
+        <div class="section-title mb-3"><i class="bi bi-calendar-plus-fill"></i> Assign New Timetable Slot</div>
+
+        <form action="/manualTimetable/add" method="post">
+
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label><i class="bi bi-calendar-week"></i> Day</label>
+                    <input type="text" id="day" name="day" class="form-control" readonly placeholder="Auto-filled after slot selection" />
+                </div>
+
+                <div class="col-md-4">
+                    <label><i class="bi bi-house-door"></i> Venue</label>
+                    <select id="venueSelect" name="venue_id" class="form-control select2" required>
+                        <option value="">Select Venue</option>
+                        <% venues.forEach(v=>{ %>
+                            <option value="<%= v.venue_id %>">
+                                <%= v.venue_name %> | Cap: <%= v.capacity %> | Type: <%= v.department %>
+                            </option>
+                        <% }) %>
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label><i class="bi bi-clock-history"></i> Slot</label>
+                    <select id="slotSelect" name="slot" class="form-control select2" required disabled>
+                        <option>Select Venue First</option>
+                    </select>
+                </div>
+
+                <div class="col-md-5">
+                    <label><i class="bi bi-book"></i> Subject</label>
+                    <select name="subject_ids[]" class="form-control select2" multiple required>
+                        <% timetables.forEach(tt=>{ %>
+                            <option value="<%= tt.subject_id %>">
+                                <%= tt.subject_name %> - (<%= tt.subject_code %>) | Tutor: <%= tt.tutor_name %> | Prog: <%= tt.program_name %> <%= tt.program_code %> <%= tt.program_type %>
+                            </option>
+                        <% }) %>
+                    </select>
+                    <small class="text-muted">Select only one subject at a time.</small>
+                </div>
+            </div>
+
+            <div class="mt-4 text-end">
+                <button type="submit" id="assign-btn" class="btn btn-success px-5 py-2">
+                    <i class="bi bi-plus-circle"></i> Assign
+                </button>
+            </div>
+        </form>
+    </div>
+    <% } %>
+
+</div>
+
+<!-- JS -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+
+<script>
+$(document).ready(function(){
+    $('.select2').select2({ width: '100%' });
+
+    const allSlots = <%- JSON.stringify(slots) %>;
+
+    // ===== Venue selection =====
+    $('#venueSelect').on('change', function() {
+        const venueId = $(this).val();
+        const slotSelect = $('#slotSelect');
+        slotSelect.empty();
+        slotSelect.prop('disabled', !venueId);
+
+        if (!venueId) {
+            slotSelect.append('<option>Select Venue First</option>');
+            return;
+        }
+
+        const filtered = allSlots.filter(
+            s => s.venue_id == venueId && s.status !== 'used'
+        );
+
+        const uniqueSlots = [];
+        const seen = new Set();
+        filtered.forEach(s => {
+            const key = `${s.day}_${s.slot}`;
+            if (!seen.has(key)) {
+                uniqueSlots.push(s);
+                seen.add(key);
+            }
+        });
+
+        slotSelect.append('<option value="">Select Slot</option>');
+
+        uniqueSlots.forEach(s => {
+            const DAY = s.day.toUpperCase();
+            slotSelect.append(`<option value="${s.slot}" data-day="${DAY}">${DAY} (${s.slot})</option>`);
+        });
+    });
+
+    // ===== Auto-fill day =====
+    $('#slotSelect').on('change', function() {
+        const day = $(this).find(':selected').data('day');
+        $('#day').val(day || '');
+    });
+
+    // ===== Subject limit one =====
+    $("form select[name='subject_ids[]']").on("change", function() {
+        if ($(this).val().length > 1) {
+            alert("Please select ONLY ONE subject.");
+            $(this).val([$(this).val()[0]]).trigger('change');
+        }
+    });
+});
+</script>
+
+</body>
+</html>

@@ -1,128 +1,17 @@
 <%- include('partials/nav') %>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Freed Slots - Matrix View & Analysis</title>
+<div class="freed-slots-container">
+  <!-- Header Section -->
+  <div class="freed-slots-header">
+    <h1>
+      <i class="fas fa-unlock-alt"></i>
+      Freed Slots Dashboard & Analysis
+    </h1>
+  </div>
 
-  <!-- Bootstrap CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
-  <!-- Select2 -->
-  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <style>
-    body {
-      background: linear-gradient(135deg, #f3f4f6, #eef2ff);
-      min-height: 100vh;
-    }
-
-    .matrix-container {
-      display: grid;
-      grid-template-columns: 280px 1fr;
-      gap: 20px;
-    }
-
-    @media (max-width: 992px) {
-      .matrix-container {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    /* Filter sidebar */
-    .filter-sidebar {
-      background: #ffffff;
-      border-radius: 12px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.08);
-      padding: 20px;
-      position: sticky;
-      top: 100px;
-      height: fit-content;
-    }
-
-    @media (max-width: 992px){
-      .filter-sidebar { position: relative; top: auto; margin-bottom: 20px; }
-    }
-
-    .filter-sidebar:hover {
-      box-shadow: 0 0 15px rgba(13,110,253,0.25);
-    }
-
-    .filter-sidebar h5 {
-      font-weight: 600;
-      margin-bottom: 15px;
-      color: #0d6efd;
-    }
-
-    .data-section .card {
-      border: none;
-      border-radius: 15px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-      background: #fff;
-      overflow: hidden;
-    }
-
-    .data-section .card-header {
-      background: linear-gradient(90deg, #0d6efd, #007bff);
-      color: #fff;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-    }
-
-    .data-section table th {
-      background-color: #f8f9fa;
-      color: #333;
-      font-size: 0.9rem;
-    }
-
-    .table-hover tbody tr:hover {
-      background-color: rgba(13, 110, 253, 0.05);
-      transition: 0.2s;
-    }
-
-    /* True responsive table: horizontal scroll on small devices */
-    .table-responsive {
-      display: block;
-      width: 100%;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-    }
-
-    .select2-container .select2-selection--single {
-      height: 38px;
-      border: 1px solid #ced4da;
-      border-radius: 0.375rem;
-      display: flex;
-      align-items: center;
-    }
-
-    .select2-selection__arrow { top: 7px !important; }
-
-    .pagination .page-item.active .page-link {
-      background-color: #0d6efd;
-      border-color: #0d6efd;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      body { background: linear-gradient(135deg, #1a1a1a, #111); color: #e9ecef; }
-      .filter-sidebar, .data-section .card { background: #1f1f1f; color: #e9ecef; }
-      .data-section table th { background-color: #333; color: #e9ecef; }
-    }
-  </style>
-</head>
-
-<body>
-<main class="container py-4">
-  <h3 class="text-center mb-4">🎛️ Freed Slots Dashboard & Analysis</h3>
-
-  <!-- Instructions -->
-  <div class="alert alert-info">
-    <ul class="mb-0">
+  <!-- Instructions Alert -->
+  <div class="instructions-alert">
+    <ul>
       <li>View and filter recently freed timetable slots.</li>
       <li>Filter slots by <strong>venue</strong> or <strong>day</strong> in the sidebar.</li>
       <li>Table shows 20 records per page.</li>
@@ -131,17 +20,21 @@
   </div>
 
   <div class="matrix-container">
-
     <!-- Left: Filter Sidebar -->
     <aside class="filter-sidebar">
-      <h5><i class="bi bi-funnel-fill me-2"></i>Filter Slots</h5>
-      <form method="GET" action="/manageTimetable/freed-slots" role="search">
+      <h5>
+        <i class="fas fa-filter"></i>
+        Filter Slots
+      </h5>
+      <form method="GET" action="/manageTimetable/freed-slots" role="search" class="filter-form">
         <div class="mb-3">
           <label for="venue_id" class="form-label">Select Venue</label>
           <select name="venue_id" id="venue_id" class="form-select select2">
             <option value="">All Venues</option>
             <% venues.forEach(v => { %>
-              <option value="<%= v.venue_id %>" <%= venue_id == v.venue_id ? 'selected' : '' %>><%= v.venue_name %></option>
+              <option value="<%= v.venue_id %>" <%= venue_id == v.venue_id ? 'selected' : '' %>>
+                <%= v.venue_name %>
+              </option>
             <% }) %>
           </select>
         </div>
@@ -156,25 +49,33 @@
           </select>
         </div>
 
-        <button type="submit" class="btn btn-primary w-100 mb-2"><i class="bi bi-search me-1"></i> Apply Filter</button>
+        <button type="submit" class="btn filter-apply-btn">
+          <i class="fas fa-search"></i>
+          Apply Filter
+        </button>
+        
         <% if (venue_id || day) { %>
-        <a href="/manageTimetable/freed-slots" class="btn btn-outline-secondary w-100"><i class="bi bi-arrow-counterclockwise me-1"></i> Reset</a>
+        <a href="/manageTimetable/freed-slots" class="btn filter-reset-btn">
+          <i class="fas fa-redo"></i>
+          Reset
+        </a>
         <% } %>
       </form>
     </aside>
 
     <!-- Right: Data Table & Charts -->
     <section class="data-section">
-      <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
+      <!-- Data Card -->
+      <div class="freed-slots-card">
+        <div class="freed-slots-card-header">
           <span>Freed Slots Data</span>
-          <span class="badge bg-light text-primary">Page <%= page %> of <%= totalPages %></span>
+          <span class="page-badge">Page <%= page %> of <%= totalPages %></span>
         </div>
-        <div class="card-body">
-          <div class="table-responsive mb-3">
-            <table class="table table-hover table-bordered align-middle caption-top">
-              <caption class="text-secondary">Recently freed slots list</caption>
-              <thead class="table-primary">
+        <div class="freed-slots-card-body">
+          <div class="freed-slots-table-wrapper">
+            <table class="table table-hover table-bordered freed-slots-table">
+              <caption>Recently freed slots list</caption>
+              <thead>
                 <tr>
                   <th>#</th>
                   <th>Venue</th>
@@ -187,19 +88,24 @@
                 </tr>
               </thead>
               <tbody>
-                <% if(freed.length===0){ %>
-                  <tr><td colspan="8" class="text-center text-muted py-3">No freed slots found.</td></tr>
+                <% if(freed.length === 0) { %>
+                  <tr>
+                    <td colspan="8" class="empty-row">No freed slots found.</td>
+                  </tr>
                 <% } else { %>
-                  <% freed.forEach(f=>{ %>
+                  <% freed.forEach(f => { %>
                     <tr>
-                      <td><%= f.id %></td>
-                      <td><%= f.venue_name %> (ID:<%= f.venue_id %>)</td>
-                      <td><%= f.day %></td>
-                      <td><%= f.start_time %></td>
-                      <td><%= f.end_time %></td>
-                      <td><%= f.released_by %></td>
-                      <td><%= f.reason %></td>
-                      <td><%= new Date(f.created_at).toLocaleString() %></td>
+                      <td data-label="#"><%= f.id %></td>
+                      <td data-label="Venue">
+                        <%= f.venue_name %>
+                        <span class="venue-badge">ID: <%= f.venue_id %></span>
+                      </td>
+                      <td data-label="Day"><%= f.day %></td>
+                      <td data-label="Start"><%= f.start_time %></td>
+                      <td data-label="End"><%= f.end_time %></td>
+                      <td data-label="Released By"><%= f.released_by %></td>
+                      <td data-label="Reason"><%= f.reason %></td>
+                      <td data-label="Released On"><%= new Date(f.created_at).toLocaleString() %></td>
                     </tr>
                   <% }) %>
                 <% } %>
@@ -208,16 +114,30 @@
           </div>
 
           <!-- Pagination -->
-          <nav aria-label="Freed slots pagination">
-            <ul class="pagination justify-content-center flex-wrap">
-              <% if(page>1){ %>
-                <li class="page-item"><a class="page-link" href="?page=<%= page-1 %><%= venue_id ? '&venue_id='+venue_id : '' %><%= day ? '&day='+day : '' %>">Previous</a></li>
+          <nav aria-label="Freed slots pagination" class="pagination-wrapper">
+            <ul class="pagination">
+              <% if(page > 1) { %>
+                <li class="page-item">
+                  <a class="page-link" href="?page=<%= page-1 %><%= venue_id ? '&venue_id='+venue_id : '' %><%= day ? '&day='+day : '' %>">
+                    Previous
+                  </a>
+                </li>
               <% } %>
-              <% for(let i=1;i<=totalPages;i++){ %>
-                <li class="page-item <%= page===i?'active':'' %>"><a class="page-link" href="?page=<%= i %><%= venue_id ? '&venue_id='+venue_id : '' %><%= day ? '&day='+day : '' %>"><%= i %></a></li>
+              
+              <% for(let i = 1; i <= totalPages; i++) { %>
+                <li class="page-item <%= page === i ? 'active' : '' %>">
+                  <a class="page-link" href="?page=<%= i %><%= venue_id ? '&venue_id='+venue_id : '' %><%= day ? '&day='+day : '' %>">
+                    <%= i %>
+                  </a>
+                </li>
               <% } %>
-              <% if(page<totalPages){ %>
-                <li class="page-item"><a class="page-link" href="?page=<%= page+1 %><%= venue_id ? '&venue_id='+venue_id : '' %><%= day ? '&day='+day : '' %>">Next</a></li>
+              
+              <% if(page < totalPages) { %>
+                <li class="page-item">
+                  <a class="page-link" href="?page=<%= page+1 %><%= venue_id ? '&venue_id='+venue_id : '' %><%= day ? '&day='+day : '' %>">
+                    Next
+                  </a>
+                </li>
               <% } %>
             </ul>
           </nav>
@@ -225,67 +145,30 @@
       </div>
 
       <!-- Charts Section -->
-      <div class="row g-4">
-        <div class="col-lg-6 col-md-12">
-          <div class="card p-3">
-            <h6 class="card-title">Venues Most Frequently Freed</h6>
-            <canvas id="venuePieChart" height="250"></canvas>
-          </div>
+      <div class="charts-row">
+        <div class="chart-card">
+          <h6>Venues Most Frequently Freed</h6>
+          <canvas id="venuePieChart" class="chart-canvas"></canvas>
         </div>
 
-        <div class="col-lg-6 col-md-12">
-          <div class="card p-3">
-            <h6 class="card-title">Slots Most Frequently Freed (Hours)</h6>
-            <canvas id="timeBarChart" height="250"></canvas>
-          </div>
+        <div class="chart-card">
+          <h6>Slots Most Frequently Freed (Hours)</h6>
+          <canvas id="timeBarChart" class="chart-canvas"></canvas>
         </div>
       </div>
     </section>
   </div>
-</main>
+</div>
 
-<!-- JS -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+<!-- Embed chart data for JavaScript -->
 <script>
-  $(document).ready(function() {
-    $('.select2').select2({ theme: "bootstrap-5", width: '100%', placeholder: "Select option", allowClear: true });
-  });
-
-  // Chart data (ensure venueStats & timeStats are passed from server)
-  const venueData = <%- JSON.stringify(venueStats || []) %>;
-  const timeData = <%- JSON.stringify(timeStats || []) %>;
-
-  const ctx1 = document.getElementById('venuePieChart').getContext('2d');
-  new Chart(ctx1, {
-    type: 'pie',
-    data: {
-      labels: venueData.map(v=>v.venue),
-      datasets:[{
-        label:'Times Freed',
-        data: venueData.map(v=>v.count),
-        backgroundColor: ['#0d6efd','#6f42c1','#198754','#fd7e14','#dc3545','#20c997','#6610f2','#ffc107'],
-      }]
-    },
-    options:{ responsive:true, plugins:{ legend:{ position:'bottom' } } }
-  });
-
-  const ctx2 = document.getElementById('timeBarChart').getContext('2d');
-  new Chart(ctx2, {
-    type: 'bar',
-    data:{
-      labels: timeData.map(t=>t.time),
-      datasets:[{
-        label:'Slots Freed Count',
-        data: timeData.map(t=>t.count),
-        backgroundColor:'#0d6efd',
-        borderRadius:5
-      }]
-    },
-    options:{ responsive:true, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true } } }
-  });
+  // Make chart data available globally for freedSlots.js
+  window.venueStats = <%- JSON.stringify(venueStats || []) %>;
+  window.timeStats = <%- JSON.stringify(timeStats || []) %>;
 </script>
-</body>
-</html>
+
+</main>
+<%- include('partials/footer') %>

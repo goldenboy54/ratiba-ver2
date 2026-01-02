@@ -1,30 +1,9 @@
 <%- include('partials/nav') %>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>User Profile</title>
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"/>
-  <style>
-    body { background-color: #f0f2f5; }
-    .profile-container { display: flex; flex-wrap: wrap; gap: 30px; margin-top: 40px; }
-    .profile-form, .profile-info { flex: 1; min-width: 300px; max-width: 600px; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-    #strengthMessage { font-weight: bold; margin-top: 5px; }
-    .strength-weak { color: red; }
-    .strength-medium { color: orange; }
-    .strength-strong { color: green; }
-    .info-matrix { font-family: monospace; background-color: #0f0f0f; color: #0f0; padding: 15px; border-radius: 8px; overflow-x: auto; }
-    .info-matrix p { margin-bottom: 0.5rem; }
-  </style>
-</head>
-<body>
+  <div class="container">
+    <h2 class="text-center text-primary mb-4">User Profile</h2>
 
-<div class="container">
-  <h2 class="text-center text-success mb-4">User Profile</h2>
-
-  <div class="profile-container">
+    <div class="profile-container">
 
     <!-- Form Section -->
     <div class="profile-form">
@@ -39,54 +18,58 @@
       <% if(success){ %><div class="alert alert-success"><%= success %></div><% } %>
 
       <form action="/profile/update" method="POST" id="profileForm">
-        <div class="form-group">
-          <label class="text-success">Full Name</label>
+        <div class="mb-3">
+          <label class="form-label text-primary fw-bold">Full Name</label>
           <input type="text" name="full_name" class="form-control" value="<%= user.full_name %>" required>
         </div>
 
-        <div class="form-group">
-          <label class="text-success"><b>Department</b></label>
+        <div class="mb-3">
+          <label class="form-label text-primary fw-bold">Department</label>
           <input type="text" name="department" class="form-control" value="<%= user.department %>">
         </div>
 
-        <div class="form-group">
-          <label class="text-success">Email</label>
+        <div class="mb-3">
+          <label class="form-label text-primary fw-bold">Email</label>
           <input type="email" name="user_email" class="form-control" value="<%= user.user_email %>" required>
         </div>
 
-        <div class="form-group">
-          <label class="text-success">New Password 
+        <div class="mb-3">
+          <label class="form-label text-primary fw-bold">New Password 
             <% if(user.must_change_password) { %>
               <span class="text-danger">(Required)</span>
             <% } else { %>
-              <small>(leave blank to keep current)</small>
+              <small class="text-muted">(leave blank to keep current)</small>
             <% } %>
           </label>
           <div class="input-group">
             <input type="password" name="password" class="form-control" id="password" <%= user.must_change_password ? 'required' : '' %>>
-            <div class="input-group-append">
-              <button type="button" class="btn btn-outline-secondary" id="togglePassword">Show</button>
-            </div>
+            <button type="button" class="btn btn-outline-secondary" id="togglePassword">
+              <i class="fas fa-eye" id="toggleIcon"></i>
+            </button>
           </div>
-          <div id="strengthMessage"></div>
+          <div id="strengthMessage" class="mt-2"></div>
         </div>
 
-        <button type="submit" class="btn btn-info w-100 mt-3" id="submitBtn">Update Profile</button>
+        <button type="submit" class="btn btn-primary w-100 mt-3" id="submitBtn">
+          <i class="fas fa-save me-2"></i>Update Profile
+        </button>
       </form>
     </div>
 
     <!-- Info / Matrix Section -->
     <div class="profile-info">
-      <h5 class="text-success mb-3">Importance of Strong Passwords & Timetable System</h5>
+      <h5 class="text-primary mb-3 fw-bold">
+        <i class="fas fa-shield-alt me-2"></i>Password Security Tips
+      </h5>
       <div class="info-matrix">
-        <p>• Strong passwords protect your data from unauthorized access.</p>
-        <p>• Include uppercase, lowercase, numbers, and special characters.</p>
-        <p>• Minimum 8 characters recommended for strong protection.</p>
-        <p>• Regularly update passwords every 3 months.</p>
-        <p>• The timetable system ensures accurate, conflict-free scheduling.</p>
-        <p>• Educated users benefit from efficient academic planning using this system.</p>
-        <p>• Keeping your account secure maintains integrity of all scheduling operations.</p>
-        <p>• Remember: strong passwords + well-managed timetable = safe & efficient workflow.</p>
+        <p><i class="fas fa-check-circle me-2"></i>Strong passwords protect your data from unauthorized access.</p>
+        <p><i class="fas fa-check-circle me-2"></i>Include uppercase, lowercase, numbers, and special characters.</p>
+        <p><i class="fas fa-check-circle me-2"></i>Minimum 8 characters recommended for strong protection.</p>
+        <p><i class="fas fa-check-circle me-2"></i>Regularly update passwords every 3 months.</p>
+        <p><i class="fas fa-calendar-alt me-2"></i>The timetable system ensures accurate, conflict-free scheduling.</p>
+        <p><i class="fas fa-graduation-cap me-2"></i>Educated users benefit from efficient academic planning using this system.</p>
+        <p><i class="fas fa-lock me-2"></i>Keeping your account secure maintains integrity of all scheduling operations.</p>
+        <p><i class="fas fa-lightbulb me-2"></i>Remember: strong passwords + well-managed timetable = safe & efficient workflow.</p>
       </div>
     </div>
 
@@ -99,6 +82,7 @@
   const submitBtn = document.getElementById('submitBtn');
   const profileForm = document.getElementById('profileForm');
   const togglePassword = document.getElementById('togglePassword');
+  const toggleIcon = document.getElementById('toggleIcon');
 
   // Password strength checker
   passwordInput.addEventListener('input', updateStrength);
@@ -110,18 +94,19 @@
 
     if(val === "") {
       strengthMessage.textContent = "";
+      strengthMessage.className = "";
       submitBtn.disabled = <%= user.must_change_password ? 'true' : 'false' %>;
     } else if(strongRegex.test(val)) {
-      strengthMessage.textContent = "Strong password";
-      strengthMessage.className = "strength-strong";
+      strengthMessage.innerHTML = '<i class="fas fa-check-circle text-success me-1"></i>Strong password';
+      strengthMessage.className = "text-success fw-bold";
       submitBtn.disabled = false;
     } else if(mediumRegex.test(val)) {
-      strengthMessage.textContent = "Medium strength (add special char for strong)";
-      strengthMessage.className = "strength-medium";
+      strengthMessage.innerHTML = '<i class="fas fa-exclamation-circle text-warning me-1"></i>Medium strength (add special char for strong)';
+      strengthMessage.className = "text-warning fw-bold";
       submitBtn.disabled = true;
     } else {
-      strengthMessage.textContent = "Weak password";
-      strengthMessage.className = "strength-weak";
+      strengthMessage.innerHTML = '<i class="fas fa-times-circle text-danger me-1"></i>Weak password';
+      strengthMessage.className = "text-danger fw-bold";
       submitBtn.disabled = true;
     }
   }
@@ -130,7 +115,7 @@
   togglePassword.addEventListener('click', () => {
     const type = passwordInput.type === "password" ? "text" : "password";
     passwordInput.type = type;
-    togglePassword.textContent = type === "password" ? "Show" : "Hide";
+    toggleIcon.className = type === "password" ? "fas fa-eye" : "fas fa-eye-slash";
   });
 
   // Form validation
@@ -153,5 +138,8 @@
   });
 </script>
 
+</main>
+
+<%- include('partials/footer') %>
 </body>
 </html>

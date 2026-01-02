@@ -1,0 +1,289 @@
+<!-- Delete Modal -->
+<div class="modal fade modal-delete modal-timetables" id="deleteModal<%= timetable.id %>" tabindex="-1" aria-labelledby="deleteModalLabel<%= timetable.id %>" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form method="POST" action="/timetables/delete/<%= timetable.id %>">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="deleteModalLabel<%= timetable.id %>">
+            Confirm Delete: <%= timetable.subject_name %> - <%= timetable.program_name %>
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>Select reason for deletion:</p>
+          <select name="reason" class="form-select select2" required>
+            <option value="">-- Choose Reason --</option>
+            <option value="tutor_collision">Tutor Collision</option>
+            <option value="program_collision">Program Collision</option>
+            <option value="exceed_ltpa">Exceeded LTPA</option>
+            <option value="free_slot">Free Slot</option>
+            <option value="unmix">Unmix Combined Program</option>
+            <option value="other">Other</option>
+          </select>
+
+          <div class="mt-3">
+            <label class="form-label">Additional Notes (Optional)</label>
+            <textarea name="notes" class="form-control" rows="2"></textarea>
+          </div>
+
+          <!-- Hidden fields -->
+          <input type="hidden" name="subject_code" value="<%= timetable.subject_code %>">
+          <input type="hidden" name="program_code" value="<%= timetable.program_code %>">
+          <input type="hidden" name="tutor_name" value="<%= timetable.tutor_name %>">
+          <input type="hidden" name="day" value="<%= timetable.day %>">
+          <input type="hidden" name="start_time" value="<%= timetable.start_time %>">
+          <input type="hidden" name="end_time" value="<%= timetable.end_time %>">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-danger">Confirm Delete</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Update Modal -->
+<div class="modal fade modal-timetables" id="updateModal<%= timetable.id %>" tabindex="-1" aria-labelledby="updateModalLabel<%= timetable.id %>" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="updateModalLabel<%= timetable.id %>">Update Timetable</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form action="/timetables/edit/<%= timetable.id %>" method="post">
+          <div class="row g-3">
+
+            <!-- Day -->
+            <div class="col-md-6">
+              <label for="day_<%= timetable.id %>" class="form-label">Day:</label>
+              <select id="day_<%= timetable.id %>" name="day" class="form-select select2" required>
+                <% ['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY','SUNDAY'].forEach(d => { %>
+                  <option value="<%= d %>" <%= timetable.day === d ? 'selected' : '' %>><%= d %></option>
+                <% }) %>
+              </select>
+            </div>
+
+            <!-- Start Time -->
+            <div class="col-md-6">
+              <label for="start_time_<%= timetable.id %>" class="form-label">Start Time:</label>
+              <select id="start_time" name="start_time" class="form-select select2" required>
+                <option value="">Select Start Time</option>
+                <option>07:30</option>
+                <option>08:15</option>
+                <option>09:05</option>
+                <option>09:50</option>
+                <option disabled>-- Tea Break 10:35 - 11:00 --</option>
+                <option>11:00</option>
+                <option>11:45</option>
+                <option disabled>-- Lunch Break 12:30 - 13:15 --</option>
+                <option>13:15</option>
+                <option>14:00</option>
+                <option>14:50</option>
+                <option>15:35</option>
+                <option>16:25</option>
+                <option>17:10</option>
+                <option>18:00</option>
+                <option>18:45</option>
+                <option>19:35</option>
+                <option>20:20</option>
+                <option>21:10</option>
+                <option>21:55</option>
+              </select>
+            </div>
+
+            <!-- End Time -->
+            <div class="col-md-6">
+              <label for="end_time_<%= timetable.id %>" class="form-label">End Time:</label>
+              <input 
+                type="time" 
+                id="end_time" 
+                name="end_time" 
+                class="form-control" 
+                value="<%= timetable.end_time %>" 
+                readonly 
+                required
+              >
+            </div>
+
+            <!-- Subject Code -->
+            <div class="col-md-6">
+              <label for="subject_code_<%= timetable.id %>" class="form-label">Subject Code:</label>
+              <input 
+                type="text" 
+                id="subject_code_<%= timetable.id %>" 
+                name="subject_code" 
+                class="form-control" 
+                value="<%= timetable.subject_code %>" 
+                required
+              >
+            </div>
+
+            <!-- Subject Name -->
+            <div class="col-md-6">
+              <label for="subject_name_<%= timetable.id %>" class="form-label">Subject Name:</label>
+              <select id="subject_name_<%= timetable.id %>" name="subject_name" class="form-select select2" required>
+                <% subjects.forEach(sub => { %>
+                  <option value="<%= sub.subject_name %>" <%= timetable.subject_name === sub.subject_name ? 'selected' : '' %>>
+                    <%= sub.subject_name %> <%= sub.subject_code %>
+                  </option>
+                <% }) %>
+              </select>
+            </div>
+
+            <!-- Venue Name -->
+            <div class="col-md-6">
+              <label for="venue_name_<%= timetable.id %>" class="form-label">Venue Name:</label>
+              <select id="venue_name_<%= timetable.id %>" name="venue_name" class="form-select select2" required>
+                <% venues.forEach(venue => { %>
+                  <option value="<%= venue.venue_name %>" <%= timetable.venue_name === venue.venue_name ? 'selected' : '' %>>
+                    <%= venue.venue_name %>
+                  </option>
+                <% }) %>
+              </select>
+            </div>
+
+            <!-- Venue Location -->
+            <div class="col-md-6">
+              <label for="venue_location_<%= timetable.id %>" class="form-label">Venue Location:</label>
+              <input 
+                type="text" 
+                id="venue_location_<%= timetable.id %>" 
+                name="venue_location" 
+                class="form-control" 
+                value="<%= timetable.venue_location %>" 
+                required
+              >
+            </div>
+
+            <!-- Tutor Name -->
+            <div class="col-md-6">
+              <label for="tutor_name_<%= timetable.id %>" class="form-label">Tutor Name:</label>
+              <select id="tutor_name_<%= timetable.id %>" name="tutor_name" class="form-select select2" required>
+                <% tutors.forEach(tutor => { %>
+                  <option value="<%= tutor.tutor_name %>" <%= timetable.tutor_name === tutor.tutor_name ? 'selected' : '' %>>
+                    <%= tutor.tutor_name %>
+                  </option>
+                <% }) %>
+              </select>
+            </div>
+
+            <!-- Credit -->
+            <div class="col-md-6">
+              <label for="subject_credit_<%= timetable.id %>" class="form-label">Credit:</label>
+              <select id="subject_credit_<%= timetable.id %>" name="subject_credit" class="form-select select2" required>
+                <% [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20].forEach(c => { %>
+                  <option value="<%= c %>" <%= timetable.subject_credit === c ? 'selected' : '' %>><%= c %></option>
+                <% }) %>
+              </select>
+            </div>
+
+            <!-- Venue Type -->
+            <div class="col-md-6">
+              <label for="venue_type_<%= timetable.id %>" class="form-label">Venue Type:</label>
+              <select id="venue_type_<%= timetable.id %>" name="venue_type" class="form-select select2" required>
+                <% ['Theory','Lab'].forEach(vt => { %>
+                  <option value="<%= vt %>" <%= timetable.venue_type === vt ? 'selected' : '' %>><%= vt %></option>
+                <% }) %>
+              </select>
+            </div>
+
+            <!-- Status -->
+            <div class="col-md-6">
+              <label for="venue_status_<%= timetable.id %>" class="form-label">Status:</label>
+              <select id="venue_status_<%= timetable.id %>" name="venue_status" class="form-select select2" required>
+                <% ['used','available','maintenance'].forEach(st => { %>
+                  <option value="<%= st %>" <%= timetable.venue_status === st ? 'selected' : '' %>><%= st %></option>
+                <% }) %>
+              </select>
+            </div>
+
+            <!-- Program Name -->
+            <div class="col-md-6">
+              <label for="program_name_<%= timetable.id %>" class="form-label">Program Name:</label>
+              <select id="program_name_<%= timetable.id %>" name="program_name" class="form-select select2" required>
+                <% programs.forEach(p => { %>
+                  <option value="<%= p.program_name %>" <%= timetable.program_name === p.program_name ? 'selected' : '' %>>
+                    <%= p.program_name %>
+                  </option>
+                <% }) %>
+              </select>
+            </div>
+
+            <!-- Program Level -->
+            <div class="col-md-6">
+              <label for="program_level_<%= timetable.id %>" class="form-label">Program Level:</label>
+              <select id="program_level_<%= timetable.id %>" name="program_level" class="form-select select2" required>
+                <% levels.forEach(l => { %>
+                  <option value="<%= l.program_level %>" <%= timetable.program_level === l.program_level ? 'selected' : '' %>>
+                    <%= l.program_level %>
+                  </option>
+                <% }) %>
+              </select>
+            </div>
+
+            <!-- Department Name -->
+            <div class="col-md-6">
+              <label for="department_name_<%= timetable.id %>" class="form-label">Department Name:</label>
+              <select id="department_name_<%= timetable.id %>" name="department_name" class="form-select select2" required>
+                <% departments.forEach(d => { %>
+                  <option value="<%= d.department_name %>" <%= timetable.department_name === d.department_name ? 'selected' : '' %>>
+                    <%= d.department_name %>
+                  </option>
+                <% }) %>
+              </select>
+            </div>
+
+            <!-- Duration -->
+            <div class="col-md-6">
+              <label for="year_<%= timetable.id %>" class="form-label">Duration:</label>
+              <select id="year_<%= timetable.id %>" name="year" class="form-select select2" required>
+                <% [1,2,3,4,5].forEach(y => { %>
+                  <option value="<%= y %>" <%= timetable.year === y ? 'selected' : '' %>><%= y %> Year(s)</option>
+                <% }) %>
+              </select>
+            </div>
+
+            <!-- Semester -->
+            <div class="col-md-6">
+              <label for="semester_<%= timetable.id %>" class="form-label">Semester:</label>
+              <select id="semester_<%= timetable.id %>" name="semester" class="form-select select2" required>
+                <% ['I','II'].forEach(s => { %>
+                  <option value="<%= s %>" <%= timetable.semester === s ? 'selected' : '' %>><%= s %></option>
+                <% }) %>
+              </select>
+            </div>
+
+            <!-- Program Capacity -->
+            <div class="col-md-6">
+              <label for="program_capacity_<%= timetable.id %>" class="form-label">Program Capacity:</label>
+              <select id="program_capacity_<%= timetable.id %>" name="program_capacity" class="form-select select2" required>
+                <% [20,30,40,50,60,70,80,90,100,150,200,300].forEach(pc => { %>
+                  <option value="<%= pc %>" <%= timetable.program_capacity === pc ? 'selected' : '' %>>
+                    <%= pc %> students
+                  </option>
+                <% }) %>
+              </select>
+            </div>
+
+            <!-- Program Type -->
+            <div class="col-md-6">
+              <label for="program_type_<%= timetable.id %>" class="form-label">Program Type:</label>
+              <select id="program_type_<%= timetable.id %>" name="program_type" class="form-select select2" required>
+                <% ptypes.forEach(pt => { %>
+                  <option value="<%= pt.program_type %>" <%= timetable.program_type === pt.program_type ? 'selected' : '' %>>
+                    <%= pt.program_type %>
+                  </option>
+                <% }) %>
+              </select>
+            </div>
+
+          </div>
+
+          <button type="submit" class="btn btn-primary mt-4">Update</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

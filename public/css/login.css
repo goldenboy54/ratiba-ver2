@@ -1,0 +1,126 @@
+/* Login Page Styles */
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  font-family: Arial, sans-serif;
+  background: linear-gradient(135deg, #0d1b2a, #1b263b);
+  color: #fff;
+}
+
+header {
+  background-color: #0d1b2a;
+  color: #3498db;
+  padding: 20px;
+  text-align: center;
+  border-bottom: 3px solid #3498db;
+}
+
+header h1 {
+  font-size: 32px;
+  font-weight: 700;
+}
+
+main {
+  flex: 1;
+}
+
+.card {
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  animation: fadeInUp 0.8s ease;
+}
+
+.card-body {
+  background-color: #1b263b;
+  color: #fff;
+}
+
+.form-control {
+  background-color: #0d1b2a;
+  border: 1px solid #3498db;
+  color: #fff;
+}
+
+.form-control:focus {
+  border-color: #3498db;
+  box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+  background-color: #0d1b2a;
+  color: #fff;
+}
+
+.form-control::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.btn-dark {
+  background-color: #3498db;
+  border: none;
+  width: 100%;
+  transition: background 0.3s ease, transform 0.2s ease;
+}
+
+.btn-dark:hover {
+  background-color: #2874a6;
+  transform: translateY(-2px);
+}
+
+.link-blue {
+  color: #3498db;
+  text-decoration: none;
+}
+
+.link-blue:hover {
+  color: #2874a6;
+  text-decoration: underline;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 15px;
+  top: 37px;
+  color: #3498db;
+  cursor: pointer;
+}
+
+.error-message {
+  color: #e74c3c;
+  background-color: rgba(231, 76, 60, 0.1);
+  padding: 10px;
+  border-radius: 5px;
+  border-left: 4px solid #e74c3c;
+}
+
+footer {
+  background-color: #0d1b2a;
+  color: #aaa;
+  text-align: center;
+  padding: 15px 10px;
+  border-top: 2px solid #3498db;
+  margin-top: auto;
+}
+
+footer a {
+  color: #3498db;
+  text-decoration: none;
+}
+
+footer a:hover {
+  color: #2874a6;
+  text-decoration: underline;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

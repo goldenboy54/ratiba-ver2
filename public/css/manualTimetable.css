@@ -1,0 +1,444 @@
+/* =================================================================
+   Manual Timetable Generator (manualTimetable.ejs) - Styles
+   ================================================================= */
+
+/* =================================================================
+   Page Layout
+   ================================================================= */
+
+.manual-timetable-container {
+  padding: var(--spacing-8) 0;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* =================================================================
+   Header Section
+   ================================================================= */
+
+.page-header-manual {
+  text-align: center;
+  margin-bottom: var(--spacing-6);
+}
+
+.header-icon {
+  font-size: 3rem;
+  color: var(--color-primary);
+  display: inline-block;
+  animation: rotateIcon 4s linear infinite;
+  margin-bottom: var(--spacing-3);
+}
+
+@keyframes rotateIcon {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.page-header-manual h3 {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+  margin-bottom: var(--spacing-2);
+}
+
+.page-header-manual .subtitle {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+/* =================================================================
+   Alert Messages
+   ================================================================= */
+
+.alert-manual {
+  padding: var(--spacing-4) var(--spacing-5);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--spacing-4);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  font-size: var(--font-size-base);
+  animation: slideInDown 0.5s ease-out;
+}
+
+.alert-manual i {
+  font-size: var(--font-size-xl);
+}
+
+.alert-manual.alert-danger {
+  background: rgba(220, 53, 69, 0.1);
+  color: var(--color-danger-dark);
+  border-left: 4px solid var(--color-danger);
+}
+
+.alert-manual.alert-success {
+  background: rgba(40, 167, 69, 0.1);
+  color: var(--color-success-dark);
+  border-left: 4px solid var(--color-success);
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* =================================================================
+   Logs Box
+   ================================================================= */
+
+.logs-box {
+  max-height: 180px;
+  overflow-y: auto;
+  background: linear-gradient(135deg, #e7f3ff 0%, #f0f8ff 100%);
+  border-left: 4px solid var(--color-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-4) var(--spacing-5);
+  margin-bottom: var(--spacing-4);
+  box-shadow: var(--shadow-sm);
+}
+
+.logs-box ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.logs-box li {
+  padding: var(--spacing-1) 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-2);
+}
+
+.logs-box li i {
+  color: var(--color-primary);
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+/* =================================================================
+   Form Section
+   ================================================================= */
+
+.form-section-manual {
+  background: var(--color-white);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-6);
+  margin-bottom: var(--spacing-6);
+  box-shadow: var(--shadow-md);
+  transition: var(--transition-base);
+  border: 1px solid var(--color-border-light);
+}
+
+.form-section-manual:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.section-title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+  margin-bottom: var(--spacing-4);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.section-title i {
+  font-size: var(--font-size-xl);
+}
+
+/* =================================================================
+   Form Elements
+   ================================================================= */
+
+.form-section-manual .form-label {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary);
+  margin-bottom: var(--spacing-2);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-base);
+}
+
+.form-section-manual .form-label i {
+  color: var(--color-primary);
+}
+
+.form-section-manual .form-control,
+.form-section-manual .form-select {
+  height: 45px;
+  padding: var(--spacing-3);
+  border: 1px solid var(--color-border-medium);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  transition: var(--transition-base);
+  background: var(--color-white);
+}
+
+.form-section-manual .form-control:focus,
+.form-section-manual .form-select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 0.2rem rgba(37, 117, 252, 0.25);
+  outline: none;
+}
+
+.form-section-manual .form-control:disabled,
+.form-section-manual .form-control[readonly] {
+  background: var(--color-gray-100);
+  cursor: not-allowed;
+}
+
+.form-section-manual .text-muted {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-top: var(--spacing-1);
+  display: block;
+}
+
+/* Select2 Overrides */
+.form-section-manual .select2-container .select2-selection--single {
+  height: 45px !important;
+  padding: 8px 12px !important;
+  border-radius: var(--radius-md) !important;
+  border: 1px solid var(--color-border-medium) !important;
+  transition: var(--transition-base);
+}
+
+.form-section-manual .select2-container .select2-selection--multiple {
+  min-height: 45px !important;
+  padding: 4px 8px !important;
+  border-radius: var(--radius-md) !important;
+  border: 1px solid var(--color-border-medium) !important;
+}
+
+.form-section-manual .select2-container--focus .select2-selection {
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 0.2rem rgba(37, 117, 252, 0.25) !important;
+}
+
+.form-section-manual .select2-selection__rendered {
+  font-size: var(--font-size-base);
+  line-height: 28px !important;
+}
+
+.form-section-manual .select2-selection__placeholder {
+  color: var(--color-text-tertiary) !important;
+}
+
+/* =================================================================
+   Buttons
+   ================================================================= */
+
+.btn-filter {
+  padding: var(--spacing-3) var(--spacing-6);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--radius-md);
+  border: none;
+  background: var(--color-primary);
+  color: var(--color-white);
+  transition: var(--transition-base);
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-4);
+  letter-spacing: 0.5px;
+}
+
+.btn-filter:hover {
+  background: var(--color-primary-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.btn-filter i {
+  font-size: var(--font-size-lg);
+}
+
+.btn-assign {
+  padding: var(--spacing-3) var(--spacing-8);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  border-radius: var(--radius-md);
+  border: none;
+  background: var(--color-success);
+  color: var(--color-white);
+  transition: var(--transition-base);
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  letter-spacing: 0.5px;
+}
+
+.btn-assign:hover {
+  background: var(--color-success-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.btn-assign i {
+  font-size: var(--font-size-lg);
+}
+
+/* =================================================================
+   Form Actions
+   ================================================================= */
+
+.form-actions {
+  margin-top: var(--spacing-5);
+  padding-top: var(--spacing-4);
+  border-top: 1px solid var(--color-border-light);
+  text-align: right;
+}
+
+/* =================================================================
+   Responsive Adjustments
+   ================================================================= */
+
+@media (max-width: 992px) {
+  .manual-timetable-container {
+    padding: var(--spacing-6) 0;
+  }
+
+  .form-section-manual {
+    padding: var(--spacing-5);
+  }
+}
+
+@media (max-width: 768px) {
+  .manual-timetable-container {
+    padding: var(--spacing-4) 0;
+  }
+
+  .header-icon {
+    font-size: 2.5rem;
+  }
+
+  .page-header-manual h3 {
+    font-size: var(--font-size-2xl);
+  }
+
+  .form-section-manual {
+    padding: var(--spacing-4);
+    margin-bottom: var(--spacing-4);
+  }
+
+  .section-title {
+    font-size: var(--font-size-lg);
+  }
+
+  .btn-filter,
+  .btn-assign {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .form-actions {
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-header-manual h3 {
+    font-size: var(--font-size-xl);
+  }
+
+  .header-icon {
+    font-size: 2rem;
+  }
+
+  .form-section-manual {
+    padding: var(--spacing-3);
+    border-radius: var(--radius-lg);
+  }
+
+  .section-title {
+    font-size: var(--font-size-base);
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-1);
+  }
+
+  .form-section-manual .form-control,
+  .form-section-manual .form-select {
+    height: 42px;
+    font-size: var(--font-size-sm);
+  }
+
+  .logs-box {
+    max-height: 150px;
+    padding: var(--spacing-3);
+  }
+
+  .logs-box li {
+    font-size: var(--font-size-xs);
+  }
+}
+
+/* =================================================================
+   Animations
+   ================================================================= */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.form-section-manual {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+/* Stagger animation for multiple sections */
+.form-section-manual:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.form-section-manual:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+/* =================================================================
+   Print Styles
+   ================================================================= */
+
+@media print {
+  .form-section-manual {
+    box-shadow: none;
+    page-break-inside: avoid;
+  }
+
+  .btn-filter,
+  .btn-assign {
+    display: none;
+  }
+
+  .header-icon {
+    animation: none;
+  }
+}

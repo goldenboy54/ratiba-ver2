@@ -1,202 +1,307 @@
 <%- include('partials/nav') %>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Work Load Report</title>
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-
-</head>
-<body>
-
-  
-
-  
-<div class="container mt-5">
-<!--   
-  <a href="/subjects/form" class="btn btn-success mb-3"><i class="fas fa-plus"></i> Assign new informations here</a>
-
-  <div id="successAlert" class="alert alert-success d-none" role="alert">
-     updated successfully!
-  </div> -->
-
-
-    <% if (locals.subjects) { %>
-
-      <div class="container mt-5">
-        <h2 class="text-center text-primary mb-4">FILTER BELOW TO CUSTOMIZE VIEWS</h2>
-        
-        <form method="get" action="/work_reports" class="mb-4">
-          <div class="row">
-            <div class="col-md-4 mb-3">
-              <label for="user">User:</label>
-              <select id="user" name="user" class="form-control select2">
-                <option value="">Select user</option>
-                <% users.forEach(user => { %>
-                  <option value="<%= user.full_name %>" <%= user_name === user.full_name ? 'selected' : '' %>><%= user.full_name %></option>
-                <% }); %>
-              </select>
-            </div>
-            
-         
-            <div class="col-md-4 mb-3">
-              <label for="program_name">Program Name:</label>
-              <select id="program_name" name="program_name" class="form-control select2">
-                <option value="">Select program</option>
-                <% pname.forEach(program => { %>
-                  <option value="<%= program.program_name %>" <%= program_name === program.program_name ? 'selected' : '' %>><%= program.program_name %></option>
-                <% }); %>
-              </select>
-            </div>
-            
-            <div class="col-md-4 mb-3">
-              <label for="category">Mother Program Department:</label>
-              <select id="category" name="category" class="form-control select2">
-                <option value="">Select program department</option>
-                <% pcategory.forEach(program => { %>
-                  <option value="<%= program.category %>" <%= category === program.category ? 'selected' : '' %>><%= program.category %></option>
-                <% }); %>
-              </select>
-            </div>
-          </div>
-          
-          <div class="row">
-            <div class="col-md-4 mb-3">
-              <label for="level">Level:</label>
-              <select id="level" name="level" class="form-control select2">
-                <option value="">Select level</option>
-                <% plevel.forEach(program => { %>
-                  <option value="<%= program.level %>" <%= level === program.level ? 'selected' : '' %>><%= program.level %></option>
-                <% }); %>
-              </select>
-            </div>
-        
-            <div class="col-md-4 mb-3">
-              <label for="title">Subject Name:</label>
-              <select id="title" name="title" class="form-control select2">
-                <option value="">Select subject name</option>
-                <% sname.forEach(subject => { %>
-                  <option value="<%= subject.title %>" <%= title === subject.title ? 'selected' : '' %>><%= subject.title %></option>
-                <% }); %>
-              </select>
-            </div>
-            
-            <div class="col-md-4 mb-3">
-              <label for="subject_department">Mother Subject Department:</label>
-              <select id="subject_department" name="subject_department" class="form-control select2">
-                <option value="">Select subject department</option>
-                <% idara.forEach(department => { %>
-                  <option value="<%= department.subject_department %>" <%= subject_department === department.subject_department ? 'selected' : '' %>><%= department.subject_department %></option>
-                
-                  <% }); %>
-              </select>
-            </div>
-          </div>
-          
-          <div class="row">
-            <div class="col-md-4 mb-3">
-              <label for="semester">Semester:</label>
-              <select id="semester" name="semester" class="form-control select2">
-                <option value="">Select semester</option>
-                <% semesters.forEach(semester => { %>
-                  <option value="<%= semester.semester %>" <%= semester === semester.semester ? 'selected' : '' %>><%= semester.semester %></option>
-                <% }); %>
-              </select>
-            </div>
-            
-            <div class="col-md-4 mb-3">
-              <label for="program_type">Program Type:</label>
-              <select id="program_type" name="program_type" class="form-control select2">
-                <option value="">Select type</option>
-                <% ptypes.forEach(type => { %>
-                  <option value="<%= type.program_type %>" <%= program_type === type.program_type ? 'selected' : '' %>><%= type.program_type %></option>
-                <% }); %>
-              </select>
-            </div>
-          </div>
-          
-          <div class="text-center">
-            <button type="submit" class="btn btn-primary">Filter</button>
-          </div>
-        </form>
-      </div>
-
-    <!-- Display timetables -->
-    <% if (user_name || semester ||program_type|| program_name || level ||  subject_department || title || category) { %>
-    
-      <h2 class="mb-4">WORK LOAD REPORT </h2>
-      <table class="table table-bordered table-responsive">
-        <thead class="thead-dark">
-          <tr>
-            <th>TUTOR/STAFF INFORMATION</th>
-            <th>TOTAL HOURS PER WEEK</th>
-            <th>PROGRAM ASSIGNED </th>
-            <!-- <th>Actions</th> -->
-          </tr>
-        </thead>
-        <tbody>
-          <% subjects.forEach(subject => { %>
-            <tr>
-
-              <td>
-               Name <b><%= subject.full_name %></b> <br>
-               Email <%= subject.user_email %> <br>
-               Mother department <%= subject.user_department %> <br>
-               Original role <%= subject.user_role %> <br>
-               Status <%= subject.user_status %>
-
-              </td>
-
-              <td>
-                sname <%= subject.title %> <br>
-                scode  <%= subject.subject_code %><br>
-                <!-- mother Subject department <%= subject.subject_department %> <br>
-                SCredit: <%= subject.credit %> <br> -->
-               <h1>TOTAL HOURS PER WEEK: <%= subject.total_hours_per_week %> <br> </h1>      <!-- ltpa assigned by tmaster: <%= subject.ltpa %> <br> -->
-                <!-- Type: <%= subject.type_prac_or_theory %> <br> -->
-              </td>
-              <td>
-                program name <%= subject.program_name %>  <br>
-                 program code <%= subject.program_code %> <br>
-                 mother program department <%= subject.category %> <br>
-                 program type <%= subject.program_type %> <br>
-                 program level  <%= subject.program_level %> <br>
-                 program capacity <%= subject.program_capacity %> <br>
-                 program Duration <%= subject.program_duration %> yrs <br>
-                </td>
-
-              <!-- <td>
-                <button type="button" class="btn btn-warning btn-sm fixed-size-btn" data-toggle="modal" data-target="#updateModal<%= subject.subject_id %>">
-                  Edit
-                </button>
-                <a href="/subjects/delete/<%= // subject.subject_id %>" class="btn btn-danger btn-sm fixed-size-btn" onclick="return confirm('Are you sure you want to delete this subject?');">
-                  Delete
-                </a>
-              </td> -->
-
-            </tr>
-
-          <% }); %>
-     
-    <% } } else { %>
-      <h1>NO INFOMATIONS AVAILABLE</h1>
-    <% } %>
-    
+<div class="work-reports-container">
+  <!-- Header Section -->
+  <div class="work-reports-header">
+    <h1>
+      <i class="fas fa-chart-bar"></i>
+      Work Load Report
+    </h1>
   </div>
 
+  <!-- Filter Section -->
+  <div class="filter-section">
+    <h2>Filter Below To Customize Views</h2>
+    
+    <form method="get" action="/work_reports" class="filter-form">
+      <div class="row">
+        <!-- User Filter -->
+        <div class="col-md-4 mb-3">
+          <label for="user" class="form-label">
+            <i class="fas fa-user"></i>
+            User:
+          </label>
+          <select id="user" name="user" class="form-control select2" data-placeholder="Select user">
+            <option value="">Select user</option>
+            <% users.forEach(user => { %>
+              <option value="<%= user.full_name %>" <%= user_name === user.full_name ? 'selected' : '' %>>
+                <%= user.full_name %>
+              </option>
+            <% }); %>
+          </select>
+        </div>
+        
+        <!-- Program Name Filter -->
+        <div class="col-md-4 mb-3">
+          <label for="program_name" class="form-label">
+            <i class="fas fa-graduation-cap"></i>
+            Program Name:
+          </label>
+          <select id="program_name" name="program_name" class="form-control select2" data-placeholder="Select program">
+            <option value="">Select program</option>
+            <% pname.forEach(program => { %>
+              <option value="<%= program.program_name %>" <%= program_name === program.program_name ? 'selected' : '' %>>
+                <%= program.program_name %>
+              </option>
+            <% }); %>
+          </select>
+        </div>
+        
+        <!-- Mother Program Department Filter -->
+        <div class="col-md-4 mb-3">
+          <label for="category" class="form-label">
+            <i class="fas fa-building"></i>
+            Mother Program Department:
+          </label>
+          <select id="category" name="category" class="form-control select2" data-placeholder="Select program department">
+            <option value="">Select program department</option>
+            <% pcategory.forEach(program => { %>
+              <option value="<%= program.category %>" <%= category === program.category ? 'selected' : '' %>>
+                <%= program.category %>
+              </option>
+            <% }); %>
+          </select>
+        </div>
+      </div>
+      
+      <div class="row">
+        <!-- Level Filter -->
+        <div class="col-md-4 mb-3">
+          <label for="level" class="form-label">
+            <i class="fas fa-layer-group"></i>
+            Level:
+          </label>
+          <select id="level" name="level" class="form-control select2" data-placeholder="Select level">
+            <option value="">Select level</option>
+            <% plevel.forEach(program => { %>
+              <option value="<%= program.level %>" <%= level === program.level ? 'selected' : '' %>>
+                <%= program.level %>
+              </option>
+            <% }); %>
+          </select>
+        </div>
+    
+        <!-- Subject Name Filter -->
+        <div class="col-md-4 mb-3">
+          <label for="title" class="form-label">
+            <i class="fas fa-book"></i>
+            Subject Name:
+          </label>
+          <select id="title" name="title" class="form-control select2" data-placeholder="Select subject name">
+            <option value="">Select subject name</option>
+            <% sname.forEach(subject => { %>
+              <option value="<%= subject.title %>" <%= title === subject.title ? 'selected' : '' %>>
+                <%= subject.title %>
+              </option>
+            <% }); %>
+          </select>
+        </div>
+        
+        <!-- Mother Subject Department Filter -->
+        <div class="col-md-4 mb-3">
+          <label for="subject_department" class="form-label">
+            <i class="fas fa-sitemap"></i>
+            Mother Subject Department:
+          </label>
+          <select id="subject_department" name="subject_department" class="form-control select2" data-placeholder="Select subject department">
+            <option value="">Select subject department</option>
+            <% idara.forEach(department => { %>
+              <option value="<%= department.subject_department %>" <%= subject_department === department.subject_department ? 'selected' : '' %>>
+                <%= department.subject_department %>
+              </option>
+            <% }); %>
+          </select>
+        </div>
+      </div>
+      
+      <div class="row">
+        <!-- Semester Filter -->
+        <div class="col-md-4 mb-3">
+          <label for="semester" class="form-label">
+            <i class="fas fa-calendar-alt"></i>
+            Semester:
+          </label>
+          <select id="semester" name="semester" class="form-control select2" data-placeholder="Select semester">
+            <option value="">Select semester</option>
+            <% semesters.forEach(semester => { %>
+              <option value="<%= semester.semester %>" <%= semester === semester.semester ? 'selected' : '' %>>
+                <%= semester.semester %>
+              </option>
+            <% }); %>
+          </select>
+        </div>
+        
+        <!-- Program Type Filter -->
+        <div class="col-md-4 mb-3">
+          <label for="program_type" class="form-label">
+            <i class="fas fa-tag"></i>
+            Program Type:
+          </label>
+          <select id="program_type" name="program_type" class="form-control select2" data-placeholder="Select type">
+            <option value="">Select type</option>
+            <% ptypes.forEach(type => { %>
+              <option value="<%= type.program_type %>" <%= program_type === type.program_type ? 'selected' : '' %>>
+                <%= type.program_type %>
+              </option>
+            <% }); %>
+          </select>
+        </div>
+      </div>
+      
+      <div class="text-center">
+        <button type="submit" class="filter-submit-btn">
+          <i class="fas fa-filter"></i>
+          Apply Filters
+        </button>
+      </div>
+    </form>
+  </div>
 
-  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
-  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  <% if (locals.subjects && subjects.length > 0) { %>
+    <!-- Check if any filters are applied -->
+    <% if (user_name || semester || program_type || program_name || level || subject_department || title || category) { %>
+      
+      <!-- Report Header with Export Buttons -->
+      <div class="report-header">
+        <h2 class="report-title">
+          <i class="fas fa-file-alt"></i>
+          Work Load Report
+        </h2>
+        <div class="export-buttons">
+          <button id="exportCSV" class="export-btn export-csv">
+            <i class="fas fa-file-csv"></i>
+            Export CSV
+          </button>
+          <button id="exportPDF" class="export-btn export-pdf">
+            <i class="fas fa-file-pdf"></i>
+            Export PDF
+          </button>
+          <button id="exportPrint" class="export-btn export-print">
+            <i class="fas fa-print"></i>
+            Print
+          </button>
+        </div>
+      </div>
 
-  <script>
-    $(document).ready(function() {
-      $('.select2').select2();
-    });
-  </script>
-</body>
-</html>
+      <!-- Report Table -->
+      <div class="report-table-wrapper">
+        <table class="table table-bordered table-hover work-reports-table">
+          <thead>
+            <tr>
+              <th>Tutor/Staff Information</th>
+              <th>Total Hours Per Week</th>
+              <th>Program Assigned</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% subjects.forEach(subject => { %>
+              <tr>
+                <!-- Tutor Information -->
+                <td data-label="Tutor/Staff Information">
+                  <div class="tutor-info">
+                    <div>
+                      <span class="info-label">Name:</span>
+                      <span class="info-value"><b><%= subject.full_name %></b></span>
+                    </div>
+                    <div>
+                      <span class="info-label">Email:</span>
+                      <span class="info-value"><%= subject.user_email %></span>
+                    </div>
+                    <div>
+                      <span class="info-label">Mother Department:</span>
+                      <span class="department-tag"><%= subject.user_department %></span>
+                    </div>
+                    <div>
+                      <span class="info-label">Original Role:</span>
+                      <span class="info-value"><%= subject.user_role %></span>
+                    </div>
+                    <div>
+                      <span class="info-label">Status:</span>
+                      <span class="status-badge <%= subject.user_status === 'active' ? 'status-active' : 'status-inactive' %>">
+                        <%= subject.user_status %>
+                      </span>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Workload Information -->
+                <td data-label="Total Hours Per Week">
+                  <div class="workload-info">
+                    <div>
+                      <span class="info-label">Subject Name:</span>
+                      <span class="info-value"><%= subject.title %></span>
+                    </div>
+                    <div>
+                      <span class="info-label">Subject Code:</span>
+                      <span class="info-value"><%= subject.subject_code %></span>
+                    </div>
+                    <div class="total-hours">
+                      <span class="total-hours-label">Total Hours Per Week</span>
+                      <%= subject.total_hours_per_week %>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Program Information -->
+                <td data-label="Program Assigned">
+                  <div class="program-info">
+                    <div>
+                      <span class="info-label">Program Name:</span>
+                      <span class="info-value"><%= subject.program_name %></span>
+                    </div>
+                    <div>
+                      <span class="info-label">Program Code:</span>
+                      <span class="info-value"><%= subject.program_code %></span>
+                    </div>
+                    <div>
+                      <span class="info-label">Mother Program Department:</span>
+                      <span class="info-value"><%= subject.category %></span>
+                    </div>
+                    <div>
+                      <span class="info-label">Program Type:</span>
+                      <span class="program-type-badge"><%= subject.program_type %></span>
+                    </div>
+                    <div>
+                      <span class="info-label">Program Level:</span>
+                      <span class="info-value"><%= subject.program_level %></span>
+                    </div>
+                    <div>
+                      <span class="info-label">Program Capacity:</span>
+                      <span class="info-value"><%= subject.program_capacity %></span>
+                    </div>
+                    <div>
+                      <span class="info-label">Program Duration:</span>
+                      <span class="info-value"><%= subject.program_duration %> yrs</span>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+
+    <% } else { %>
+      <!-- No Filters Applied Message -->
+      <div class="no-filters-message">
+        <i class="fas fa-info-circle"></i>
+        <h3>No Filters Applied</h3>
+        <p>Please select at least one filter above to view the work load report.</p>
+      </div>
+    <% } %>
+
+  <% } else { %>
+    <!-- Empty State -->
+    <div class="empty-state">
+      <i class="fas fa-inbox"></i>
+      <h2>No Information Available</h2>
+      <p>There are no work reports matching your criteria. Please adjust your filters and try again.</p>
+    </div>
+  <% } %>
+</div>
+
+<!-- Include html2pdf library for PDF export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+</main>
+<%- include('partials/footer') %>

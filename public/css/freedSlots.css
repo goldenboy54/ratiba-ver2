@@ -1,0 +1,651 @@
+/* ===================================================================
+   FREED SLOTS STYLES
+   Dashboard for viewing and analyzing freed timetable slots
+   =================================================================== */
+
+/* ===================================================================
+   1. LAYOUT & CONTAINER
+   =================================================================== */
+
+.freed-slots-container {
+  padding: var(--spacing-lg);
+  background: linear-gradient(135deg, #f3f4f6, #eef2ff);
+  min-height: 100vh;
+}
+
+/* ===================================================================
+   2. HEADER SECTION
+   =================================================================== */
+
+.freed-slots-header {
+  text-align: center;
+  margin-bottom: var(--spacing-xl);
+}
+
+.freed-slots-header h1 {
+  color: var(--primary-color);
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+}
+
+.freed-slots-header h1 i {
+  font-size: 1.8rem;
+  animation: rotateIcon 3s linear infinite;
+}
+
+@keyframes rotateIcon {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ===================================================================
+   3. INSTRUCTIONS SECTION
+   =================================================================== */
+
+.instructions-alert {
+  background: linear-gradient(135deg, #d1ecf1, #bee5eb);
+  border-left: 4px solid var(--info-color);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+  box-shadow: var(--shadow-sm);
+}
+
+.instructions-alert ul {
+  margin: 0;
+  padding-left: var(--spacing-lg);
+  list-style-type: disc;
+}
+
+.instructions-alert li {
+  margin-bottom: var(--spacing-xs);
+  line-height: 1.6;
+}
+
+.instructions-alert strong {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+/* ===================================================================
+   4. MATRIX LAYOUT (SIDEBAR + CONTENT)
+   =================================================================== */
+
+.matrix-container {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: var(--spacing-xl);
+  align-items: start;
+}
+
+/* ===================================================================
+   5. FILTER SIDEBAR
+   =================================================================== */
+
+.filter-sidebar {
+  background: white;
+  border-radius: 12px;
+  box-shadow: var(--shadow-md);
+  padding: var(--spacing-xl);
+  position: sticky;
+  top: 100px;
+  transition: all 0.3s ease;
+}
+
+.filter-sidebar:hover {
+  box-shadow: 0 0 20px rgba(13, 110, 253, 0.25);
+  transform: translateY(-2px);
+}
+
+.filter-sidebar h5 {
+  font-weight: 600;
+  color: var(--primary-color);
+  margin-bottom: var(--spacing-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: 1.2rem;
+}
+
+.filter-sidebar h5 i {
+  font-size: 1.1rem;
+}
+
+.filter-form .form-label {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-xs);
+  font-size: 0.9rem;
+}
+
+.filter-form .form-select {
+  border: 2px solid var(--border-color);
+  border-radius: var(--border-radius);
+  transition: all 0.3s ease;
+  font-size: 0.95rem;
+}
+
+.filter-form .form-select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+  outline: none;
+}
+
+.filter-apply-btn {
+  background: linear-gradient(135deg, var(--primary-color), #007bff);
+  color: white;
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-weight: 600;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  margin-bottom: var(--spacing-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+}
+
+.filter-apply-btn i {
+  font-size: 1rem;
+}
+
+.filter-apply-btn:hover {
+  background: linear-gradient(135deg, #007bff, var(--primary-color));
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.filter-apply-btn:active {
+  transform: translateY(0);
+}
+
+.filter-reset-btn {
+  background: white;
+  color: var(--text-secondary);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-weight: 600;
+  border: 2px solid var(--border-color);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+}
+
+.filter-reset-btn:hover {
+  background-color: #f8f9fa;
+  border-color: var(--text-secondary);
+}
+
+/* ===================================================================
+   6. DATA SECTION
+   =================================================================== */
+
+.data-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+
+/* Card styling */
+.freed-slots-card {
+  border: none;
+  border-radius: 15px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  background: white;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.freed-slots-card:hover {
+  box-shadow: 0 6px 30px rgba(0, 0, 0, 0.1);
+}
+
+.freed-slots-card-header {
+  background: linear-gradient(90deg, var(--primary-color), #007bff);
+  color: white;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: var(--spacing-md) var(--spacing-lg);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1.1rem;
+}
+
+.page-badge {
+  background: white;
+  color: var(--primary-color);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.freed-slots-card-body {
+  padding: var(--spacing-xl);
+}
+
+/* ===================================================================
+   7. TABLE STYLING
+   =================================================================== */
+
+.freed-slots-table-wrapper {
+  overflow-x: auto;
+  margin-bottom: var(--spacing-lg);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.freed-slots-table {
+  width: 100%;
+  margin-bottom: 0;
+  font-size: 0.9rem;
+  background: white;
+}
+
+.freed-slots-table caption {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  padding: var(--spacing-sm);
+  caption-side: top;
+}
+
+.freed-slots-table thead {
+  background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+}
+
+.freed-slots-table thead th {
+  padding: var(--spacing-md);
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: left;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid var(--primary-color);
+  white-space: nowrap;
+}
+
+.freed-slots-table tbody td {
+  padding: var(--spacing-md);
+  vertical-align: middle;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.freed-slots-table tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+.freed-slots-table tbody tr:hover {
+  background-color: rgba(13, 110, 253, 0.05);
+}
+
+.freed-slots-table tbody tr:nth-child(even) {
+  background-color: #f8f9fa;
+}
+
+/* Empty state */
+.empty-row {
+  text-align: center;
+  padding: var(--spacing-xxl) !important;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ===================================================================
+   8. PAGINATION
+   =================================================================== */
+
+.pagination-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--spacing-lg);
+}
+
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.page-item {
+  margin: 0;
+}
+
+.page-link {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  display: block;
+}
+
+.page-link:hover {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.page-item.active .page-link {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+}
+
+.page-item.disabled .page-link {
+  color: var(--text-muted);
+  pointer-events: none;
+  background-color: #f8f9fa;
+}
+
+/* ===================================================================
+   9. CHARTS SECTION
+   =================================================================== */
+
+.charts-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--spacing-xl);
+  margin-top: var(--spacing-xl);
+}
+
+.chart-card {
+  background: white;
+  border-radius: 12px;
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-md);
+  transition: all 0.3s ease;
+}
+
+.chart-card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-3px);
+}
+
+.chart-card h6 {
+  color: var(--text-primary);
+  font-weight: 600;
+  margin-bottom: var(--spacing-md);
+  font-size: 1rem;
+  text-align: center;
+}
+
+.chart-canvas {
+  width: 100%;
+  height: 250px;
+}
+
+/* ===================================================================
+   10. RESPONSIVE DESIGN
+   =================================================================== */
+
+/* Tablets and below (992px) */
+@media (max-width: 992px) {
+  .matrix-container {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-lg);
+  }
+
+  .filter-sidebar {
+    position: relative;
+    top: auto;
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .freed-slots-container {
+    padding: var(--spacing-md);
+  }
+
+  .freed-slots-header h1 {
+    font-size: 1.75rem;
+  }
+
+  .freed-slots-table {
+    font-size: 0.85rem;
+  }
+
+  .freed-slots-table thead th,
+  .freed-slots-table tbody td {
+    padding: var(--spacing-sm);
+  }
+
+  .charts-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Mobile devices (768px) */
+@media (max-width: 768px) {
+  .freed-slots-header h1 {
+    font-size: 1.5rem;
+    flex-direction: column;
+  }
+
+  .freed-slots-card-header {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    text-align: center;
+  }
+
+  .freed-slots-table {
+    font-size: 0.8rem;
+  }
+
+  /* Stack table on mobile */
+  .freed-slots-table thead {
+    display: none;
+  }
+
+  .freed-slots-table tbody tr {
+    display: block;
+    margin-bottom: var(--spacing-lg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .freed-slots-table tbody td {
+    display: block;
+    text-align: right;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-bottom: 1px solid var(--border-color);
+    position: relative;
+    padding-left: 50%;
+  }
+
+  .freed-slots-table tbody td:last-child {
+    border-bottom: none;
+  }
+
+  .freed-slots-table tbody td::before {
+    content: attr(data-label);
+    position: absolute;
+    left: var(--spacing-md);
+    width: 45%;
+    text-align: left;
+    font-weight: 700;
+    color: var(--primary-color);
+    text-transform: uppercase;
+    font-size: 0.75rem;
+  }
+
+  .pagination {
+    justify-content: center;
+  }
+
+  .page-link {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: 0.85rem;
+  }
+}
+
+/* Small mobile devices (480px) */
+@media (max-width: 480px) {
+  .freed-slots-container {
+    padding: var(--spacing-sm);
+  }
+
+  .freed-slots-header h1 {
+    font-size: 1.3rem;
+  }
+
+  .filter-sidebar {
+    padding: var(--spacing-md);
+  }
+
+  .freed-slots-card-body {
+    padding: var(--spacing-md);
+  }
+
+  .instructions-alert {
+    padding: var(--spacing-md);
+  }
+
+  .instructions-alert ul {
+    padding-left: var(--spacing-md);
+  }
+}
+
+/* ===================================================================
+   11. PRINT STYLES
+   =================================================================== */
+
+@media print {
+  .filter-sidebar,
+  .freed-slots-header,
+  .instructions-alert,
+  .pagination-wrapper,
+  .charts-row {
+    display: none !important;
+  }
+
+  .freed-slots-container {
+    padding: 0;
+    background: white;
+  }
+
+  .matrix-container {
+    grid-template-columns: 1fr;
+  }
+
+  .freed-slots-table {
+    font-size: 0.75rem;
+  }
+
+  .freed-slots-table thead {
+    background: #333 !important;
+    color: white !important;
+  }
+
+  .freed-slots-table tbody tr {
+    page-break-inside: avoid;
+  }
+
+  .freed-slots-card {
+    box-shadow: none;
+  }
+}
+
+/* ===================================================================
+   12. DARK MODE SUPPORT (OPTIONAL)
+   =================================================================== */
+
+@media (prefers-color-scheme: dark) {
+  .freed-slots-container {
+    background: linear-gradient(135deg, #1a1a1a, #111);
+    color: #e9ecef;
+  }
+
+  .filter-sidebar,
+  .freed-slots-card,
+  .chart-card {
+    background: #1f1f1f;
+    color: #e9ecef;
+  }
+
+  .freed-slots-table thead th {
+    background-color: #333;
+    color: #e9ecef;
+  }
+
+  .freed-slots-table tbody tr:nth-child(even) {
+    background-color: #2a2a2a;
+  }
+
+  .freed-slots-table tbody tr:hover {
+    background-color: rgba(13, 110, 253, 0.15);
+  }
+
+  .instructions-alert {
+    background: linear-gradient(135deg, #1a3a4a, #234a5a);
+    color: #e9ecef;
+  }
+}
+
+/* ===================================================================
+   13. ANIMATIONS
+   =================================================================== */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.freed-slots-card,
+.chart-card {
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* ===================================================================
+   14. UTILITY CLASSES
+   =================================================================== */
+
+.text-primary-custom {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.badge-custom {
+  display: inline-block;
+  padding: 4px 10px;
+  background-color: var(--primary-color);
+  color: white;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.venue-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  background-color: var(--info-color);
+  color: white;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-left: var(--spacing-xs);
+}

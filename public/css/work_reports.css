@@ -1,0 +1,682 @@
+/* ===================================================================
+   WORK REPORTS STYLES
+   Tutor workload reports with filtering and detailed view
+   =================================================================== */
+
+/* ===================================================================
+   1. LAYOUT & CONTAINER
+   =================================================================== */
+
+.work-reports-container {
+  padding: var(--spacing-lg);
+  max-width: 100%;
+}
+
+/* ===================================================================
+   2. HEADER SECTION
+   =================================================================== */
+
+.work-reports-header {
+  text-align: center;
+  margin-bottom: var(--spacing-xl);
+  padding: var(--spacing-lg);
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-md);
+}
+
+.work-reports-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+}
+
+.work-reports-header h1 i {
+  font-size: 1.8rem;
+  animation: bounceIcon 2s ease-in-out infinite;
+}
+
+@keyframes bounceIcon {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+/* ===================================================================
+   3. FILTER SECTION
+   =================================================================== */
+
+.filter-section {
+  background-color: white;
+  padding: var(--spacing-xl);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-md);
+  margin-bottom: var(--spacing-xl);
+}
+
+.filter-section h2 {
+  color: var(--primary-color);
+  font-size: 1.5rem;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: var(--spacing-xl);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.filter-form .form-label {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-xs);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.filter-form .form-label i {
+  color: var(--primary-color);
+  font-size: 0.9rem;
+}
+
+.filter-form .form-control,
+.filter-form .form-select {
+  border: 2px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-sm) var(--spacing-md);
+  transition: all 0.3s ease;
+  font-size: 0.95rem;
+}
+
+.filter-form .form-control:focus,
+.filter-form .form-select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.2rem rgba(var(--primary-color-rgb), 0.25);
+  outline: none;
+}
+
+.filter-submit-btn {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: white;
+  padding: var(--spacing-md) var(--spacing-xxl);
+  font-size: 1.1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-md);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.filter-submit-btn i {
+  font-size: 1.2rem;
+}
+
+.filter-submit-btn:hover {
+  background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.filter-submit-btn:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ===================================================================
+   4. REPORT HEADER & EXPORT BUTTONS
+   =================================================================== */
+
+.report-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+}
+
+.report-title {
+  color: var(--text-primary);
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.report-title i {
+  color: var(--primary-color);
+}
+
+.export-buttons {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.export-btn {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: none;
+  border-radius: var(--border-radius);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  box-shadow: var(--shadow-sm);
+  font-size: 0.9rem;
+}
+
+.export-btn i {
+  font-size: 1rem;
+}
+
+.export-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.export-btn:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+.export-csv {
+  background-color: var(--success-color);
+  color: white;
+}
+
+.export-csv:hover {
+  background-color: #28a745;
+}
+
+.export-pdf {
+  background-color: var(--danger-color);
+  color: white;
+}
+
+.export-pdf:hover {
+  background-color: #c92a2a;
+}
+
+.export-print {
+  background-color: var(--info-color);
+  color: white;
+}
+
+.export-print:hover {
+  background-color: #117a8b;
+}
+
+/* ===================================================================
+   5. REPORT TABLE
+   =================================================================== */
+
+.report-table-wrapper {
+  background-color: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  margin-bottom: var(--spacing-xl);
+}
+
+.work-reports-table {
+  width: 100%;
+  margin-bottom: 0;
+  font-size: 0.9rem;
+  background-color: white;
+}
+
+.work-reports-table thead {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: white;
+}
+
+.work-reports-table thead th {
+  padding: var(--spacing-md);
+  font-weight: 600;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.85rem;
+  border: none;
+  white-space: nowrap;
+}
+
+.work-reports-table tbody td {
+  padding: var(--spacing-md);
+  vertical-align: top;
+  border-bottom: 1px solid var(--border-color);
+  line-height: 1.8;
+}
+
+.work-reports-table tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+.work-reports-table tbody tr:hover {
+  background-color: var(--hover-bg);
+}
+
+.work-reports-table tbody tr:nth-child(even) {
+  background-color: #f8f9fa;
+}
+
+/* Cell content styling */
+.tutor-info,
+.workload-info,
+.program-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.info-label {
+  font-weight: 600;
+  color: var(--text-primary);
+  display: inline-block;
+  min-width: 150px;
+}
+
+.info-value {
+  color: var(--text-secondary);
+}
+
+.total-hours {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  text-align: center;
+  padding: var(--spacing-md);
+  background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+  border-radius: var(--border-radius);
+  margin: var(--spacing-sm) 0;
+  box-shadow: var(--shadow-sm);
+}
+
+.total-hours-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  display: block;
+  margin-bottom: var(--spacing-xs);
+}
+
+/* ===================================================================
+   6. INFO BADGES & TAGS
+   =================================================================== */
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-active {
+  background-color: #d1e7dd;
+  color: #0f5132;
+}
+
+.status-inactive {
+  background-color: #f8d7da;
+  color: #842029;
+}
+
+.department-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  background-color: var(--secondary-color);
+  color: white;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-right: var(--spacing-xs);
+}
+
+.program-type-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  background-color: var(--info-color);
+  color: white;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* ===================================================================
+   7. EMPTY STATE
+   =================================================================== */
+
+.empty-state {
+  text-align: center;
+  padding: var(--spacing-xxl) var(--spacing-lg);
+  background-color: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.empty-state i {
+  font-size: 5rem;
+  color: var(--text-muted);
+  opacity: 0.3;
+  margin-bottom: var(--spacing-lg);
+  display: block;
+}
+
+.empty-state h2 {
+  color: var(--text-primary);
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: var(--spacing-md);
+}
+
+.empty-state p {
+  color: var(--text-muted);
+  font-size: 1rem;
+  margin: 0;
+}
+
+/* ===================================================================
+   8. NO FILTERS APPLIED STATE
+   =================================================================== */
+
+.no-filters-message {
+  text-align: center;
+  padding: var(--spacing-xl);
+  background: linear-gradient(135deg, #fff3cd, #ffe69c);
+  border-radius: var(--border-radius);
+  border-left: 4px solid var(--warning-color);
+  box-shadow: var(--shadow-sm);
+}
+
+.no-filters-message i {
+  font-size: 3rem;
+  color: var(--warning-color);
+  margin-bottom: var(--spacing-md);
+  display: block;
+}
+
+.no-filters-message h3 {
+  color: #856404;
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin-bottom: var(--spacing-sm);
+}
+
+.no-filters-message p {
+  color: #856404;
+  font-size: 1rem;
+  margin: 0;
+}
+
+/* ===================================================================
+   9. RESPONSIVE DESIGN
+   =================================================================== */
+
+/* Tablets and below (992px) */
+@media (max-width: 992px) {
+  .work-reports-container {
+    padding: var(--spacing-md);
+  }
+
+  .work-reports-header h1 {
+    font-size: 1.75rem;
+  }
+
+  .filter-section {
+    padding: var(--spacing-lg);
+  }
+
+  .filter-section h2 {
+    font-size: 1.3rem;
+  }
+
+  .report-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .export-buttons {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .work-reports-table {
+    font-size: 0.85rem;
+  }
+
+  .work-reports-table thead th,
+  .work-reports-table tbody td {
+    padding: var(--spacing-sm);
+  }
+
+  .total-hours {
+    font-size: 1.5rem;
+  }
+
+  .info-label {
+    min-width: 120px;
+  }
+}
+
+/* Mobile devices (768px) */
+@media (max-width: 768px) {
+  .work-reports-header h1 {
+    font-size: 1.5rem;
+    flex-direction: column;
+  }
+
+  .filter-section {
+    padding: var(--spacing-md);
+  }
+
+  .filter-section h2 {
+    font-size: 1.1rem;
+  }
+
+  .filter-submit-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .export-buttons {
+    flex-direction: column;
+  }
+
+  .export-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .report-title {
+    font-size: 1.5rem;
+  }
+
+  .work-reports-table {
+    font-size: 0.8rem;
+  }
+
+  .total-hours {
+    font-size: 1.3rem;
+  }
+
+  /* Stack table on mobile */
+  .work-reports-table thead {
+    display: none;
+  }
+
+  .work-reports-table tbody tr {
+    display: block;
+    margin-bottom: var(--spacing-lg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .work-reports-table tbody td {
+    display: block;
+    text-align: left;
+    padding: var(--spacing-md);
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .work-reports-table tbody td:last-child {
+    border-bottom: none;
+  }
+
+  .work-reports-table tbody td::before {
+    content: attr(data-label);
+    font-weight: 700;
+    color: var(--primary-color);
+    display: block;
+    margin-bottom: var(--spacing-xs);
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+  }
+
+  .info-label {
+    min-width: auto;
+  }
+}
+
+/* Small mobile devices (480px) */
+@media (max-width: 480px) {
+  .work-reports-container {
+    padding: var(--spacing-sm);
+  }
+
+  .work-reports-header {
+    padding: var(--spacing-md);
+  }
+
+  .work-reports-header h1 {
+    font-size: 1.3rem;
+  }
+
+  .filter-section {
+    padding: var(--spacing-sm);
+  }
+
+  .filter-section h2 {
+    font-size: 1rem;
+  }
+
+  .work-reports-table {
+    font-size: 0.75rem;
+  }
+
+  .total-hours {
+    font-size: 1.1rem;
+  }
+
+  .empty-state i {
+    font-size: 3rem;
+  }
+
+  .empty-state h2 {
+    font-size: 1.2rem;
+  }
+}
+
+/* ===================================================================
+   10. PRINT STYLES
+   =================================================================== */
+
+@media print {
+  .filter-section,
+  .export-buttons,
+  .work-reports-header {
+    display: none !important;
+  }
+
+  .work-reports-container {
+    padding: 0;
+  }
+
+  .report-header {
+    margin-bottom: var(--spacing-md);
+  }
+
+  .work-reports-table {
+    font-size: 0.75rem;
+  }
+
+  .work-reports-table thead {
+    background: #333 !important;
+    color: white !important;
+  }
+
+  .work-reports-table tbody tr {
+    page-break-inside: avoid;
+  }
+
+  .report-table-wrapper {
+    box-shadow: none;
+    page-break-inside: avoid;
+  }
+
+  .total-hours {
+    background: #f0f0f0 !important;
+    box-shadow: none;
+  }
+}
+
+/* ===================================================================
+   11. ANIMATIONS
+   =================================================================== */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.report-table-wrapper {
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* ===================================================================
+   12. UTILITY CLASSES
+   =================================================================== */
+
+.highlight-value {
+  background-color: #fff3cd;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.text-primary-custom {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.text-secondary-custom {
+  color: var(--text-secondary);
+}
+
+.text-muted-custom {
+  color: var(--text-muted);
+  font-style: italic;
+}

@@ -1,0 +1,61 @@
+/* Programs Page Styles */
+
+.table-container {
+  overflow-x: auto;
+  margin-top: 20px;
+}
+
+th {
+  text-align: center;
+  background-color: #007bff;
+  color: #fff;
+  font-weight: 600;
+}
+
+td {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.btn-download {
+  margin: 5px;
+}
+
+/* Form Styles */
+.form-control,
+.select2 {
+  border-radius: 5px;
+  border: 1px solid #ced4da;
+}
+
+.form-control:focus,
+.select2:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Modal Styles */
+.modal-header {
+  background-color: #007bff;
+  color: white;
+}
+
+.modal-title {
+  font-weight: 600;
+}
+
+.text-info {
+  color: #007bff !important;
+}
+
+/* Table Responsive */
+@media (max-width: 768px) {
+  .table-container {
+    font-size: 0.85rem;
+  }
+
+  .btn-download {
+    width: 100%;
+    margin: 5px 0;
+  }
+}

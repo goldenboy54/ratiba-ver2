@@ -1,22 +1,31 @@
 <%- include('partials/nav') %>
 
-<!-- Collision Report Page -->
-<div class="container my-4">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h1 class="h3">Collision Report</h1>
-    <div>
-      <button id="exportCsvBtn" class="btn btn-outline-primary me-2">Export CSV</button>
-      <button id="exportPdfBtn" class="btn btn-outline-secondary me-2">Export PDF</button>
-      <button id="printBtn" class="btn btn-outline-success">Print</button>
+<div class="container collision-report-container">
+
+  <!-- Header -->
+  <div class="collision-report-header">
+    <h1>Collision Report</h1>
+    <div class="export-buttons-collision">
+      <button id="exportCsvBtn" class="btn-export-collision csv">
+        <i class="fas fa-file-csv"></i> Export CSV
+      </button>
+      <button id="exportPdfBtn" class="btn-export-collision pdf">
+        <i class="fas fa-file-pdf"></i> Export PDF
+      </button>
+      <button id="printBtn" class="btn-export-collision print">
+        <i class="fas fa-print"></i> Print
+      </button>
     </div>
   </div>
 
-  <div class="card mb-3 p-3">
-    <div class="row g-2">
+  <!-- Filters -->
+  <div class="filter-card-collision card">
+    <div class="row g-3">
+
       <div class="col-md-3">
-        <label class="form-label">Filter by Day</label>
-        <select id="filterDay" class="form-select">
-          <option value="">All</option>
+        <label for="filterDay" class="form-label">Filter by Day</label>
+        <select id="filterDay" class="form-select select2">
+          <option value="">All Days</option>
           <option>MONDAY</option>
           <option>TUESDAY</option>
           <option>WEDNESDAY</option>
@@ -26,395 +35,85 @@
       </div>
 
       <div class="col-md-3">
-        <label class="form-label">Filter by Venue</label>
-        <select id="filterVenue" class="form-select">
-          <option value="">All</option>
+        <label for="filterVenue" class="form-label">Filter by Venue</label>
+        <select id="filterVenue" class="form-select select2">
+          <option value="">All Venues</option>
         </select>
       </div>
 
       <div class="col-md-3">
-        <label class="form-label">Filter by Program Type</label>
-        <select id="filterProgType" class="form-select">
-          <option value="">All</option>
-          <option value="full-time">full-time</option>
-          <option value="evening">evening</option>
-          <option value="veta">veta</option>
+        <label for="filterProgType" class="form-label">Filter by Program Type</label>
+        <select id="filterProgType" class="form-select select2">
+          <option value="">All Types</option>
+          <option value="full-time">Full-Time</option>
+          <option value="evening">Evening</option>
+          <option value="veta">VETA</option>
         </select>
       </div>
 
       <div class="col-md-3">
-        <label class="form-label">Search (tutor / subject / program code)</label>
-        <input id="globalSearch" class="form-control" placeholder="search tutor, subject_code, program_code..." />
+        <label for="globalSearch" class="form-label">Search</label>
+        <input 
+          id="globalSearch" 
+          class="form-control" 
+          type="text"
+          placeholder="Tutor, subject, program..."
+        />
       </div>
+
     </div>
   </div>
 
-  <!-- summary -->
-  <div class="row mb-3">
+  <!-- Summary -->
+  <div class="row summary-cards-collision">
     <div class="col-md-4">
-      <div class="card p-3">
-        <strong>Scanned slots:</strong>
-        <div id="summaryScanned" class="fs-4 text-primary">0</div>
+      <div class="summary-card">
+        <strong>Scanned Slots:</strong>
+        <div id="summaryScanned" class="summary-value">0</div>
       </div>
     </div>
     <div class="col-md-8">
-      <div class="card p-3">
-        <strong>Collisions summary:</strong>
-        <div class="d-flex gap-3 mt-2">
-          <span class="badge bg-danger">Program: <span id="summaryProgram">0</span></span>
-          <span class="badge bg-warning text-dark">Tutor: <span id="summaryTutor">0</span></span>
-          <span class="badge bg-info text-dark">Venue: <span id="summaryVenue">0</span></span>
+      <div class="summary-card">
+        <strong>Collisions Summary:</strong>
+        <div class="summary-badges">
+          <span class="badge program">
+            Program: <span id="summaryProgram">0</span>
+          </span>
+          <span class="badge tutor">
+            Tutor: <span id="summaryTutor">0</span>
+          </span>
+          <span class="badge venue">
+            Venue: <span id="summaryVenue">0</span>
+          </span>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Collisions container -->
-  <div id="reportContainer">
-    <!-- sections will be injected here by client JS -->
+  <!-- Report Container -->
+  <div id="reportContainer" class="report-container-collision">
+    <!-- Collision cards will be injected here by JavaScript -->
   </div>
 
-  <hr />
-  <div class="text-muted small">
-    Suggestions: Use filters to narrow collisions. Click "Analyze" on a collision to view detailed slot info and suggested actions (keep earliest extracted slot; move the later one; check tutor availability; contact program coordinator).
+  <!-- Footer Suggestions -->
+  <div class="suggestions-footer">
+    <p>
+      <strong>💡 Suggestions:</strong> Use filters to narrow collisions. 
+      Click "Analyze" on a collision to view detailed slot info and suggested actions 
+      (keep earliest extracted slot; move the later one; check tutor availability; 
+      contact program coordinator).
+    </p>
   </div>
+
+  <!-- Hidden report data for JavaScript -->
+  <script type="application/json" id="reportData">
+    <%- report %>
+  </script>
+
 </div>
 
-<!-- Client-side scripts -->
-<!-- html2pdf (for client-side PDF creation) -->
+<!-- html2pdf library for PDF export -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
-<script>
-/*
-  REPORT_DATA is server-rendered (a JSON string). Recreate object here.
-  The controller rendered: res.render('collisionReport', { report: JSON.stringify(report) })
-*/
-const REPORT = <%- report %>;
-
-// Utility functions
-const byId = id => document.getElementById(id);
-const timeToMinutes = t => { if(!t) return 0; const [hh,mm] = t.split(':').map(Number); return hh*60 + mm; };
-const overlap = (aStart,aEnd,bStart,bEnd) => aStart < bEnd && bStart < aEnd;
-
-// Build Venue options from rawSlots
-const buildVenueOptions = (slots) => {
-  const set = new Set();
-  slots.forEach(s => { if (s.venue_name) set.add(s.venue_name); });
-  const arr = Array.from(set).sort();
-  const sel = byId('filterVenue');
-  arr.forEach(v => {
-    const opt = document.createElement('option'); opt.value = v; opt.textContent = v; sel.appendChild(opt);
-  });
-};
-
-// Render functions for each collision type
-function buildCollisionCard(type, idx, item) {
-  // type = 'program'|'tutor'|'venue'
-  const card = document.createElement('div');
-  card.className = 'card mb-2';
-  const body = document.createElement('div');
-  body.className = 'card-body';
-
-  let titleText = '';
-  if (type === 'program') {
-    titleText = `Program collision #${idx+1} — ${item.day} — programs: ${item.matchedPrograms.join(', ') || 'N/A'}`;
-  } else if (type === 'tutor') {
-    titleText = `Tutor collision #${idx+1} — ${item.day} — tutor: ${item.tutor}`;
-  } else {
-    titleText = `Venue collision #${idx+1} — ${item.day} — venue: ${item.venue_name}`;
-  }
-
-  const title = document.createElement('h5'); title.textContent = titleText;
-  body.appendChild(title);
-
-  // summary list
-  const ul = document.createElement('ul'); ul.className = 'mb-2';
-  for (const s of item.slots) {
-    const li = document.createElement('li');
-    li.innerHTML = `<code>${s.label || s.id}</code> — Venue: ${s.venue || s.venue_name || ''} — ProgType: ${s.program_type || ''}`;
-    ul.appendChild(li);
-  }
-  body.appendChild(ul);
-
-  // analysis block (collapsible)
-  const analysisId = `analysis-${type}-${idx}`;
-  const analysisToggle = document.createElement('button');
-  analysisToggle.className = 'btn btn-sm btn-outline-primary me-2';
-  analysisToggle.textContent = 'Analyze';
-  analysisToggle.setAttribute('data-bs-toggle', 'collapse');
-  analysisToggle.setAttribute('data-bs-target', `#${analysisId}`);
-
-  const actions = document.createElement('div');
-  actions.className = 'd-inline';
-
-  // suggested actions dropdown
-  const suggestions = `
-    <div class="collapse mt-2" id="${analysisId}">
-      <div class="card card-body">
-        <strong>Detailed analysis</strong>
-        <ul>
-          ${item.slots.map(s => `<li><code>${s.label}</code> — created_at: ${s.created_at || 'N/A'}</li>`).join('')}
-        </ul>
-        <p><strong>Suggested Actions</strong></p>
-        <ol>
-          <li>Keep the earliest extracted slot (lowest created_at or lowest id).</li>
-          <li>Consider moving the later slot to an available slot (use collision monitor tool) — search same venue next days first.</li>
-          <li>If tutor conflict: contact tutor or reassign tutor for one slot.</li>
-          <li>If program collision: coordinate with program coordinators to avoid same program being in multiple venues at same time.</li>
-        </ol>
-      </div>
-    </div>
-  `;
-
-  const analyzeWrapper = document.createElement('div');
-  analyzeWrapper.innerHTML = suggestions;
-
-  body.appendChild(analysisToggle);
-  body.appendChild(analyzeWrapper);
-
-  // small metadata row
-  const meta = document.createElement('div');
-  meta.className = 'mt-2 text-muted small';
-  meta.innerHTML = `Collision IDs: ${item.ids.join(', ')} `;
-  body.appendChild(meta);
-
-  card.appendChild(body);
-  return card;
-}
-
-// Render full report according to filters
-function renderReport(filteredReport) {
-  const container = byId('reportContainer');
-  container.innerHTML = '';
-
-  // Program collisions section
-  const pcSection = document.createElement('section');
-  pcSection.innerHTML = `<h3>1) Program collisions (${filteredReport.details.programCollisions.length})</h3>`;
-  filteredReport.details.programCollisions.forEach((pc, idx) => {
-    const card = buildCollisionCard('program', idx, pc);
-    pcSection.appendChild(card);
-  });
-  container.appendChild(pcSection);
-
-  // Tutor
-  const tcSection = document.createElement('section');
-  tcSection.innerHTML = `<h3>2) Tutor collisions (${filteredReport.details.tutorCollisions.length})</h3>`;
-  filteredReport.details.tutorCollisions.forEach((tc, idx) => {
-    const card = buildCollisionCard('tutor', idx, tc);
-    tcSection.appendChild(card);
-  });
-  container.appendChild(tcSection);
-
-  // Venue
-  const vcSection = document.createElement('section');
-  vcSection.innerHTML = `<h3>3) Venue collisions (${filteredReport.details.venueCollisions.length})</h3>`;
-  filteredReport.details.venueCollisions.forEach((vc, idx) => {
-    const card = buildCollisionCard('venue', idx, vc);
-    vcSection.appendChild(card);
-  });
-  container.appendChild(vcSection);
-
-  // Fill summary counters
-  byId('summaryScanned').textContent = filteredReport.totals.scanned;
-  byId('summaryProgram').textContent = filteredReport.totals.programCollisions;
-  byId('summaryTutor').textContent = filteredReport.totals.tutorCollisions;
-  byId('summaryVenue').textContent = filteredReport.totals.venueCollisions;
-}
-
-// Utility to deep-filter the REPORT object according to controls
-function filterReport(report, filters) {
-  // filter rawSlots to help dynamic venue list & searching
-  const raw = report.rawSlots;
-
-  // build filtered lists for collisions by applying filters to each collision item
-  function filterList(list) {
-    return list.filter(item => {
-      // check day filter
-      if (filters.day && item.day !== filters.day) return false;
-
-      // check program_type filter (all slots in collision must include program_type?)
-      if (filters.program_type) {
-        const anyMatch = item.slots.some(s => (s.program_type || '').toLowerCase() === filters.program_type.toLowerCase());
-        if (!anyMatch) return false;
-      }
-
-      // venue filter: if provided, at least one of the collision slots must have that venue
-      if (filters.venue) {
-        const anyVenue = item.slots.some(s => (s.venue || s.venue_name || '').toLowerCase() === filters.venue.toLowerCase());
-        if (!anyVenue) return false;
-      }
-
-      // search filter
-      if (filters.search) {
-        const q = filters.search.toLowerCase();
-        const anyText = item.slots.some(s => (s.label || '').toLowerCase().includes(q) ||
-                                             (s.venue || s.venue_name || '').toLowerCase().includes(q));
-        if (!anyText) return false;
-      }
-
-      return true;
-    });
-  }
-
-  const out = {
-    generatedAt: report.generatedAt,
-    totals: { ...report.totals },
-    details: {
-      programCollisions: filterList(report.details.programCollisions),
-      tutorCollisions: filterList(report.details.tutorCollisions),
-      venueCollisions: filterList(report.details.venueCollisions),
-    },
-    rawSlots: report.rawSlots
-  };
-
-  // update totals to reflect filtered counts (for user clarity)
-  out.totals.programCollisions = out.details.programCollisions.length;
-  out.totals.tutorCollisions = out.details.tutorCollisions.length;
-  out.totals.venueCollisions = out.details.venueCollisions.length;
-
-  // scanned remains the same (could optionally show filtered scanned)
-  return out;
-}
-
-// CSV export: flatten collisions into table rows and download as CSV
-function exportCSV(reportObj) {
-  const rows = [];
-  // header
-  rows.push(["collision_type","collision_id","day","matched_programs_or_tutor_or_venue","slot_id","slot_label","venue","program_type"].join(","));
-
-  const pushRow = (type, id, meta, slot) => {
-    const row = [
-      `"${type}"`,
-      `"${id}"`,
-      `"${meta}"`,
-      `"${(slot.id || '')}"`,
-      `"${(slot.label || '').replace(/"/g,'""')}"`,
-      `"${(slot.venue || slot.venue_name || '')}"`,
-      `"${(slot.program_type || '')}"`
-    ];
-    rows.push(row.join(","));
-  };
-
-  // program collisions
-  reportObj.details.programCollisions.forEach((pc, i) => {
-    pc.slots.forEach(slot => pushRow("program", i+1, pc.matchedPrograms.join("|"), slot));
-  });
-  reportObj.details.tutorCollisions.forEach((tc, i) => {
-    tc.slots.forEach(slot => pushRow("tutor", i+1, tc.tutor, slot));
-  });
-  reportObj.details.venueCollisions.forEach((vc, i) => {
-    vc.slots.forEach(slot => pushRow("venue", i+1, vc.venue_name, slot));
-  });
-
-  const csv = rows.join("\n");
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  const ts = new Date().toISOString().replace(/[:.]/g,'-');
-  a.download = `collision-report-${ts}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
-
-// PDF export using html2pdf (client-side)
-function exportPDF(domNode) {
-  const opt = {
-    margin:       0.4,
-    filename:     `collision-report-${new Date().toISOString().replace(/[:.]/g,'-')}.pdf`,
-    image:        { type: 'jpeg', quality: 0.98 },
-    html2canvas:  { scale: 2 },
-    jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
-  };
-  html2pdf().set(opt).from(domNode).save();
-}
-
-/* INITIALIZE UI */
-document.addEventListener('DOMContentLoaded', () => {
-  const report = REPORT; // from server
-  buildVenueOptions(report.rawSlots);
-
-  // initial render
-  const initialFiltered = filterReport(report, { day: '', venue: '', program_type: '', search: '' });
-  renderReport(initialFiltered);
-
-  // attach handlers
-  byId('filterDay').addEventListener('change', () => {
-    const filters = {
-      day: byId('filterDay').value,
-      venue: byId('filterVenue').value,
-      program_type: byId('filterProgType').value,
-      search: byId('globalSearch').value.trim()
-    };
-    const filtered = filterReport(report, filters);
-    renderReport(filtered);
-  });
-
-  byId('filterVenue').addEventListener('change', () => {
-    const filters = {
-      day: byId('filterDay').value,
-      venue: byId('filterVenue').value,
-      program_type: byId('filterProgType').value,
-      search: byId('globalSearch').value.trim()
-    };
-    const filtered = filterReport(report, filters);
-    renderReport(filtered);
-  });
-
-  byId('filterProgType').addEventListener('change', () => {
-    const filters = {
-      day: byId('filterDay').value,
-      venue: byId('filterVenue').value,
-      program_type: byId('filterProgType').value,
-      search: byId('globalSearch').value.trim()
-    };
-    const filtered = filterReport(report, filters);
-    renderReport(filtered);
-  });
-
-  byId('globalSearch').addEventListener('input', () => {
-    const filters = {
-      day: byId('filterDay').value,
-      venue: byId('filterVenue').value,
-      program_type: byId('filterProgType').value,
-      search: byId('globalSearch').value.trim()
-    };
-    const filtered = filterReport(report, filters);
-    renderReport(filtered);
-  });
-
-  byId('exportCsvBtn').addEventListener('click', () => {
-    const filters = {
-      day: byId('filterDay').value,
-      venue: byId('filterVenue').value,
-      program_type: byId('filterProgType').value,
-      search: byId('globalSearch').value.trim()
-    };
-    const filtered = filterReport(report, filters);
-    exportCSV(filtered);
-  });
-
-  byId('exportPdfBtn').addEventListener('click', () => {
-    // convert #reportContainer to PDF
-    exportPDF(document.getElementById('reportContainer'));
-  });
-
-  byId('printBtn').addEventListener('click', () => {
-    // open print dialog for reportContainer
-    const printWindow = window.open('', '_blank', 'width=900,height=700');
-    const styles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style')).map(n => n.outerHTML).join('\n');
-    printWindow.document.write(`
-      <html><head><title>Collision Report</title>${styles}</head><body>${document.getElementById('reportContainer').outerHTML}</body></html>
-    `);
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
-    // optionally close after printing
-    // printWindow.close();
-  });
-});
-</script>
-
-<%-// include('partials/footer') %>
+</main>
+<%- include('partials/footer') %>

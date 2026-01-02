@@ -1,129 +1,110 @@
 <%- include('partials/nav') %>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Venue Manager</title>
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
-  <style>
-    body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    .page-header { background: linear-gradient(135deg, #343a40, #495057); color: white; padding: 2rem 0; margin-bottom: 2rem; border-radius: 0 0 15px 15px; }
-    .card { box-shadow: 0 4px 12px rgba(0,0,0,0.1); border: none; border-radius: 12px; margin-bottom: 1.5rem; }
-    .filter-card { background: white; }
-    .venue-card { transition: transform 0.2s; }
-    .venue-card:hover { transform: translateY(-5px); }
-    .slot-matrix th { background-color: #495057; color: white; font-weight: 600; }
-    .slot-time { font-weight: bold; color: #495057; }
-    .status-unused { background-color: #d4edda; color: #155724; }
-    .status-booked { background-color: #f8d7da; color: #721c24; }
-    .status-maintenance { background-color: #fff3cd; color: #856404; }
-    .badge { font-size: 0.8em; padding: 0.4em 0.8em; }
-    .table-sm td, .table-sm th { padding: 0.5rem; }
-    .action-btn { font-size: 0.9rem; }
-    @media (max-width: 768px) {
-      .form-row > div { margin-bottom: 1rem; }
-      .page-header h1 { font-size: 1.8rem; }
-    }
-  </style>
-</head>
-<body>
 
-<div class="page-header text-center">
+<div class="venue-manager-header text-center py-4 mb-4">
   <div class="container">
-    <h1><i class="fas fa-university mr-3"></i>Venue Manager</h1>
+    <h1 class="mb-2"><i class="fas fa-university me-3"></i>Venue Manager</h1>
     <p class="lead mb-0">View, Filter, and Manage All Venue Slots</p>
   </div>
 </div>
 
-<div class="container">
-  <!-- Add Venue Button -->
-  <div class="text-right mb-4">
+<div class="container-fluid px-4">
+  
+  <div class="venue-manager-actions mb-4">
     <a href="/venues/form" class="btn btn-success btn-lg shadow">
       <i class="fas fa-plus-circle"></i> Add New Venue
     </a>
   </div>
 
   <!-- Filter Section -->
-  <div class="card filter-card">
-    <div class="card-header bg-primary text-white">
-      <h5 class="mb-0"><i class="fas fa-filter"></i> Filter Venues</h5>
-    </div>
-    <div class="card-body">
-      <form method="GET" action="/venueManager" id="filterForm">
-        <div class="form-row">
-          <div class="col-lg-3 col-md-6">
-            <label>Venue Name</label>
-            <select name="venue_name" class="form-control select2">
-              <option value="">All Venues</option>
-              <% Vname.forEach(v => { %>
-                <option value="<%= v.venue_name %>" <%= venue_name === v.venue_name ? 'selected' : '' %>><%= v.venue_name %></option>
-              <% }) %>
-            </select>
-          </div>
-          <div class="col-lg-3 col-md-6">
-            <label>Capacity</label>
-            <select name="capacity" class="form-control select2">
-              <option value="">Any Capacity</option>
-              <% Vcap.forEach(v => { %>
-                <option value="<%= v.capacity %>" <%= capacity == v.capacity ? 'selected' : '' %>><%= v.capacity %></option>
-              <% }) %>
-            </select>
-          </div>
-          <div class="col-lg-3 col-md-6">
-            <label>Department</label>
-            <select name="department" class="form-control select2">
-              <option value="">All Departments</option>
-              <% Vdep.forEach(v => { %>
-                <option value="<%= v.department %>" <%= department === v.department ? 'selected' : '' %>><%= v.department %></option>
-              <% }) %>
-            </select>
-          </div>
-          <div class="col-lg-3 col-md-6">
-            <label>Status</label>
-            <select name="status" class="form-control select2">
-              <option value="">All Status</option>
-              <% Vstat.forEach(v => { %>
-                <option value="<%= v.status %>" <%= status === v.status ? 'selected' : '' %>><%= v.status %></option>
-              <% }) %>
-            </select>
-          </div>
-          <div class="col-lg-3 col-md-6 mt-3">
-            <label>Day</label>
-            <select name="day" class="form-control select2">
-              <option value="">All Days</option>
-              <% days.forEach(d => { %>
-                <option value="<%= d %>" <%= day === d ? 'selected' : '' %>><%= d %></option>
-              <% }) %>
-            </select>
-          </div>
-          <div class="col-lg-3 col-md-6 mt-3">
-            <label>Slot</label>
-            <select name="slot" class="form-control select2">
-              <option value="">All Slots</option>
-              <% slots.forEach(s => { %>
-                <option value="<%= s %>" <%= slot == s ? 'selected' : '' %>>Slot <%= s %></option>
-              <% }) %>
-            </select>
-          </div>
-          <div class="col-lg-3 col-md-6 mt-3">
-            <label>Slot Status</label>
-            <select name="slot_status" class="form-control select2">
-              <option value="">All Statuses</option>
-              <% slotStatuses.forEach(st => { %>
-                <option value="<%= st %>" <%= slot_status === st ? 'selected' : '' %>><%= st.charAt(0).toUpperCase() + st.slice(1) %></option>
-              <% }) %>
-            </select>
-          </div>
+  <div class="filter-section">
+    <h2>Filter Below to Customize Views</h2>
+    
+    <form method="GET" action="/venueManager" id="filterForm">
+      <div class="row">
+        <div class="col-md-4 mb-3">
+          <label for="venue_name" class="form-label">Venue Name:</label>
+          <select name="venue_name" id="venue_name" class="form-select select2">
+            <option value="">Select venue</option>
+            <% Vname.forEach(v => { %>
+              <option value="<%= v.venue_name %>" <%= venue_name === v.venue_name ? 'selected' : '' %>><%= v.venue_name %></option>
+            <% }) %>
+          </select>
         </div>
-        <div class="text-center mt-4">
-          <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-search"></i> Apply Filters</button>
-          <a href="/venueManager" class="btn btn-secondary btn-lg ml-3"><i class="fas fa-sync"></i> Clear</a>
+        
+        <div class="col-md-4 mb-3">
+          <label for="capacity" class="form-label">Capacity:</label>
+          <select name="capacity" id="capacity" class="form-select select2">
+            <option value="">Select capacity</option>
+            <% Vcap.forEach(v => { %>
+              <option value="<%= v.capacity %>" <%= capacity == v.capacity ? 'selected' : '' %>><%= v.capacity %></option>
+            <% }) %>
+          </select>
         </div>
-      </form>
-    </div>
+        
+        <div class="col-md-4 mb-3">
+          <label for="department" class="form-label">Department:</label>
+          <select name="department" id="department" class="form-select select2">
+            <option value="">Select department</option>
+            <% Vdep.forEach(v => { %>
+              <option value="<%= v.department %>" <%= department === v.department ? 'selected' : '' %>><%= v.department %></option>
+            <% }) %>
+          </select>
+        </div>
+      </div>
+      
+      <div class="row">
+        <div class="col-md-4 mb-3">
+          <label for="status" class="form-label">Status:</label>
+          <select name="status" id="status" class="form-select select2">
+            <option value="">Select status</option>
+            <% Vstat.forEach(v => { %>
+              <option value="<%= v.status %>" <%= status === v.status ? 'selected' : '' %>><%= v.status %></option>
+            <% }) %>
+          </select>
+        </div>
+        
+        <div class="col-md-4 mb-3">
+          <label for="day" class="form-label">Day:</label>
+          <select name="day" id="day" class="form-select select2">
+            <option value="">Select day</option>
+            <% days.forEach(d => { %>
+              <option value="<%= d %>" <%= day === d ? 'selected' : '' %>><%= d %></option>
+            <% }) %>
+          </select>
+        </div>
+        
+        <div class="col-md-4 mb-3">
+          <label for="slot" class="form-label">Slot:</label>
+          <select name="slot" id="slot" class="form-select select2">
+            <option value="">Select slot</option>
+            <% slots.forEach(s => { %>
+              <option value="<%= s %>" <%= slot == s ? 'selected' : '' %>>Slot <%= s %></option>
+            <% }) %>
+          </select>
+        </div>
+      </div>
+      
+      <div class="row">
+        <div class="col-md-4 mb-3">
+          <label for="slot_status" class="form-label">Slot Status:</label>
+          <select name="slot_status" id="slot_status" class="form-select select2">
+            <option value="">Select slot status</option>
+            <% slotStatuses.forEach(st => { %>
+              <option value="<%= st %>" <%= slot_status === st ? 'selected' : '' %>><%= st.charAt(0).toUpperCase() + st.slice(1) %></option>
+            <% }) %>
+          </select>
+        </div>
+      </div>
+      
+      <div class="text-center mt-3">
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-filter"></i> Filter
+        </button>
+        <a href="/venueManager" class="btn btn-secondary ms-2">
+          <i class="fas fa-sync"></i> Clear
+        </a>
+      </div>
+    </form>
   </div>
 
   <!-- Venues List -->
@@ -309,6 +290,5 @@
   });
 </script>
 
+</main>
 <%- include('partials/footer') %>
-</body>
-</html>

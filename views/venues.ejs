@@ -1,35 +1,20 @@
 <%- include('partials/nav') %>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Venues Management</title>
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-  <!-- Include Select2 CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-  <style>
-    .table-container { overflow-x: auto; margin-top: 20px; }
-    th, td { text-align: center; vertical-align: middle; }
-    th { background-color: #343a40; color: white; }
-    .btn-download { margin: 5px; }
-  </style>
-</head>
-<body>
-  <div class="container mt-5">
-    <h1 class="text-center text-primary mb-4">Venues Management</h1>
+<div class="container-fluid py-4">
+  <div class="venues-header">
+    <h1>Venues Management</h1>
+    <a href="/venues/form" class="btn btn-primary mb-3">
+      <i class="fas fa-plus"></i> Add Venue
+    </a>
+  </div>
 
-    <!-- Add Venue Button --> 
-    <a href="/venues/form" class="btn btn-primary mb-3"><i class="fas fa-plus"></i> Add Venue</a>
-
-    <% if (locals.Viewvenues) { %>
-    <!-- Search Form -->
-    <form method="get" action="/venues" class="mb-4" id="filterForm">
-      <div class="form-row">
-        <div class="form-group col-md-4">
-          <label for="venue_name">venue_name:</label>
-          <select id="venue_name" name="venue_name" class="form-control select2 filterInput">
+  <% if (locals.Viewvenues) { %>
+    <!-- Filter Form -->
+    <form method="get" action="/venues" class="filter-form" id="filterForm">
+      <div class="row">
+        <div class="col-md-4 mb-3">
+          <label for="venue_name" class="form-label">Venue Name:</label>
+          <select id="venue_name" name="venue_name" class="form-select select2 filterInput">
             <option value="">venue_name</option>
             <% vname.forEach(venue_name => { %>
               <option value="<%= venue_name.venue_name %>" <%= venue_name === venue_name.venue_name ? 'selected' : '' %>><%= venue_name.venue_name %></option>
@@ -37,9 +22,9 @@
           </select>
         </div>
 
-        <div class="form-group col-md-4">
-          <label for="capacity">capacity:</label>
-          <select id="capacity" name="capacity" class="form-control select2 filterInput">
+        <div class="col-md-4 mb-3">
+          <label for="capacity" class="form-label">Capacity:</label>
+          <select id="capacity" name="capacity" class="form-select select2 filterInput">
             <option value="">capacity</option>
             <% vcapacity.forEach(capacity => { %>
               <option value="<%= capacity.capacity %>" <%= capacity === capacity.capacity ? 'selected' : '' %>><%= capacity.capacity %></option>
@@ -47,9 +32,9 @@
           </select>
         </div>
 
-        <div class="form-group col-md-4">
-          <label for="location">location:</label>
-          <select id="location" name="location" class="form-control select2 filterInput">
+        <div class="col-md-4 mb-3">
+          <label for="location" class="form-label">Location:</label>
+          <select id="location" name="location" class="form-select select2 filterInput">
             <option value="">location</option>
             <% vlocation.forEach(location => { %>
               <option value="<%= location.location %>" <%= location === location.location ? 'selected' : '' %>><%= location.location %></option>
@@ -57,9 +42,9 @@
           </select>
         </div>
 
-        <div class="form-group col-md-4">
-          <label for="type">type:</label>
-          <select id="type" name="type" class="form-control select2 filterInput">
+        <div class="col-md-4 mb-3">
+          <label for="type" class="form-label">Type:</label>
+          <select id="type" name="type" class="form-select select2 filterInput">
             <option value="">type</option>
             <% vtype.forEach(type => { %>
               <option value="<%= type.type %>" <%= type === type.type ? 'selected' : '' %>><%= type.type %></option>
@@ -67,9 +52,9 @@
           </select>
         </div>
 
-        <div class="form-group col-md-4">
-          <label for="quality">quality:</label>
-          <select id="quality" name="quality" class="form-control select2 filterInput">
+        <div class="col-md-4 mb-3">
+          <label for="quality" class="form-label">Quality:</label>
+          <select id="quality" name="quality" class="form-select select2 filterInput">
             <option value="">quality</option>
             <% vquality.forEach(quality => { %>
               <option value="<%= quality.quality %>" <%= quality === quality.quality ? 'selected' : '' %>><%= quality.quality %></option>
@@ -77,9 +62,9 @@
           </select>
         </div>
         
-        <div class="form-group col-md-4">
-          <label for="department">department:</label>
-          <select id="department1" name="department" class="form-control select2 filterInput">
+        <div class="col-md-4 mb-3">
+          <label for="department" class="form-label">Department:</label>
+          <select id="department1" name="department" class="form-select select2 filterInput">
             <option value="">department</option>
             <% vdepartment.forEach(department => { %>
               <option value="<%= department.department %>" <%= department === department.department ? 'selected' : '' %>> <%= department.department %> </option>
@@ -87,9 +72,9 @@
           </select>
         </div>
 
-        <div class="form-group col-md-4">
-          <label for="status">status:</label>
-          <select id="status" name="status" class="form-control select2 filterInput">
+        <div class="col-md-4 mb-3">
+          <label for="status" class="form-label">Status:</label>
+          <select id="status" name="status" class="form-select select2 filterInput">
             <option value="">status</option>
             <% vstatus.forEach(status => { %>
               <option value="<%= status.status %>" <%= status === status.status ? 'selected' : '' %>><%= status.status %></option>
@@ -100,17 +85,23 @@
     </form>
 
     <!-- Buttons for CSV, PDF, Print -->
-    <div class="text-center mb-3">
-      <button id="downloadCSV" class="btn btn-info btn-download">Download CSV (Front-end)</button>
-      <button id="downloadPDF" class="btn btn-warning btn-download">Download PDF (Front-end)</button>
-      <button id="printTable" class="btn btn-success btn-download">Print Table (Front-end)</button>
+    <div class="download-section">
+      <button id="downloadCSV" class="btn btn-info btn-download">
+        <i class="fas fa-file-csv"></i> Download CSV
+      </button>
+      <button id="downloadPDF" class="btn btn-warning btn-download">
+        <i class="fas fa-file-pdf"></i> Download PDF
+      </button>
+      <button id="printTable" class="btn btn-success btn-download">
+        <i class="fas fa-print"></i> Print Table
+      </button>
     </div>
 
     <!-- Display Venues -->
     <% if (Viewvenues.length > 0) { %>
       <div class="table-container" id="venuesTableContainer">
-        <table class="table table-bordered table-striped" id="venuesTable">
-          <thead class="thead-dark bg-dark text-light">
+        <table class="table table-bordered table-hover" id="venuesTable">
+          <thead>
             <tr>
               <th>Name</th>
               <th>Capacity</th>
@@ -146,58 +137,60 @@
                 <td><%= venue.frnos %></td>
                 <td><%= venue.satnos %></td>
                 <td><%= venue.sunnos %></td>
-                <td>
-                  <button type="button" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#updateModal<%= venue.venue_id %>">Edit</button>
-                  <a href="/venues/delete/<%= venue.venue_id %>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?');">Delete</a>
+                <td class="action-buttons">
+                  <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#updateModal<%= venue.venue_id %>">
+                    <i class="fas fa-edit"></i> Edit
+                  </button>
+                  <a href="/venues/delete/<%= venue.venue_id %>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?');">
+                    <i class="fas fa-trash"></i> Delete
+                  </a>
                 </td>
               </tr>
-                     <!-- Update Modal -->
-              <div class="modal fade" id="updateModal<%= venue.venue_id %>" tabindex="-1" role="dialog" aria-labelledby="updateModalLabel<%= venue.venue_id %>" aria-hidden="true">
-                <div class="modal-dialog" role="document">
+              <!-- Update Modal -->
+              <div class="modal fade" id="updateModal<%= venue.venue_id %>" tabindex="-1" aria-labelledby="updateModalLabel<%= venue.venue_id %>" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
                   <div class="modal-content">
-                    <div class="modal-header bg-primary text-light">
+                    <div class="modal-header">
                       <h5 class="modal-title" id="updateModalLabel<%= venue.venue_id %>">Update Venue</h5>
-                      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                      </button>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                       <form action="/venues/edit/<%= venue.venue_id %>" method="post">
-                        <div class="form-group">
-                          <label for="venue_name"  class="text-info">Name:</label>
+                        <div class="mb-3">
+                          <label for="venue_name" class="form-label text-info">Name:</label>
                           <input type="text" id="name" name="name" class="form-control" value="<%= venue.venue_name %>" required>
                         </div>
-                        <div class="form-group">
-                          <label for="capacity"  class="text-info">Capacity:</label>
+                        <div class="mb-3">
+                          <label for="capacity" class="form-label text-info">Capacity:</label>
                           <input type="number" id="capacity" name="capacity" class="form-control" value="<%= venue.capacity %>" required>
                         </div>
-                        <div class="form-group">
-                          <label for="location"  class="text-info">Location:</label>
+                        <div class="mb-3">
+                          <label for="location" class="form-label text-info">Location:</label>
                           <input type="text" id="location" name="location" class="form-control" value="<%= venue.location %>" required>
                         </div>
-                        <div class="form-group">
-                          <label for="type"  class="text-info">Type:</label>
+                        <div class="mb-3">
+                          <label for="type" class="form-label text-info">Type:</label>
                           <input type="text" id="type" name="type" class="form-control" value="<%= venue.type %>" required>
                         </div>
-                        <div class="form-group">
-                          <label for="quality"  class="text-info">Quality:</label>
+                        <div class="mb-3">
+                          <label for="quality" class="form-label text-info">Quality:</label>
                           <input type="text" id="quality" name="quality" class="form-control" value="<%= venue.quality %>">
                         </div>
-                 
-                        <div class="form-group">
-                          <label for="department"  class="text-info">Department:</label>
-                          <select id="department" name="department" class="form-control select2" required>
+                        <div class="mb-3">
+                          <label for="department" class="form-label text-info">Department:</label>
+                          <select id="department" name="department" class="form-select select2" required>
                             <% departments.forEach(department => { %>
-                              <option value="<%= department.department_name %>"><%= department.department_name %> </option>
+                              <option value="<%= department.department_name %>"><%= department.department_name %></option>
                             <% }); %>
                           </select>
                         </div>
-
-                        <div class="form-group">
-                          <label for="status"  class="text-info">Status:</label>
+                        <div class="mb-3">
+                          <label for="status" class="form-label text-info">Status:</label>
                           <input type="text" id="status" name="status" class="form-control" value="<%= venue.status %>" required>
                         </div>
-                        <button type="submit" class="btn btn-success">Submit Changes</button>
+                        <button type="submit" class="btn btn-success">
+                          <i class="fas fa-save"></i> Submit Changes
+                        </button>
                       </form>
                     </div>
                   </div>
@@ -208,62 +201,81 @@
         </table>
       </div>
    <% } %>
-    <% }  else { %>
+    <% } else { %>
 
-      
-    <!-- Form for uploading CSV/Excel -->
-    <h3>Upload CSV/Excel File</h3>
-    <form action="/venues/uploads" method="post" enctype="multipart/form-data">
-      <div class="form-group">
-        <label for="file">Choose CSV/Excel File:</label>
-        <input type="file" name="file" class="form-control" required>
-      </div>
-      <button type="submit" class="btn btn-success">Upload</button>
-    </form>
-
-      <!-- Display Add Venue Form -->
-      <h2 class="mb-4 text-warning">Add Venue</h2>
-      <form action="/venues" method="post">
-        <div class="form-group">
-          <label for="name">Venue Name:</label>
-          <input type="text" id="name" name="name" class="form-control" required>
+    <!-- Form Section -->
+    <div class="form-section">
+      <!-- Upload Form -->
+      <h3><i class="fas fa-upload"></i> Upload CSV/Excel File</h3>
+      <form action="/venues/uploads" method="post" enctype="multipart/form-data">
+        <div class="mb-3">
+          <label for="file" class="form-label">Choose CSV/Excel File:</label>
+          <input type="file" name="file" class="form-control" required>
         </div>
-        <div class="form-group">
-          <label for="capacity">Venue Capacity:</label>
-          <input type="number" id="capacity" name="capacity" class="form-control" required>
-        </div>
-        <div class="form-group">
-          <label for="location">Venue Location:</label>
-          <input type="text" id="location" name="location" class="form-control" required>
-        </div>
-        <div class="form-group">
-          <label for="type">Venue Type:</label>
-          <select id="type" name="type" class="form-control">
-            <option value="Theory">Theory</option>
-            <option value="Lab">Lab</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="quality">Venue Quality:</label>
-          <input type="text" id="quality" name="quality" class="form-control">
-        </div>
-        <div class="form-group">
-          <label for="department">Venue Department:</label>
-          <select id="department" name="department" class="form-control select2" required>
-            <% departments.forEach(department => { %>
-              <option value="<%= department.department_name %>"><%= department.department_name %> </option>
-            <% }); %>
-          </select>
-        </div>
-
-        <input type="text" id="status" name="status" class="form-control" value="used" required hidden>
-        <button type="submit" class="btn btn-success">Add Venue</button>
+        <button type="submit" class="btn btn-success">
+          <i class="fas fa-cloud-upload-alt"></i> Upload
+        </button>
       </form>
+
+      <hr class="my-4">
+
+      <!-- Add Venue Form -->
+      <h2><i class="fas fa-plus-circle"></i> Add Venue</h2>
+      <form action="/venues" method="post">
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label for="name" class="form-label">Venue Name:</label>
+            <input type="text" id="name" name="name" class="form-control" required>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label for="capacity" class="form-label">Venue Capacity:</label>
+            <input type="number" id="capacity" name="capacity" class="form-control" required>
+          </div>
+        </div>
+        
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label for="location" class="form-label">Venue Location:</label>
+            <input type="text" id="location" name="location" class="form-control" required>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label for="type" class="form-label">Venue Type:</label>
+            <select id="type" name="type" class="form-select select2" required>
+              <option value="Theory">Theory</option>
+              <option value="Lab">Lab</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label for="quality" class="form-label">Venue Quality:</label>
+            <input type="text" id="quality" name="quality" class="form-control">
+          </div>
+          <div class="col-md-6 mb-3">
+            <label for="department" class="form-label">Venue Department:</label>
+            <select id="department" name="department" class="form-select select2" required>
+              <% departments.forEach(department => { %>
+                <option value="<%= department.department_name %>"><%= department.department_name %></option>
+              <% }); %>
+            </select>
+          </div>
+        </div>
+
+        <input type="hidden" id="status" name="status" value="used">
+        <button type="submit" class="btn btn-success">
+          <i class="fas fa-save"></i> Add Venue
+        </button>
+      </form>
+    </div>
     <% } %>
 
-
-    <h1>Timetable Slot Guide</h1>
-<p class="text text-danger">THE MORE ASSIGNED VENUE WILL BE AT THE UPPER OF ALL VENUES AND IF SLOT OF THE VENUE IS FULL UP TO SUNDAY THE VENUE WILL BE REMOVED IN THE LIST </p>
+  <!-- Timetable Slot Guide -->
+  <div class="slot-guide">
+    <h1><i class="fas fa-clock"></i> Timetable Slot Guide</h1>
+    <p class="text-danger">
+      THE MORE ASSIGNED VENUE WILL BE AT THE UPPER OF ALL VENUES AND IF SLOT OF THE VENUE IS FULL UP TO SUNDAY THE VENUE WILL BE REMOVED IN THE LIST
+    </p>
     <div class="info-block">
       <h2><span class="key">Key:</span></h2>
       <p><span class="key">mnos to sunnos:</span> "Monday number of slots" to "Sunday number of slots".</p>
@@ -302,96 +314,10 @@
       <p class="slot">nos=18: 22:00 - 22:45 (End of All Sessions in a Day)</p>
     </div>
   </div>
+</div>
 
+</main>
 
-  <!-- JS Libraries -->
-  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
-  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-
-  <script>
-    $(document).ready(function() {
-      $('.select2').select2();
-
-      // Auto filter
-      $('.filterInput').on('change', function(){
-        const form = $('#filterForm');
-        const url = new URL(window.location.href);
-        form.find('select').each(function(){
-          const val = $(this).val();
-          if(val) url.searchParams.set($(this).attr('name'), val);
-          else url.searchParams.delete($(this).attr('name'));
-        });
-        window.location.href = url.toString();
-      });
-
-      function getFileName(prefix){
-        const now = new Date();
-        const dateStr = now.toISOString().slice(0,10) + '_' + now.getHours() + '-' + now.getMinutes() + '-' + now.getSeconds();
-        return `${prefix}_filteredData_${dateStr}`;
-      }
-
-      // CSV Download
-      $('#downloadCSV').click(function(){
-        const rows = [];
-        $('#venuesTable tr').each(function(){
-          const cols = [];
-          $(this).find('th, td').each(function(){ cols.push('"' + $(this).text().trim() + '"'); });
-          rows.push(cols.join(','));
-        });
-        const csvContent = rows.join('\n');
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = getFileName('ATC') + '.csv';
-        link.click();
-      });
-
-      // Print Table
-      $('#printTable').click(function(){
-        const printContents = document.getElementById('venuesTableContainer').innerHTML;
-        const win = window.open('', '', 'width=1000,height=800');
-        win.document.write('<html><head><title>' + getFileName('ATC') + '</title>');
-        win.document.write('<style>table{width:100%;border-collapse:collapse;} th,td{border:1px solid #000;padding:6px;text-align:center;} th{background:#343a40;color:#fff;}</style>');
-        win.document.write('</head><body>');
-        win.document.write(printContents);
-        win.document.write('</body></html>');
-        win.document.close();
-        win.print();
-      });
-
-      // PDF Download (multi-page support)
-      $('#downloadPDF').click(function(){
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF('l', 'pt', 'a4');
-        const tableEl = document.getElementById('venuesTableContainer');
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const pageHeight = doc.internal.pageSize.getHeight();
-        html2canvas(tableEl, { scale: 2 }).then(canvas => {
-          const imgData = canvas.toDataURL('image/png');
-          const imgWidth = pageWidth - 40; // margin
-          const imgHeight = canvas.height * imgWidth / canvas.width;
-          let heightLeft = imgHeight;
-          let position = 20;
-          doc.addImage(imgData, 'PNG', 20, position, imgWidth, imgHeight);
-          heightLeft -= pageHeight;
-          while(heightLeft > 0){
-            position = heightLeft - imgHeight + 20;
-            doc.addPage();
-            doc.addImage(imgData, 'PNG', 20, position, imgWidth, imgHeight);
-            heightLeft -= pageHeight;
-          }
-          doc.save(getFileName('ATC') + '.pdf');
-        });
-      });
-
-    });
-  </script>
-</body>
-</html>
+<script src="/js/venues.js"></script>
 
 <%- include('partials/footer') %>

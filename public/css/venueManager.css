@@ -1,0 +1,135 @@
+/* Venue Manager Styles */
+
+/* Header Section */
+.venue-manager-header {
+  background: linear-gradient(135deg, #2c5aa0 0%, #4a90e2 100%);
+  color: white;
+  border-radius: 0 0 15px 15px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.venue-manager-header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #ffffff;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.venue-manager-header .lead {
+  font-size: 1.2rem;
+  color: #ffffff;
+  font-weight: 500;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Cards */
+.card {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: none;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.filter-card {
+  background: white;
+}
+
+.venue-card {
+  transition: transform 0.2s;
+}
+
+.venue-card:hover {
+  transform: translateY(-5px);
+}
+
+/* Slot Matrix */
+.slot-matrix th {
+  background-color: #495057;
+  color: white;
+  font-weight: 600;
+}
+
+.slot-time {
+  font-weight: bold;
+  color: #495057;
+}
+
+/* Status Colors */
+.status-unused {
+  background-color: #d4edda;
+  color: #155724;
+  font-weight: 500;
+}
+
+.status-booked {
+  background-color: #f8d7da;
+  color: #721c24;
+  font-weight: 500;
+}
+
+.status-maintenance {
+  background-color: #fff3cd;
+  color: #856404;
+  font-weight: 500;
+}
+
+/* Badge Styles */
+.badge {
+  font-size: 0.8em;
+  padding: 0.4em 0.8em;
+}
+
+/* Table Styles */
+.table-sm td,
+.table-sm th {
+  padding: 0.5rem;
+}
+
+/* Action Buttons */
+.action-btn {
+  font-size: 0.9rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .venue-manager-header h1 {
+    font-size: 1.8rem;
+  }
+
+  .venue-manager-header .lead {
+    font-size: 1rem;
+  }
+
+  .form-row > div {
+    margin-bottom: 1rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .venue-manager-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .venue-manager-header .lead {
+    font-size: 0.9rem;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .venue-manager-header {
+    background: white !important;
+    color: black !important;
+    box-shadow: none;
+  }
+
+  .venue-manager-header h1,
+  .venue-manager-header .lead {
+    color: black !important;
+    text-shadow: none;
+  }
+
+  .btn {
+    display: none;
+  }
+}

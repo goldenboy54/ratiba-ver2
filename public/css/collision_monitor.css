@@ -1,0 +1,494 @@
+/* ===================================================================
+   COLLISION MONITOR STYLES
+   Real-time collision detection and resolution monitoring interface
+   =================================================================== */
+
+/* ===================================================================
+   1. LAYOUT & CONTAINER
+   =================================================================== */
+
+.collision-monitor-container {
+  padding: var(--spacing-lg);
+  max-width: 100%;
+}
+
+/* ===================================================================
+   2. HEADER SECTION
+   =================================================================== */
+
+.collision-monitor-header {
+  margin-bottom: var(--spacing-xl);
+}
+
+.collision-monitor-header h1 {
+  color: var(--primary-color);
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.collision-monitor-header h1 i {
+  font-size: 1.8rem;
+  animation: pulseIcon 2s ease-in-out infinite;
+}
+
+@keyframes pulseIcon {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.8; }
+}
+
+.collision-monitor-header .description {
+  color: var(--text-muted);
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: var(--spacing-lg);
+}
+
+/* ===================================================================
+   3. RUN BUTTON
+   =================================================================== */
+
+.run-monitor-btn {
+  background: linear-gradient(135deg, var(--danger-color), #c92a2a);
+  color: white;
+  padding: var(--spacing-md) var(--spacing-xl);
+  font-size: 1.1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-md);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.run-monitor-btn i {
+  font-size: 1.2rem;
+}
+
+.run-monitor-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #c92a2a, var(--danger-color));
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.run-monitor-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+.run-monitor-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: linear-gradient(135deg, #a8a8a8, #808080);
+}
+
+.run-monitor-btn.running {
+  animation: buttonPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes buttonPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* ===================================================================
+   4. STATUS DISPLAY
+   =================================================================== */
+
+.status-display {
+  margin: var(--spacing-lg) 0;
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.status-display.status-working {
+  background-color: #fff3cd;
+  color: #856404;
+  border-left: 4px solid var(--warning-color);
+}
+
+.status-display.status-success {
+  background-color: #d1e7dd;
+  color: #0f5132;
+  border-left: 4px solid var(--success-color);
+}
+
+.status-display.status-error {
+  background-color: #f8d7da;
+  color: #842029;
+  border-left: 4px solid var(--danger-color);
+}
+
+.status-display:empty {
+  display: none;
+}
+
+/* ===================================================================
+   5. RESULTS SECTION
+   =================================================================== */
+
+.results-container {
+  margin-top: var(--spacing-xl);
+}
+
+.results-section {
+  margin-bottom: var(--spacing-xl);
+  animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.results-section h5 {
+  color: var(--text-primary);
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 2px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.results-section h5 i {
+  font-size: 1.2rem;
+}
+
+/* Type-specific heading colors */
+.results-section.relocated h5 {
+  color: var(--success-color);
+  border-bottom-color: var(--success-color);
+}
+
+.results-section.skipped h5 {
+  color: var(--warning-color);
+  border-bottom-color: var(--warning-color);
+}
+
+.results-section.failed h5 {
+  color: var(--danger-color);
+  border-bottom-color: var(--danger-color);
+}
+
+/* ===================================================================
+   6. TABLES
+   =================================================================== */
+
+.table-wrapper {
+  overflow-x: auto;
+  margin-bottom: var(--spacing-xl);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.collision-monitor-table {
+  width: 100%;
+  margin-bottom: 0;
+  background-color: white;
+  font-size: 0.9rem;
+}
+
+.collision-monitor-table thead {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: white;
+}
+
+.collision-monitor-table thead th {
+  padding: var(--spacing-md);
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+  vertical-align: middle;
+}
+
+.collision-monitor-table tbody td {
+  padding: var(--spacing-sm) var(--spacing-md);
+  white-space: nowrap;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.collision-monitor-table tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+.collision-monitor-table tbody tr:hover {
+  background-color: var(--hover-bg);
+}
+
+.collision-monitor-table tbody tr:nth-child(even) {
+  background-color: #f8f9fa;
+}
+
+/* Success table variant */
+.table-success thead {
+  background: linear-gradient(135deg, var(--success-color), #28a745);
+}
+
+.table-success tbody tr:hover {
+  background-color: #d1e7dd;
+}
+
+/* Warning table variant */
+.table-warning thead {
+  background: linear-gradient(135deg, var(--warning-color), #f0ad4e);
+}
+
+.table-warning tbody tr:hover {
+  background-color: #fff3cd;
+}
+
+/* Danger table variant */
+.table-danger thead {
+  background: linear-gradient(135deg, var(--danger-color), #c92a2a);
+}
+
+.table-danger tbody tr:hover {
+  background-color: #f8d7da;
+}
+
+/* Info table variant */
+.table-info thead {
+  background: linear-gradient(135deg, var(--info-color), #17a2b8);
+}
+
+.table-info tbody tr:hover {
+  background-color: #d1ecf1;
+}
+
+/* ===================================================================
+   7. SPECIAL TABLE CELLS
+   =================================================================== */
+
+/* Time change indicators */
+.time-change {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.time-change .arrow {
+  color: var(--info-color);
+  font-weight: bold;
+}
+
+/* Slot ID badges */
+.slot-id-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  background-color: var(--primary-color);
+  color: white;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* Reason/Note cells */
+.reason-cell {
+  max-width: 250px;
+  white-space: normal;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Consecutive indicator */
+.consecutive-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.consecutive-indicator.true {
+  color: var(--success-color);
+  font-weight: 600;
+}
+
+.consecutive-indicator.false {
+  color: var(--danger-color);
+  font-weight: 600;
+}
+
+/* ===================================================================
+   8. EMPTY STATE
+   =================================================================== */
+
+.empty-state {
+  text-align: center;
+  padding: var(--spacing-xxl);
+  color: var(--text-muted);
+}
+
+.empty-state i {
+  font-size: 4rem;
+  margin-bottom: var(--spacing-lg);
+  opacity: 0.3;
+}
+
+.empty-state p {
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+/* ===================================================================
+   9. RESPONSIVE DESIGN
+   =================================================================== */
+
+/* Tablets and below (992px) */
+@media (max-width: 992px) {
+  .collision-monitor-container {
+    padding: var(--spacing-md);
+  }
+
+  .collision-monitor-header h1 {
+    font-size: 1.75rem;
+  }
+
+  .collision-monitor-table {
+    font-size: 0.85rem;
+  }
+
+  .collision-monitor-table thead th,
+  .collision-monitor-table tbody td {
+    padding: var(--spacing-sm);
+  }
+
+  .run-monitor-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Mobile devices (768px) */
+@media (max-width: 768px) {
+  .collision-monitor-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .collision-monitor-header .description {
+    font-size: 0.9rem;
+  }
+
+  .collision-monitor-table {
+    font-size: 0.8rem;
+  }
+
+  .results-section h5 {
+    font-size: 1.1rem;
+  }
+
+  .status-display {
+    font-size: 0.9rem;
+  }
+}
+
+/* Small mobile devices (480px) */
+@media (max-width: 480px) {
+  .collision-monitor-container {
+    padding: var(--spacing-sm);
+  }
+
+  .collision-monitor-header h1 {
+    font-size: 1.3rem;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .collision-monitor-table thead th,
+  .collision-monitor-table tbody td {
+    padding: 6px;
+  }
+
+  .run-monitor-btn {
+    font-size: 1rem;
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+}
+
+/* ===================================================================
+   10. PRINT STYLES
+   =================================================================== */
+
+@media print {
+  .run-monitor-btn {
+    display: none !important;
+  }
+
+  .collision-monitor-table {
+    font-size: 0.75rem;
+  }
+
+  .collision-monitor-table thead {
+    background: #333 !important;
+    color: white !important;
+  }
+
+  .table-wrapper {
+    box-shadow: none;
+    page-break-inside: avoid;
+  }
+
+  .results-section {
+    page-break-inside: avoid;
+  }
+}
+
+/* ===================================================================
+   11. LOADING ANIMATION
+   =================================================================== */
+
+.loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ===================================================================
+   12. UTILITY CLASSES
+   =================================================================== */
+
+.text-arrow {
+  color: var(--info-color);
+  font-weight: bold;
+  margin: 0 4px;
+}
+
+.highlight-change {
+  background-color: #fff3cd;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+.no-data {
+  text-align: center;
+  padding: var(--spacing-lg);
+  color: var(--text-muted);
+  font-style: italic;
+}

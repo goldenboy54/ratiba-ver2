@@ -1,110 +1,104 @@
 <%- include('partials/nav') %>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Programs Management</title>
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<div class="container-fluid py-4">
+  
+  <div class="programs-header">
+    <a href="/programs/form" class="btn btn-primary mb-3">
+      <i class="fas fa-plus"></i> Add Program
+    </a>
+  </div>
 
-  <style>
-    .table-container { overflow-x: auto; margin-top: 20px; }
-    th { text-align: center; background-color: #007bff; color: #fff; }
-    td { text-align: center; vertical-align: middle; }
-    .btn-download { margin: 5px; }
-  </style>
-</head>
-<body>
-  <div class="container mt-5">
-    <h1 class="text-center mb-4">Programs Management</h1>
+  <% if (locals.Viewprograms) { %>
 
-    <a href="/programs/form" class="btn btn-primary mb-3"><i class="fas fa-plus"></i> Add Program</a>
-
-    <% if (locals.Viewprograms) { %>
-
-      <form method="get" action="/programs" id="filterForm" class="mb-4">
-        <div class="form-row">
-
-          <div class="form-group col-md-4">
-            <label for="program_name">program_name:</label>
-            <select id="program_name" name="program_name" class="form-control select2">
-              <option value="">program_name</option>
+    <div class="filter-section">
+      <h2>Filter Below to Customize Views</h2>
+      
+      <form method="get" action="/programs" id="filterForm">
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label for="program_name" class="form-label">Program Name:</label>
+            <select id="program_name" name="program_name" class="form-select select2">
+              <option value="">Select program name</option>
               <% pname.forEach(item => { %>
                 <option value="<%= item.program_name %>" <%= locals.query?.program_name === item.program_name ? 'selected' : '' %>><%= item.program_name %></option>
               <% }); %>
             </select>
           </div>
 
-          <div class="form-group col-md-4">
-            <label for="program_code">program_code:</label>
-            <select id="program_code" name="program_code" class="form-control select2">
-              <option value="">program_code</option>
+          <div class="col-md-4 mb-3">
+            <label for="program_code" class="form-label">Program Code:</label>
+            <select id="program_code" name="program_code" class="form-select select2">
+              <option value="">Select program code</option>
               <% pcode.forEach(item => { %>
                 <option value="<%= item.program_code %>" <%= locals.query?.program_code === item.program_code ? 'selected' : '' %>><%= item.program_code %></option>
               <% }); %>
             </select>
           </div>
 
-          <div class="form-group col-md-4">
-            <label for="duration">duration:</label>
-            <select id="duration" name="duration" class="form-control select2">
-              <option value="">duration</option>
+          <div class="col-md-4 mb-3">
+            <label for="duration" class="form-label">Duration:</label>
+            <select id="duration" name="duration" class="form-select select2">
+              <option value="">Select duration</option>
               <% pduration.forEach(item => { %>
                 <option value="<%= item.duration %>" <%= locals.query?.duration === item.duration ? 'selected' : '' %>><%= item.duration %></option>
               <% }); %>
             </select>
           </div>
+        </div>
 
-          <div class="form-group col-md-4">
-            <label for="level">level:</label>
-            <select id="level" name="level" class="form-control select2">
-              <option value="">level</option>
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label for="level" class="form-label">Level:</label>
+            <select id="level" name="level" class="form-select select2">
+              <option value="">Select level</option>
               <% plevel.forEach(item => { %>
                 <option value="<%= item.level %>" <%= locals.query?.level === item.level ? 'selected' : '' %>><%= item.level %></option>
               <% }); %>
             </select>
           </div>
 
-          <div class="form-group col-md-4">
-            <label for="category">Program Department:</label>
-            <select id="category" name="category" class="form-control select2">
-              <option value="">Program Department</option>
+          <div class="col-md-4 mb-3">
+            <label for="category" class="form-label">Program Department:</label>
+            <select id="category" name="category" class="form-select select2">
+              <option value="">Select program department</option>
               <% pcategory.forEach(item => { %>
                 <option value="<%= item.category %>" <%= locals.query?.category === item.category ? 'selected' : '' %>><%= item.category %></option>
               <% }); %>
             </select>
           </div>
 
-          <div class="form-group col-md-4">
-            <label for="program_capacity">program_capacity:</label>
-            <select id="program_capacity" name="program_capacity" class="form-control select2">
-              <option value="">program_capacity</option>
+          <div class="col-md-4 mb-3">
+            <label for="program_capacity" class="form-label">Program Capacity:</label>
+            <select id="program_capacity" name="program_capacity" class="form-select select2">
+              <option value="">Select program capacity</option>
               <% pcapacity.forEach(item => { %>
                 <option value="<%= item.program_capacity %>" <%= locals.query?.program_capacity === item.program_capacity ? 'selected' : '' %>><%= item.program_capacity %></option>
               <% }); %>
             </select>
           </div>
+        </div>
 
-          <div class="form-group col-md-4">
-            <label for="program_type">program_type:</label>
-            <select id="program_type" name="program_type" class="form-control select2">
-              <option value="">program_type</option>
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label for="program_type" class="form-label">Program Type:</label>
+            <select id="program_type" name="program_type" class="form-select select2">
+              <option value="">Select program type</option>
               <% ptype.forEach(item => { %>
                 <option value="<%= item.program_type %>" <%= locals.query?.program_type === item.program_type ? 'selected' : '' %>><%= item.program_type %></option>
               <% }); %>
             </select>
           </div>
-
         </div>
 
-        <div class="form-group">
-          <button type="submit" class="btn btn-primary btn-block">Filter</button>
+        <div class="text-center mt-3">
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-filter"></i> Filter
+          </button>
         </div>
       </form>
+    </div>
 
-      <div class="text-center mb-3">
+    <div class="text-center mb-3">
         <button id="csvDownloadBtn" class="btn btn-success btn-download">Download CSV</button>
         <button id="pdfDownloadBtn" class="btn btn-info btn-download">Download PDF</button>
         <button id="printBtn" class="btn btn-secondary btn-download">Print</button>
@@ -369,6 +363,5 @@ $(document).ready(function(){
 });
 </script>
 
+</main>
 <%- include('partials/footer') %>
-</body>
-</html>
