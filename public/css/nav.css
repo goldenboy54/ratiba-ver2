@@ -25,15 +25,22 @@ body {
   cursor: pointer;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
   transition: all 0.3s ease;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
-.mobile-toggle:hover {
+.mobile-toggle:hover,
+.mobile-toggle:active,
+.mobile-toggle:focus {
   transform: scale(1.05);
   box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+  outline: none;
 }
 
 .mobile-toggle i {
   font-size: 20px;
+  pointer-events: none;
 }
 
 /* Sidebar Overlay for Mobile */
@@ -48,11 +55,13 @@ body {
   z-index: 999;
   opacity: 0;
   transition: opacity 0.3s ease;
+  pointer-events: none;
 }
 
 .sidebar-overlay.active {
   display: block;
   opacity: 1;
+  pointer-events: auto;
 }
 
 /* Table Container */

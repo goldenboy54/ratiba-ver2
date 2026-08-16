@@ -31,7 +31,6 @@ export const getDistinctValues = async (column) => {
 };
 
 
-
 export const handleUploadCSV = async (req, res) => {
   const file = req.file;
   try {

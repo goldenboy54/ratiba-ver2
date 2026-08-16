@@ -34,39 +34,62 @@ export const listtimetables = async (req, res) => {
 // Delete timetable handler
 export const handleDeletetimetable = async (req, res) => {
   const id = req.params.id;
-  const reason = req.body.reason;
-  const notes = req.body.notes || '';
-  const released_by = req.user ? req.user.name : (req.body.released_by || 'system');
 
   try {
-    await deleteTimetableByIdWithEffects(id, {
-      reason,
-      notes,
-      released_by,
+    const result = await deleteTimetableByIdWithEffects(id, {
+      reason:       req.body.reason || 'manual deletion',
+      notes:        req.body.notes  || '',
+      deleted_by:   req.user ? req.user.name : (req.body.released_by || 'system'),
       subject_code: req.body.subject_code,
       program_code: req.body.program_code,
-      tutor_name: req.body.tutor_name,
-      day: req.body.day,
-      start_time: req.body.start_time,
-      end_time: req.body.end_time
+      tutor_name:   req.body.tutor_name,
+      day:          req.body.day,
+      start_time:   req.body.start_time,
+      end_time:     req.body.end_time
     });
 
-    res.redirect('/timetables?success=' + encodeURIComponent('Timetable entry deleted successfully.'));
+    // Kama kuna warnings, onyesha kwa user badala ya redirect moja kwa moja
+    if (result.warnings && result.warnings.length > 0) {
+      const warningHtml = result.warnings
+        .map(w => `<li style="margin-bottom:10px;">${w}</li>`)
+        .join('');
+
+      return res.send(`
+        <div style="max-width:750px;margin:40px auto;padding:28px;
+                    border:2px solid #e67e22;border-radius:12px;background:#fffaf0;">
+          <h3 style="color:#27ae60;">✅ Timetable imefutwa kwa mafanikio</h3>
+          <p style="color:#888;">ID: ${id}</p>
+
+          <div style="background:#fff3cd;padding:18px;border-left:5px solid #f39c12;
+                      border-radius:6px;margin-top:20px;">
+            <h4 style="color:#b7770d;margin-top:0;">
+              ⚠️ Matatizo yaliyogundulika wakati wa kufuta:
+            </h4>
+            <ul style="margin:0;padding-left:20px;color:#7a5000;">
+              ${warningHtml}
+            </ul>
+          </div>
+
+          <div style="margin-top:25px;">
+            <a href="/timetables" class="btn btn-primary">Rudi Timetables</a>
+          </div>
+        </div>
+      `);
+    }
+
+    // No warnings — clean delete
+    return res.redirect(
+      '/timetables?success=' + encodeURIComponent('Timetable entry deleted successfully.')
+    );
+
   } catch (err) {
     console.error('Error deleting timetable:', err);
-    res.redirect('/timetables?error=' + encodeURIComponent('Error deleting timetable: ' + err.message));
+    return res.redirect(
+      '/timetables?error=' + encodeURIComponent('Error deleting timetable: ' + err.message)
+    );
   }
 };
 
-
-// export const handleDeletetimetable = async (req, res) => {
-//   try {
-//     await deletetimetable(req.params.id);
-//     res.redirect('/timetables');
-//   } catch (error) {
-//     res.status(500).send('Error deleting timetable: ' + error.message);
-//   }
-// };
 
 
 export const getEdittimetableForm = async (req, res) => {
@@ -79,1031 +102,317 @@ export const getEdittimetableForm = async (req, res) => {
 };
 
 
+// logics/timetableLogic.js
+// ====================== HELPERS ======================
+// ====================== HELPERS ======================
+const timeToSlot = {
+  "07:30-08:15": 1, "08:15-09:00": 2, "09:05-09:50": 3, "09:50-10:35": 4,
+  "11:00-11:45": 5, "11:45-12:30": 6, "13:15-14:00": 7, "14:00-14:45": 8,
+  "14:50-15:35": 9, "15:35-16:20": 10, "16:25-17:10": 11, "17:10-17:55": 12,
+  "18:00-18:45": 13, "18:45-19:30": 14, "19:35-20:20": 15, "20:20-21:05": 16,
+  "21:10-21:55": 17, "21:55-22:40": 18,
+};
 
+const toShort = (v) => v ? String(v).trim().substring(0, 5) : null;
 
+const getSlotCol = (day, start, end) => {
+  const key = `${toShort(start)}-${toShort(end)}`;
+  const num = timeToSlot[key];
+  if (!num) return null;
+  return `${String(day).toLowerCase()}_slot${num}`;
+};
+
+const slotStrToCol = (day, slotStr) => {
+  if (!slotStr) return null;
+  const num = timeToSlot[String(slotStr).trim()];
+  if (!num) return null;
+  return `${String(day).toLowerCase()}_slot${num}`;
+};
+
+const isSlotStillUsed = async (conn, venueId, slotCol, excludeId = null) => {
+  const match = String(slotCol).match(/^(.+)_slot(\d+)$/);
+  if (!match) return false;
+
+  const day = match[1];
+  const slotNum = parseInt(match[2]);
+
+  const slotEntry = Object.entries(timeToSlot).find(([, n]) => n === slotNum);
+  if (!slotEntry) return false;
+
+  const [timeRange] = slotEntry;
+  const [startShort, endShort] = timeRange.split('-');
+  const startFull = startShort + ":00";
+  const endFull = endShort + ":00";
+
+  let query = `
+    SELECT COUNT(*) as cnt 
+    FROM extracted_timetables 
+    WHERE venue_id = ? 
+      AND LOWER(day) = ?
+      AND (start_time = ? OR start_time = ?) 
+      AND (end_time = ? OR end_time = ?)
+  `;
+
+  const params = [venueId, day, startFull, startShort, endFull, endShort];
+
+  if (excludeId) {
+    query += ` AND id != ?`;
+    params.push(excludeId);
+  }
+
+  const [[row]] = await conn.query(query, params);
+  return row.cnt > 0;
+};
+
+// ====================== MAIN UPDATE HANDLER ======================
 export const handleUpdatetimetable = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const t = req.body || {};
+  const conn = await pool.getConnection();
 
-    // Normalize "HH:MM" => "HH:MM:SS"
-    const normalizeTime = v => {
+  try {
+    await conn.beginTransaction();
+
+    const { id } = req.params;
+    const t = { ...req.body };
+
+    // ====================== NORMALIZATION ======================
+    const normalizeTime = (v) => {
       if (!v) return null;
       const s = String(v).trim();
-      return s.length === 5 ? s + ':00' : s;
+      return s.length === 5 ? s + ":00" : s;
     };
+
     t.start_time = normalizeTime(t.start_time);
     t.end_time = normalizeTime(t.end_time);
 
-    // Empty → null
-    const sanitize = v => (v === undefined || v === "" ? null : v);
+    const sanitize = (v) => (v === undefined || v === "" ? null : String(v).trim());
 
-    // Required fields
+    // ====================== VALIDATION ======================
     const requiredFields = [
-      'day','start_time','end_time','subject_code','subject_name',
-      'department_name','venue_name','tutor_name','venue_location',
-      'program_name','subject_credit','program_level','year',
-      'venue_type','venue_status','semester'
+      'day', 'start_time', 'end_time', 'subject_code', 'subject_name',
+      'department_name', 'venue_name', 'tutor_name', 'venue_location',
+      'program_name', 'program_level', 'semester'
     ];
 
     for (const f of requiredFields) {
-      if (!t[f] || t[f].toString().trim() === "") {
+      if (!t[f] || String(t[f]).trim() === "") {
+        await conn.rollback();
+        conn.release();
         return res.status(400).send(`Missing required field: '${f}'`);
       }
     }
 
-    // Fetch current row
-    const [[current]] = await pool.query(
-      `SELECT * FROM extracted_timetables WHERE id = ?`,
-      [id]
-    );
-    if (!current) return res.status(404).send("Timetable entry not found");
-
-    // Get all other entries same day & semester
-    const [others] = await pool.query(
-      `SELECT * FROM extracted_timetables
-       WHERE id != ? AND semester = ? AND day = ? AND  start_time=? AND end_time=? AND venue_name=?`,
-      [id, t.semester, t.day,t.start_time,t.end_time,t.venue_name]
+    // ====================== FETCH CURRENT ROW ======================
+    const [[current]] = await conn.query(
+      `SELECT * FROM extracted_timetables WHERE id = ?`, [id]
     );
 
-// console.log(others)
+    if (!current) {
+      await conn.rollback();
+      conn.release();
+      return res.status(404).send("Timetable entry not found");
+    }
 
-    // Time overlap function
-    const overlap = (s1, e1, s2, e2) => (s1 < e2 && e1 > s2);
+    // ====================== COLLISION DETECTION ======================
+    const overlap = (s1, e1, s2, e2) => s1 < e2 && e1 > s2;
 
-    /* ================================================================
-         UPDATED CHECKER WITH program_name + program_level
-       ================================================================ */
-    const programsMatch = (p1name, p1level, p2name, p2level) => {
-      return p1name === p2name && p1level === p2level;
-    };
+    const getProgramCodes = (progStr) =>
+      progStr ? String(progStr).split('+').map(p => p.trim().toUpperCase()).filter(Boolean) : [];
 
-    // Check if payload can fit into slot without conflict
-    const canPlacePayloadInSlot = async (payload, slot, excludes = []) => {
-      const params = [slot.semester, slot.day, slot.end_time, slot.start_time];
-      let q = `SELECT * FROM extracted_timetables 
-               WHERE semester = ? AND day = ? 
-               AND start_time = ? AND end_time = ?`;
-
-      if (excludes.length) {
-        q += ` AND id NOT IN (${excludes.map(_ => "?").join(",")})`;
-        params.push(...excludes);
-      }
-
-      const [rows] = await pool.query(q, params);
-
-      for (const r of rows) {
-        if (r.venue_name === slot.venue_name)
-          return { ok: false, reason: "venue_conflict", row: r };
-
-        if (payload.tutor_name && payload.tutor_name === r.tutor_name)
-          return { ok: false, reason: "tutor_conflict", row: r };
-
-        if (
-          payload.program_name &&
-          payload.program_level &&
-          programsMatch(payload.program_name, payload.program_level, r.program_name, r.program_level)
-        ) {
-          return { ok: false, reason: "program_conflict", row: r };
-        }
-      }
-
-      return { ok: true };
-    };
-
-    // Find holding slot for swap
-    const findAvailableSlotForSwap = async (payload, excludeIds = []) => {
-      const [slots] = await pool.query(
-        `SELECT * FROM extracted_timetables 
-         WHERE semester = ? AND day = ? AND id NOT IN (?)`,
-        [t.semester, t.day, excludeIds]
-      );
-      for (const s of slots) {
-        const ch = await canPlacePayloadInSlot(payload, s, excludeIds);
-        if (ch.ok) return s;
-      }
-      return null;
-    };
+    const [others] = await conn.query(
+      `SELECT * FROM extracted_timetables 
+       WHERE id != ? AND semester = ? AND day = ?`,
+      [id, t.semester, t.day]
+    );
 
     let action = null;
     let collisionEntry = null;
 
-    /* ================================================================
-         COLLISION SCANNING — UPDATED WITH LEVEL CHECK
-       ================================================================ */
     for (const e of others) {
       if (!overlap(t.start_time, t.end_time, e.start_time, e.end_time)) continue;
-      // 1️⃣ Mix programs (same subject, different program)
-      if (
-        e.subject_code === t.subject_code &&
-        !programsMatch(t.program_name, t.program_level, e.program_name, e.program_level)
-      ) {
-        action = "mix";
+
+      // 1. TUTOR CONFLICT (Highest priority)
+      if (sanitize(t.tutor_name) === sanitize(e.tutor_name)) {
+        action = "tutor_conflict";
         collisionEntry = e;
         break;
       }
 
-      // 2️⃣ STRICT EXCHANGE CHECK (two-way)
-      const payloadA = {
-        tutor_name: t.tutor_name,
-        program_name: t.program_name,
-        program_level: t.program_level
-      };
-
-      const payloadB = {
-        tutor_name: e.tutor_name,
-        program_name: e.program_name,
-        program_level: e.program_level
-      };
-
-      const slotE = {
-        semester: e.semester,
-        day: e.day,
-        start_time: e.start_time,
-        end_time: e.end_time,
-        venue_name: e.venue_name
-      };
-
-      const slotT = {
-        semester: t.semester,
-        day: t.day,
-        start_time: t.start_time,
-        end_time: t.end_time,
-        venue_name: t.venue_name
-      };
-
-      const chA = await canPlacePayloadInSlot(payloadA, slotE, [id, e.id]);
-      const chB = await canPlacePayloadInSlot(payloadB, slotT, [id, e.id]);
-
-      if (chA.ok && chB.ok) {
-        action = "exchange";
+      // 2. VENUE CONFLICT 
+      if (sanitize(t.venue_name) === sanitize(e.venue_name)) {
+        action = "venue_conflict";
         collisionEntry = e;
         break;
       }
 
-      // Hard conflict → cancel
-      if (!chB.ok && (chB.reason === "tutor_conflict" || chB.reason === "program_conflict")) {
-        const holdSlotA = await findAvailableSlotForSwap(payloadA, [id, e.id]);
-        const holdSlotB = await findAvailableSlotForSwap(payloadB, [id, e.id]);
+      // 3. PROGRAM CONFLICT (Strict - only same program code)
+      const newCodes = getProgramCodes(t.program_code || t.program_name);
+      const existingCodes = getProgramCodes(e.program_code || e.program_name);
 
-        if (!holdSlotA || !holdSlotB) {
-          action = "cancel";
-          collisionEntry = chB.row || e;
-          break;
-        }
+      if (newCodes.some(code => existingCodes.includes(code))) {
+        action = "program_conflict";
+        collisionEntry = e;
+        break;
       }
     }
 
-    /* ================================================================
-         RETURN UI RESPONSES (unchanged)
-       ================================================================ */
+    // ====================== COLLISION RESPONSE ======================
     if (action && collisionEntry) {
-      let msg = "";
+      await conn.rollback();
+      conn.release();
 
-      if (action === "mix") {
-        msg = `<h4>Mix Programs</h4>
-<p>Subject <b>${t.subject_name}</b> (${t.subject_code}) appears in another program 
-(${collisionEntry.program_name} - Level ${collisionEntry.program_level}).</p>
-<a href="/manageTimetable">Mix Now</a>
-<a href="/timetables">Cancel</a>`;
+      if (action === "venue_conflict") {
+        return res.status(409).send(`
+          <div style="max-width:950px;margin:30px auto;padding:25px;border:2px solid #e74c3c;border-radius:12px;background:#fff;">
+            <h4 style="color:#c0392b;">⚠️ Venue Collision Imegunduliwa</h4>
+            
+            <div style="background:#fff3cd;padding:18px;border-left:5px solid #f39c12;margin:20px 0;">
+              <strong>Onyo:</strong> Swap inaweza kusababisha class kuondolewa kwenye Lab. Fikiria vizuri.
+            </div>
+
+            <div style="margin-bottom:20px;">
+              <strong>Slot Unayotaka:</strong><br>
+              ${t.day} | ${t.start_time} - ${t.end_time}<br>
+              <b>${t.subject_name} (${t.subject_code})</b><br>
+              Program: ${t.program_name} (${t.program_code || 'N/A'}) | Level: ${t.program_level || 'N/A'}<br>
+              Venue: ${t.venue_name} (${t.venue_location || 'N/A'}) | Tutor: ${t.tutor_name}
+            </div>
+
+            <div style="margin-bottom:25px;">
+              <strong>Slot Inayogongana:</strong><br>
+              ${collisionEntry.day} | ${collisionEntry.start_time} - ${collisionEntry.end_time}<br>
+              <b>${collisionEntry.subject_name} (${collisionEntry.subject_code})</b><br>
+              Program: ${collisionEntry.program_name} (${collisionEntry.program_code || 'N/A'}) | Level: ${collisionEntry.program_level || 'N/A'}<br>
+              Venue: ${collisionEntry.venue_name} (${collisionEntry.venue_location || 'N/A'}) | Tutor: ${collisionEntry.tutor_name}
+            </div>
+
+            <form method="POST" action="/timetables/exchange" style="display:inline;">
+              <input type="hidden" name="first_id" value="${id}">
+              <input type="hidden" name="second_id" value="${collisionEntry.id}">
+              <button type="submit" class="btn btn-warning btn-lg">🔄 SWAP VENUE</button>
+            </form>
+            &nbsp;&nbsp;
+            <a href="/timetables" class="btn btn-secondary btn-lg">Cancel & Rudi Nyuma</a>
+          </div>`);
       }
 
-      if (action === "exchange") {
-        msg = `<h4>Exchange Possible</h4>
-           For Tutor: ${t.tutor_name}<br> teaching
-<b>${t.subject_name}</b> (${t.subject_code})<br>
-${t.day} | ${t.start_time} - ${t.end_time}<br>
-Program: ${t.program_name} - Level ${t.program_level}<br>
-<br><br> 
-        with Tutor: ${collisionEntry.tutor_name}<br>
-<br> teaching 
-<b>${collisionEntry.subject_name}</b> (${collisionEntry.subject_code}) 
- program  (${collisionEntry.program_name} - Level ${collisionEntry.program_level}).</p>
- in Venue: ${collisionEntry.venue_name}
-<form method="POST" action="/timetables/exchange">
-  <input type="hidden" name="first_id" value="${id}">
-  <input type="hidden" name="second_id" value="${collisionEntry.id}">
-  <button class="btn btn-warning">Exchange Slots</button>
-</form>
-<a href="/timetables">Back</a>`;
-      }
-
-      if (action === "cancel") {
-        msg = `<h4 style="color:red;">Exchange Impossible</h4>
-<p>Conflict with:</p>
-<b>${collisionEntry.subject_name}</b><br>
-Program: ${collisionEntry.program_name} - Level ${collisionEntry.program_level}<br>
-Tutor: ${collisionEntry.tutor_name}<br>
-Venue: ${collisionEntry.venue_name}<br>`;
-      }
-
-      return res.status(409).send(msg);
+      // Tutor or Program Conflict
+      const conflictType = action === "tutor_conflict" ? "Tutor" : "Program";
+      return res.status(409).send(`
+        <div style="max-width:950px;margin:30px auto;padding:30px;border:3px solid #e67e22;border-radius:12px;background:#fffaf0;">
+          <h3 style="color:#e67e22;">⚠️ ${conflictType} Collision Imegunduliwa</h3>
+          <div style="background:#fff3cd;padding:18px;border-left:5px solid #f39c12;margin:20px 0;">
+            <strong>Onyo:</strong> Swap inaweza kusababisha class kuondolewa kwenye Lab. Fikiria vizuri.
+          </div>
+          <div style="margin-bottom:20px;">
+            <strong>Slot Unayotaka:</strong><br>
+            ${t.day} | ${t.start_time} - ${t.end_time}<br>
+            <b>${t.subject_name} (${t.subject_code})</b><br>
+            Program: ${t.program_name} (${t.program_code || 'N/A'})<br>
+            Venue: ${t.venue_name} | Tutor: ${t.tutor_name}
+          </div>
+          <div style="margin-bottom:25px;">
+            <strong>Slot Inayogongana:</strong><br>
+            ${collisionEntry.day} | ${collisionEntry.start_time} - ${collisionEntry.end_time}<br>
+            <b>${collisionEntry.subject_name} (${collisionEntry.subject_code})</b><br>
+            Program: ${collisionEntry.program_name} (${collisionEntry.program_code || 'N/A'})<br>
+            Venue: ${collisionEntry.venue_name} | Tutor: ${collisionEntry.tutor_name}
+          </div>
+          <form method="POST" action="/timetables/exchange" style="display:inline-block;margin-right:15px;">
+            <input type="hidden" name="first_id" value="${id}">
+            <input type="hidden" name="second_id" value="${collisionEntry.id}">
+            <input type="hidden" name="force" value="true">
+            <button type="submit" class="btn btn-danger btn-lg">🚨 FORCE SWAP</button>
+          </form>
+          <a href="/timetables" class="btn btn-secondary btn-lg">Cancel & Rudi Nyuma</a>
+        </div>`);
     }
 
-    /* ================================================================
-         SAFE UPDATE (UNCHANGED)
-       ================================================================ */
+    // ====================== NO COLLISION - VENUE SLOT MANAGEMENT ======================
+    const oldDay = String(current.day).toLowerCase();
+    const oldVenueId = current.venue_id || null;
+
+    let oldSlotCol = slotStrToCol(oldDay, current.slot);
+    if (!oldSlotCol) {
+      oldSlotCol = getSlotCol(oldDay, current.start_time, current.end_time);
+    }
+
+    const newDay = sanitize(t.day).toLowerCase();
+    const newSlotCol = getSlotCol(newDay, t.start_time, t.end_time);
+
+    if (!newSlotCol) {
+      await conn.rollback();
+      conn.release();
+      return res.status(400).send(`Muda ${t.start_time} - ${t.end_time} hauko kwenye orodha ya slots.`);
+    }
+
+    const [[newVenueRow]] = await conn.query(
+      `SELECT venue_id FROM venues WHERE venue_name = ? LIMIT 1`,
+      [sanitize(t.venue_name)]
+    );
+
+    if (!newVenueRow) {
+      await conn.rollback();
+      conn.release();
+      return res.status(404).send(`Venue "${t.venue_name}" haikupatikana.`);
+    }
+
+    const newVenueId = newVenueRow.venue_id;
+
+    const venueChanged = newVenueId !== oldVenueId;
+    const slotChanged = oldSlotCol !== newSlotCol;
+    const dayChanged = oldDay !== newDay;
+
+    if (oldVenueId && oldSlotCol && (venueChanged || slotChanged || dayChanged)) {
+      const stillUsed = await isSlotStillUsed(conn, oldVenueId, oldSlotCol, id);
+      if (!stillUsed) {
+        await conn.execute(`UPDATE venues SET ${oldSlotCol}_status = 'unused' WHERE venue_id = ?`, [oldVenueId]);
+      }
+    }
+
+    await conn.execute(`UPDATE venues SET ${newSlotCol}_status = 'used' WHERE venue_id = ?`, [newVenueId]);
+
+    // ====================== UPDATE THE TIMETABLE ======================
+    const newSlotStr = `${toShort(t.start_time)}-${toShort(t.end_time)}`;
+
     const sql = `
       UPDATE extracted_timetables SET
-        day=?, start_time=?, end_time=?, subject_code=?, subject_name=?,
-        department_name=?, venue_name=?, tutor_name=?, venue_location=?,
-        program_name=?, subject_credit=?, program_level=?, year=?,
-        venue_type=?, venue_status=?, semester=?
-      WHERE id=?`;
+        day = ?, start_time = ?, end_time = ?, subject_code = ?, subject_name = ?,
+        department_name = ?, venue_name = ?, venue_id = ?, tutor_name = ?,
+        venue_location = ?, program_name = ?, subject_credit = ?, program_level = ?,
+        year = ?, venue_type = ?, venue_status = ?, semester = ?, slot = ?
+      WHERE id = ?`;
 
     const values = [
       sanitize(t.day), sanitize(t.start_time), sanitize(t.end_time),
       sanitize(t.subject_code), sanitize(t.subject_name),
-      sanitize(t.department_name), sanitize(t.venue_name),
+      sanitize(t.department_name), sanitize(t.venue_name), newVenueId,
       sanitize(t.tutor_name), sanitize(t.venue_location),
       sanitize(t.program_name), sanitize(t.subject_credit),
       sanitize(t.program_level), sanitize(t.year),
       sanitize(t.venue_type), sanitize(t.venue_status),
-      sanitize(t.semester), id
+      sanitize(t.semester), newSlotStr, id
     ];
 
-    await pool.execute(sql, values);
+    await conn.execute(sql, values);
+    await conn.commit();
+
+    console.log(`✅ Timetable id=${id} updated successfully`);
 
     return res.status(200).send(`
-<h4>Updated Successfully</h4>
-<b>${t.subject_name}</b> (${t.subject_code})<br>
-${t.day} | ${t.start_time} - ${t.end_time}<br>
-Program: ${t.program_name} - Level ${t.program_level}<br>
-Venue: ${t.venue_name}
-<br><br>
-<a href="/timetables">Back</a>`);
+      <div style="max-width:600px;margin:40px auto;padding:30px;border:2px solid #27ae60;border-radius:12px;text-align:center;">
+        <h3 style="color:#27ae60;">✅ Timetable Ime-update kwa Mafanikio!</h3>
+        <p><strong>${t.subject_name} (${t.subject_code})</strong></p>
+        <p>${t.day} | ${t.start_time} - ${t.end_time}</p>
+        <p>Program: ${t.program_name} | Venue: ${t.venue_name}</p>
+        <br>
+        <a href="/timetables" class="btn btn-primary btn-lg">Rudi Timetables</a>
+      </div>`);
+
   } catch (err) {
+    await conn.rollback();
     console.error("Error updating timetable:", err);
-    return res.status(500).send("Internal Error: " + err.message);
+    return res.status(500).send(`<h4 style="color:red;">Server Error</h4><p>${err.message}</p>`);
+  } finally {
+    conn.release();
   }
 };
-
-
-// export const handleUpdatetimetable = async (req, res) => {
-//   try {
-//     const { id } = req.params;
-//     const t = req.body || {};
-
-//     // Normalize "HH:MM" => "HH:MM:SS"
-//     const normalizeTime = v => {
-//       if (!v) return null;
-//       const s = String(v).trim();
-//       return s.length === 5 ? s + ':00' : s;
-//     };
-//     t.start_time = normalizeTime(t.start_time);
-//     t.end_time = normalizeTime(t.end_time);
-
-//     // Empty → null
-//     const sanitize = v => (v === undefined || v === "" ? null : v);
-
-//     // Required fields
-//     const requiredFields = [
-//       'day','start_time','end_time','subject_code','subject_name',
-//       'department_name','venue_name','tutor_name','venue_location',
-//       'program_name','subject_credit','program_level','year',
-//       'venue_type','venue_status','semester'
-//     ];
-
-//     for (const f of requiredFields) {
-//       if (!t[f] || t[f].toString().trim() === "") {
-//         return res.status(400).send(`Missing required field: '${f}'`);
-//       }
-//     }
-
-//     // Fetch current row
-//     const [[current]] = await pool.query(
-//       `SELECT * FROM extracted_timetables WHERE id = ?`,
-//       [id]
-//     );
-//     if (!current) return res.status(404).send("Timetable entry not found");
-
-//     // Get all other entries same day & semester
-//     const [others] = await pool.query(
-//       `SELECT * FROM extracted_timetables
-//        WHERE id != ? AND semester = ? AND day = ?`,
-//       [id, t.semester, t.day]
-//     );
-
-//     let action = null;
-//     let collisionEntry = null;
-
-//     // Time overlap
-//     const overlap = (s1, e1, s2, e2) => (s1 < e2 && e1 > s2);
-
-//     // Can payload fit in slot safely?
-//     const canPlacePayloadInSlot = async (payload, slotTarget, excludes = []) => {
-//       const params = [
-//         slotTarget.semester,
-//         slotTarget.day,
-//         slotTarget.end_time,
-//         slotTarget.start_time,
-//       ];
-
-//       let q = `
-//         SELECT * FROM extracted_timetables
-//         WHERE semester = ? AND day = ?
-//         AND start_time < ? AND end_time > ?
-//       `;
-
-//       if (excludes.length) {
-//         const ph = excludes.map(_ => "?").join(",");
-//         q += ` AND id NOT IN (${ph})`;
-//         params.push(...excludes);
-//       }
-
-//       const [rows] = await pool.query(q, params);
-
-//       for (const r of rows) {
-//         if (r.venue_name === slotTarget.venue_name)
-//           return { ok: false, reason: "venue_conflict", row: r };
-
-//         if (payload.tutor_name && payload.tutor_name === r.tutor_name)
-//           return { ok: false, reason: "tutor_conflict", row: r };
-
-//         if (payload.program_name && payload.program_name === r.program_name)
-//           return { ok: false, reason: "program_conflict", row: r };
-//       }
-
-//       return { ok: true };
-//     };
-
-//     // COLLISION SCAN
-//       // COLLISION SCAN
-//     for (const e of others) {
-
-//       // skip kama hakuna overlap
-//       if (!overlap(t.start_time, t.end_time, e.start_time, e.end_time))
-//         continue;
-
-//       /* =========================================================
-//          VENUE OVERLAP: Not a problem (ignore venue conflict here)
-//          ========================================================= */
-
-//       // 1️⃣ PROGRAM CONFLICT — program haijigawi
-//       if (e.program_name === t.program_name && canPlacePayloadInSlot  ) {
-//         action = "cancel";
-//         collisionEntry = e;
-//         break;
-//       }
-
-//       // 2️⃣ TUTOR CONFLICT — tutor hawezi fundisha sehemu mbili
-//       if (e.tutor_name === t.tutor_name && !canPlacePayloadInSlot) {
-//         action = "cancel";
-//         collisionEntry = e;
-//         break;
-//       }
-
-//       // 3️⃣ MIX — subject code ile ile lakini program tofauti
-//       if (e.subject_code === t.subject_code && e.program_name !== t.program_name) {
-//         action = "mix";
-//         collisionEntry = e;
-//         break;
-//       }
-
-//       // 4️⃣ STRICT EXCHANGE CHECK
-//       const payloadA = {
-//         tutor_name: t.tutor_name,
-//         program_name: t.program_name,
-//       };
-
-//       const payloadB = {
-//         tutor_name: e.tutor_name,
-//         program_name: e.program_name,
-//       };
-
-//       // slot definitions
-//       const slotE = {
-//         semester: e.semester,
-//         day: e.day,
-//         start_time: e.start_time,
-//         end_time: e.end_time,
-//         venue_name: e.venue_name
-//       };
-
-//       const slotT = {
-//         semester: t.semester,
-//         day: t.day,
-//         start_time: t.start_time,
-//         end_time: t.end_time,
-//         venue_name: t.venue_name
-//       };
-
-//       // check both sides
-//       const chA = await canPlacePayloadInSlot(payloadA, slotE, [id, e.id]);
-//       const chB = await canPlacePayloadInSlot(payloadB, slotT, [id, e.id]);
-
-//       if (chA.ok && chB.ok) {
-//         action = "exchange";
-//         collisionEntry = e;
-//         break;
-//       }
-
-//       // If reverse side fails due to tutor/program (NOT venue)
-//       if (!chB.ok && (chB.reason === "tutor_conflict" || chB.reason === "program_conflict")) {
-//         action = "cancel";
-//         collisionEntry = chB.row || e;
-//         break;
-//       }
-
-//     }
-
-
-//     // RETURN UI COLLISION RESPONSES
-//     if (action && collisionEntry) {
-//       let msg = "";
-
-// if (action === 'cancel') {
-//     msg = `
-// <h3 style="color:#b30000;">Exchange Impossible — Cancel Required</h3>
-
-// <p>
-// The system applied the <strong>Strict Two-Side Exchange Rule</strong> which requires that:
-// </p>
-
-// <ul>
-//   <li><strong>(1)</strong> Your updated session must fit correctly inside the target slot 
-//       <em>without causing tutor, program, or venue collisions</em>.</li>
-
-//   <li><strong>(2)</strong> The other session must also fit inside your original slot 
-//       using the <strong>same non-collision checks</strong>.</li>
-// </ul>
-
-// <p>
-// During the validation, the system detected that placing 
-// <strong>${t.subject_name}</strong> (${t.subject_code}) into 
-// <strong>${t.venue_name}</strong> at 
-// <strong>${t.start_time} – ${t.end_time}</strong> 
-// creates a <strong>hard collision</strong> with an already scheduled session:
-// </p>
-
-// <div style="padding:10px;border:1px solid #ddd;border-radius:5px;">
-//   <strong>${collisionEntry.subject_name}</strong> 
-//   (${collisionEntry.subject_code})<br>
-//   Program: <strong>${collisionEntry.program_name}</strong><br>
-//   Tutor: <strong>${collisionEntry.tutor_name}</strong><br>
-//   Venue: <strong>${collisionEntry.venue_name}</strong><br>
-//   Time: <strong>${collisionEntry.start_time} – ${collisionEntry.end_time}</strong>
-// </div>
-
-// <br>
-
-// <h4>Why Strict Exchange Failed:</h4>
-
-// <p>At least one of the following conflicts was detected when simulating the swap:</p>
-
-// <ul>
-//   <li>
-//     <strong>Program Conflict:</strong> The program for the above session is already in another class 
-//     within the same time window — a program cannot exist in two venues at once.
-//   </li>
-
-//   <li>
-//     <strong>Tutor Conflict:</strong> The tutor involved is already teaching somewhere else during 
-//     the same interval — tutors cannot split sessions.
-//   </li>
-
-//   <li>
-//     <strong>Venue Conflict:</strong> The venue is already booked and cannot host two sessions simultaneously.
-//   </li>
-
-//   <li>
-//     <strong>Reverse-Side Failure:</strong> Even if your class could move to the other slot, the other class 
-//     cannot move into your current slot without causing a new collision.  
-//     (<em>Strict rule: Both sides MUST fit — not one side only.</em>)
-//   </li>
-// </ul>
-
-// <br>
-
-// <p style="color:#b30000;">
-// Therefore it is <strong>impossible</strong> for these two sessions to exchange positions without violating timetable integrity.  
-// The system must <strong>cancel</strong> this exchange request.
-// </p>
-
-// <p><a href="/timetables" class="btn btn-secondary">Back to Timetables</a></p>
-// `;
-// }
-
-//       if (action === "mix") {
-//         msg = `
-// <h4>Mix Programs</h4>
-// <p>Subject <b>${t.subject_name}</b> (${t.subject_code}) appears in another program (${collisionEntry.program_name}).</p>
-
-// <a href="/manageTimetable">Go to mixing timetable page</a>
-
-// <a href="/timetables">Cancel / Back</a>
-// `;
-//       }
-
-//       if (action === "exchange") {
-//         msg = `
-// <h4>Exchange Possible</h4>
-// <p>A strict two-way exchange can be applied.</p>
-
-// <form method="POST" action="/timetables/exchange">
-//   <input type="hidden" name="first_id" value="${id}">
-//   <input type="hidden" name="second_id" value="${collisionEntry.id}">
-//   <button class="btn btn-warning">Exchange Slots</button>
-// </form>
-// <a href="/timetables">Back</a>
-// `;
-//       }
-
-//       return res.status(409).send(msg);
-//     }
-
-//     // NO COLLISION → UPDATE SAFELY (NO FREED SLOT)
-//     const sql = `
-//       UPDATE extracted_timetables SET
-//         day=?, start_time=?, end_time=?, subject_code=?, subject_name=?,
-//         department_name=?, venue_name=?, tutor_name=?, venue_location=?,
-//         program_name=?, subject_credit=?, program_level=?, year=?,
-//         venue_type=?, venue_status=?, semester=?
-//       WHERE id=?`;
-
-//     const values = [
-//       sanitize(t.day), sanitize(t.start_time), sanitize(t.end_time),
-//       sanitize(t.subject_code), sanitize(t.subject_name),
-//       sanitize(t.department_name), sanitize(t.venue_name),
-//       sanitize(t.tutor_name), sanitize(t.venue_location),
-//       sanitize(t.program_name), sanitize(t.subject_credit),
-//       sanitize(t.program_level), sanitize(t.year),
-//       sanitize(t.venue_type), sanitize(t.venue_status),
-//       sanitize(t.semester), id
-//     ];
-
-//     await pool.execute(sql, values);
-
-//     // SUCCESS
-//     return res.status(200).send(`
-// <h4>Updated Successfully</h4>
-// <b>${t.subject_name}</b> (${t.subject_code})<br>
-// ${t.day} | ${t.start_time} - ${t.end_time}<br>
-// Venue: ${t.venue_name} | Tutor: ${t.tutor_name}
-// <br><br>
-// <a href="/timetables">Back</a>
-// `);
-
-//   } catch (err) {
-//     console.error("Error updating timetable:", err);
-//     return res.status(500).send("Internal Error: " + err.message);
-//   }
-// };
-
-
-
-// export const handleUpdatetimetable = async (req, res) => {
-//   try {
-//     const { id } = req.params;
-//     const t = req.body;
-//     const sanitize = v => (v === undefined || v === '' ? null : v);
-
-//     const requiredFields = [
-//       'day','start_time','end_time','subject_code','subject_name',
-//       'department_name','venue_name','tutor_name','venue_location',
-//       'program_name','subject_credit','program_level','year',
-//       'venue_type','venue_status','semester'
-//     ];
-
-//     for (const f of requiredFields) {
-//       if (!t[f] || t[f].toString().trim() === '') 
-//         return res.status(400).send(`Missing required field: '${f}'`);
-//     }
-
-//     // Get current record
-//     const [[current]] = await pool.query(`SELECT * FROM extracted_timetables WHERE id = ?`, [id]);
-
-//     // Get all other timetable entries
-//     const [existing] = await pool.query(`SELECT * FROM extracted_timetables WHERE id != ?`, [id]);
-
-//     let action = null; // will store collision action
-//     let collisionEntry = null;
-
-//     for (const e of existing) {
-//       const timeOverlap =
-//         (t.start_time < e.end_time && t.end_time > e.start_time); // overlap check
-//       if (!timeOverlap || e.day !== t.day) continue;
-
-//       // Cancel: venue already booked for that time
-//       if (e.venue_name === t.venue_name) {
-//         action = 'cancel';
-//         collisionEntry = e;
-//         break; // no point checking further
-//       }
-
-//       // Exchange: tutor or subject conflict
-//       if ((e.tutor_name === t.tutor_name && e.subject_code !== t.subject_code) ||
-//           (e.tutor_name !== t.tutor_name && e.subject_code !== t.subject_code) ||
-//           (e.tutor_name === t.tutor_name && e.subject_code === t.subject_code && e.program_name === t.program_name)
-//       ) {
-//         action = 'exchange';
-//         collisionEntry = e;
-//         break;
-//       }
-
-//       // Mix: same subject, different program, venue already booked
-//       if (e.subject_code === t.subject_code && e.program_name !== t.program_name) {
-//         action = 'mix';
-//         collisionEntry = e;
-//         break;
-//       }
-//     }
-
-//     if (action && collisionEntry) {
-//       let msg = '';
-//       if (action === 'cancel') {
-//         msg = `
-// <h4>Cancel Required</h4>
-// <p>Cannot place <strong>${t.subject_name}</strong> (${t.subject_code}) because venue <strong>${t.venue_name}</strong> is already booked or tutor/program is busy in this slot.</p>`;
-//       } else if (action === 'exchange') {
-//         msg = `
-// <h4>Exchange Option</h4>
-// <p>Conflict detected with <strong>${collisionEntry.subject_name}</strong> (${collisionEntry.subject_code})</p>
-// <form method="POST" action="/timetables/exchange">
-//   <input type="hidden" name="first_id" value="${id}" />
-//   <input type="hidden" name="second_id" value="${collisionEntry.id}" />
-//   <button type="submit" class="btn btn-warning">Exchange Slots</button>
-// </form>
-// <form method="GET" action="/timetables/cancel">
-//   <button type="submit" class="btn btn-secondary mt-2">Cancel</button>
-// </form>`;
-//       } else if (action === 'mix') {
-//         msg = `
-// <h4>Mix Programs</h4>
-// <p>Subject <strong>${t.subject_name}</strong> (${t.subject_code}) exists in another program <strong>${collisionEntry.program_name}</strong> during this slot.</p>
-// <form method="POST" action="/timetables/mix">
-//   <input type="hidden" name="id_1" value="${id}" />
-//   <input type="hidden" name="id_2" value="${collisionEntry.id}" />
-//   <button type="submit" class="btn btn-primary">Mix Programs</button>
-// </form>
-// <form method="GET" action="/timetables/cancel">
-//   <button type="submit" class="btn btn-secondary mt-2">Cancel</button>
-// </form>`;
-//       }
-//       return res.status(409).send(msg);
-//     }
-
-//     // Freed slots if venue/time changed
-//     if (current && (current.venue_name !== t.venue_name || current.start_time !== t.start_time)) {
-//       await pool.query(
-//         `INSERT INTO freed_slots 
-//           (venue_id, venue_name, day, start_time, end_time, released_by, reason, created_at)
-//          VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
-//         [
-//           current.venue_id || null,
-//           current.venue_name || "Unknown",
-//           current.day,
-//           current.start_time,
-//           current.end_time,
-//           'System',
-//           `Slot freed due to update (moved to ${t.venue_name} ${t.start_time})`
-//         ]
-//       );
-
-//       await pool.query(
-//         `DELETE FROM extracted_timetables 
-//          WHERE day=? AND start_time=? AND venue_id=? AND program_name=?`,
-//         [current.day, current.start_time, current.venue_id, current.program_name]
-//       );
-//     }
-
-//     // Normal update
-//     const sql = `
-//       UPDATE extracted_timetables SET
-//         day=?, start_time=?, end_time=?, subject_code=?, subject_name=?,
-//         department_name=?, venue_name=?, tutor_name=?, venue_location=?,
-//         program_name=?, subject_credit=?, program_level=?, year=?,
-//         venue_type=?, venue_status=?, semester=?
-//       WHERE id=?`;
-//     const values = [
-//       sanitize(t.day), sanitize(t.start_time), sanitize(t.end_time),
-//       sanitize(t.subject_code), sanitize(t.subject_name),
-//       sanitize(t.department_name), sanitize(t.venue_name),
-//       sanitize(t.tutor_name), sanitize(t.venue_location),
-//       sanitize(t.program_name), sanitize(t.subject_credit),
-//       sanitize(t.program_level), sanitize(t.year),
-//       sanitize(t.venue_type), sanitize(t.venue_status),
-//       sanitize(t.semester), sanitize(id)
-//     ];
-
-//     await pool.execute(sql, values);
-
-//     res.status(200).send(`
-// <h4>Timetable Updated Successfully</h4>
-// <p>${t.subject_name} (${t.subject_code})</p>
-// <p>Day: ${t.day} | Time: ${t.start_time} - ${t.end_time}</p>
-// <p>Venue: ${t.venue_name} | Tutor: ${t.tutor_name}</p>
-//     `);
-
-//   } catch (err) {
-//     console.error('Error updating timetable:', err);
-//     res.status(500).send('Internal Error while updating timetable: ' + err.message);
-//   }
-// };
-
-
-// export const handleUpdatetimetable = async (req, res) => {
-//   try {
-//     const { id } = req.params;
-//     const timetable = req.body;
-//     const sanitize = v => (v === undefined || v === '' ? null : v);
-
-//     const requiredFields = [
-//       'day','start_time','end_time','subject_code','subject_name',
-//       'department_name','venue_name','tutor_name','venue_location',
-//       'program_name','subject_credit','program_level','year',
-//       'venue_type','venue_status','semester'
-//     ];
-
-//     for (const field of requiredFields) {
-//       if (!timetable[field] || timetable[field].toString().trim() === '') {
-//         return res.status(400).send(`Missing required field: '${field}'`);
-//       }
-//     }
-
-//     const [currentRows] = await pool.query(`SELECT * FROM extracted_timetables WHERE id = ?`, [id]);
-//     const currentRecord = currentRows[0];
-
-//     const [existing] = await pool.query(`SELECT * FROM extracted_timetables WHERE id != ?`, [id]);
-
-//     let collision = null;
-
-//     for (const entry of existing) {
-//       const timeOverlap =
-//         (timetable.start_time >= entry.start_time && timetable.start_time < entry.end_time) ||
-//         (timetable.end_time > entry.start_time && timetable.end_time <= entry.end_time) ||
-//         (timetable.start_time <= entry.start_time && timetable.end_time >= entry.end_time);
-
-//       if (!timeOverlap || entry.day !== timetable.day) continue;
-
-//       // Venue already taken
-//       if (entry.venue_name === timetable.venue_name) {
-//         collision = { type: 'Venue', a: entry };
-//         break;
-//       }
-
-//       // Program and subject checks
-//       if (entry.program_name === timetable.program_name && entry.subject_code === timetable.subject_code) {
-//         if (entry.tutor_name !== timetable.tutor_name) {
-//           collision = { type: 'Exchange', reason: 'Same program & subject, tutor differs', a: entry };
-//         }
-//       } 
-//       // Mix: same subject, different program
-//       else if (entry.subject_code === timetable.subject_code && entry.program_name !== timetable.program_name) {
-//         collision = { type: 'Mix', reason: 'Same subject, different program', a: entry };
-//       }
-//       // Exchange: different subject or tutor
-//       else if (entry.subject_code !== timetable.subject_code || entry.tutor_name !== timetable.tutor_name) {
-//         collision = { type: 'Exchange', reason: 'Different subject or tutor', a: entry };
-//       }
-
-//       if (collision) break;
-//     }
-
-//     if (collision) {
-//       let msg = '';
-//       switch (collision.type) {
-//         case 'Mix':
-//           msg = `
-// <h4>Mix Option Available <a href="/manageTimetable"> GO TO MIX PROGRAM PAGE</a>
-// </h4>
-// <p>Subject <strong>${timetable.subject_name}</strong> exists in another program (<strong>${collision.a.program_name}</strong>) at this time.</p>
-
-// <!-- <form method="POST" action="/timetables/mix">
-//   <input type="hidden" name="id_1" value="${id}" />
-//   <input type="hidden" name="id_2" value="${collision.a.id}" />
-//   <button type="submit" class="btn btn-primary">Mix Programs</button>
-// </form>  -->
-
-// <a href="/manageTimetable"> GO TO MIX PROGRAM PAGE</a>
-
-// <form method="GET" action="/timetables/cancel">
-//   <button type="submit" class="btn btn-secondary mt-2">Cancel</button>
-// </form>`;
-//           break;
-//         case 'Exchange':
-//           msg = `
-// <h4>Exchange Option Available</h4>
-// <p>Conflict with <strong>${collision.a.subject_name}</strong> (${collision.a.program_name}) at this time.</p>
-// <form method="POST" action="/timetables/exchange">
-//   <input type="hidden" name="first_id" value="${id}" />
-//   <input type="hidden" name="second_id" value="${collision.a.id}" />
-//   <button type="submit" class="btn btn-warning">Exchange</button>
-// </form>
-// <form method="GET" action="/timetables/cancel">
-//   <button type="submit" class="btn btn-secondary mt-2">Cancel</button>
-// </form>`;
-//           break;
-//         case 'Venue':
-//           msg = `
-// <h4>Venue Already Taken</h4>
-// <p>Venue <strong>${collision.a.venue_name}</strong> is already booked by <strong>${collision.a.program_name}</strong> (${collision.a.subject_name})</p>
-// <form method="GET" action="/timetables/cancel">
-//   <button type="submit" class="btn btn-secondary">Cancel</button>
-// </form>`;
-//           break;
-//       }
-//       return res.status(409).send(msg);
-//     }
-
-//     // Freed slots if venue or time changed
-//     if (currentRecord && (currentRecord.venue_name !== timetable.venue_name || currentRecord.start_time !== timetable.start_time)) {
-//       await pool.query(
-//         `INSERT INTO freed_slots 
-//           (venue_id, venue_name, day, start_time, end_time, released_by, reason, created_at)
-//          VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
-//         [
-//           currentRecord.venue_id || null,
-//           currentRecord.venue_name || "Unknown",
-//           currentRecord.day,
-//           currentRecord.start_time,
-//           currentRecord.end_time,
-//           'System',
-//           `Slot freed due to update (moved to ${timetable.venue_name} ${timetable.start_time})`
-//         ]
-//       );
-
-//       await pool.query(
-//         `DELETE FROM extracted_timetables 
-//          WHERE day=? AND start_time=? AND venue_id=? AND program_name=?`,
-//         [currentRecord.day, currentRecord.start_time, currentRecord.venue_id, currentRecord.program_name]
-//       );
-//     }
-
-//     // Update timetable normally
-//     const sql = `
-//       UPDATE extracted_timetables SET
-//         day=?, start_time=?, end_time=?, subject_code=?, subject_name=?,
-//         department_name=?, venue_name=?, tutor_name=?, venue_location=?,
-//         program_name=?, subject_credit=?, program_level=?, year=?,
-//         venue_type=?, venue_status=?, semester=?
-//       WHERE id=?`;
-//     const values = [
-//       sanitize(timetable.day), sanitize(timetable.start_time), sanitize(timetable.end_time),
-//       sanitize(timetable.subject_code), sanitize(timetable.subject_name),
-//       sanitize(timetable.department_name), sanitize(timetable.venue_name),
-//       sanitize(timetable.tutor_name), sanitize(timetable.venue_location),
-//       sanitize(timetable.program_name), sanitize(timetable.subject_credit),
-//       sanitize(timetable.program_level), sanitize(timetable.year),
-//       sanitize(timetable.venue_type), sanitize(timetable.venue_status),
-//       sanitize(timetable.semester), sanitize(id)
-//     ];
-
-//     await pool.execute(sql, values);
-
-//     res.status(200).send(`
-// <h4>Timetable Updated Successfully</h4>
-// <p>${timetable.subject_name} (${timetable.subject_code})</p>
-// <p>Day: ${timetable.day} | Time: ${timetable.start_time} - ${timetable.end_time}</p>
-// <p>Venue: ${timetable.venue_name} | Tutor: ${timetable.tutor_name}</p>
-//     `);
-//   } catch (err) {
-//     console.error('Error updating timetable:', err);
-//     res.status(500).send('Internal Error while updating timetable: ' + err.message);
-//   }
-// };
-
-
-// export const handleUpdatetimetable = async (req, res) => {
-//   try {
-//     const { id } = req.params;
-//     const timetable = req.body; 
-//     const sanitize = v => (v === undefined || v === '' ? null : v);
-
-//     const requiredFields = [
-//       'day','start_time','end_time','subject_code','subject_name',
-//       'department_name','venue_name','tutor_name','venue_location',
-//       'program_name','subject_credit','program_level','year',
-//       'venue_type','venue_status','semester'
-//     ];
-
-//     for (const field of requiredFields) {
-//       if (!timetable[field] || timetable[field].toString().trim() === '') {
-//         return res.status(400).send(`Missing required field: '${field}'`);
-//       }
-//     }
-
-//     const [currentRows] = await pool.query(
-//       `SELECT * FROM extracted_timetables WHERE id = ?`,
-//       [id]
-//     );
-//     const currentRecord = currentRows[0];
-
-//     const [existing] = await pool.query(`SELECT * FROM extracted_timetables WHERE id != ?`, [id]);
-
-//     let collision = null;
-//     for (const entry of existing) {
-//       const overlap =
-//         (timetable.start_time >= entry.start_time && timetable.start_time < entry.end_time) ||
-//         (timetable.end_time > entry.start_time && timetable.end_time <= entry.end_time) ||
-//         (timetable.start_time <= entry.start_time && timetable.end_time >= entry.end_time);
-
-//       if (overlap && entry.day === timetable.day) {
-//         if (entry.tutor_name === timetable.tutor_name) collision = { type: 'Tutor', a: entry };
-//         else if (entry.program_name === timetable.program_name && entry.venue_name === timetable.venue_name)
-//           collision = { type: 'Program', a: entry };
-//         else if (entry.venue_name === timetable.venue_name) collision = { type: 'Venue', a: entry };
-//       }
-//       if (collision) break;
-//     }
-
-//     if (collision) {
-//       // Collision HTML with forms calling the correct router actions
-//       let msg = '';
-//       if (collision.type === 'Tutor') {
-//         msg = `
-// <h4>Collision Detected</h4>
-// <p>Tutor <strong>${collision.a.tutor_name}</strong> already has a class at this time.</p>
-// <form method="POST" action="/timetables/exchange">
-//   <input type="hidden" name="first_id" value="${id}" />
-//   <input type="hidden" name="second_id" value="${collision.a.id}" />
-//   <button type="submit" class="btn btn-warning">Exchange</button>
-// </form>
-// <form method="GET" action="/timetables/cancel">
-//   <button type="submit" class="btn btn-secondary mt-2">Cancel</button>
-// </form>`;
-//       } else if (collision.type === 'Program') {
-//         msg = `
-// <h4>Same Subject Found in Different Programs</h4>
-// <form method="POST" action="/timetables/mix">
-//   <input type="hidden" name="id_1" value="${id}" />
-//   <input type="hidden" name="id_2" value="${collision.a.id}" />
-//   <button type="submit" class="btn btn-primary">Mix Programs</button>
-// </form>
-// <form method="GET" action="/timetables/cancel">
-//   <button type="submit" class="btn btn-secondary mt-2">Cancel</button>
-// </form>`;
-//       } else if (collision.type === 'Venue') {
-//         msg = `
-// <h4>Venue Collision</h4>
-// <p>Venue <strong>${collision.a.venue_name}</strong> is already booked by <strong>${collision.a.program_name}</strong> (${collision.a.subject_name})</p>
-// <form method="GET" action="/timetables/cancel">
-//   <button type="submit" class="btn btn-secondary">Cancel</button>
-// </form>`;
-//       }
-//       return res.status(409).send(msg);
-//     }
-
- 
-
-//     // Freed slots if venue changed or slot is being moved
-// if (currentRecord && (currentRecord.venue_name !== timetable.venue_name || currentRecord.start_time !== timetable.start_time)) {
-//   // Insert into freed_slots
-//   await pool.query(
-//     `INSERT INTO freed_slots 
-//       (venue_id, venue_name, day, start_time, end_time, released_by, reason, created_at)
-//      VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
-//     [
-//       currentRecord.venue_id || null,
-//       currentRecord.venue_name || "Unknown",
-//       currentRecord.day,
-//       currentRecord.start_time,
-//       currentRecord.end_time,
-//       'System',
-//       `Slot freed due to update (moved to ${timetable.venue_name} ${timetable.start_time})`
-//     ]
-//   );
-
-//   // Delete the old slot from extracted_timetables to free the space
-//   await pool.query(
-//     `DELETE FROM extracted_timetables 
-//      WHERE day=? AND start_time=? AND venue_id=? AND program_name=?`,
-//     [currentRecord.day, currentRecord.start_time, currentRecord.venue_id, currentRecord.program_name]
-//   );
-// }
-
-//     // Update timetable normally
-//     const sql = `
-//       UPDATE extracted_timetables SET
-//         day=?, start_time=?, end_time=?, subject_code=?, subject_name=?,
-//         department_name=?, venue_name=?, tutor_name=?, venue_location=?,
-//         program_name=?, subject_credit=?, program_level=?, year=?,
-//         venue_type=?, venue_status=?, semester=?
-//       WHERE id=?`;
-//     const values = [
-//       sanitize(timetable.day), sanitize(timetable.start_time), sanitize(timetable.end_time),
-//       sanitize(timetable.subject_code), sanitize(timetable.subject_name),
-//       sanitize(timetable.department_name), sanitize(timetable.venue_name),
-//       sanitize(timetable.tutor_name), sanitize(timetable.venue_location),
-//       sanitize(timetable.program_name), sanitize(timetable.subject_credit),
-//       sanitize(timetable.program_level), sanitize(timetable.year),
-//       sanitize(timetable.venue_type), sanitize(timetable.venue_status),
-//       sanitize(timetable.semester), sanitize(id)
-//     ];
-
-//     await pool.execute(sql, values);
-
-//     res.status(200).send(`
-// <h4>Timetable Updated Successfully</h4>
-// <p>${timetable.subject_name} (${timetable.subject_code})</p>
-// <p>Day: ${timetable.day} | Time: ${timetable.start_time} - ${timetable.end_time}</p>
-// <p>Venue: ${timetable.venue_name} | Tutor: ${timetable.tutor_name}</p>
-//     `);
-//   } catch (err) {
-//     console.error('Error updating timetable:', err);
-//     res.status(500).send('Internal Error while updating timetable: ' + err.message);
-//   }
-// };
-
-
-

@@ -1,3 +1,5 @@
+
+// models/timetablesModel.js
 import pool from '../db.js';
 
 // Fetch all timetables
@@ -55,126 +57,235 @@ export const updatetimetable = async (id, timetable) => {
 
 
 
+const LTAP_DECREMENT = 0.75;
 
-const LTAP_DECREMENT = 0.75; // 45min = 0.75
-
+/**
+ * Deletes a timetable entry and reverses its effects.
+ * Strict matching: Tutor + Subject Code + Program Name
+ * Even small spacing differences will reject the deletion.
+ */
 export const deleteTimetableByIdWithEffects = async (id, opts = {}) => {
   const conn = await pool.getConnection();
+
+  let cleanTutorName = '';
+  let cleanSubjectCode = '';
+  let timetableProgramName = '';
+
   try {
     await conn.beginTransaction();
 
-    // ===========================
-    // 1. Fetch timetable row
-    // ===========================
-    const [rows] = await conn.execute('SELECT * FROM extracted_timetables WHERE id = ?', [id]);
-    if (!rows || rows.length === 0) throw new Error('Timetable row not found for id ' + id);
-    const row = rows[0];
+    // --- 1. DATA FETCHING ---
+    const [tRows] = await conn.execute(
+      'SELECT * FROM extracted_timetables WHERE id = ? LIMIT 1',
+      [id]
+    );
 
-    const subject_code = opts.subject_code || row.subject_code;
-    const program_code_raw = opts.program_code || row.program_code || row.program_name || '';
-    const tutor_name = opts.tutor_name || row.tutor_name;
-    const day = opts.day || row.day;
-    const start_time = opts.start_time || row.start_time;
-    const end_time = opts.end_time || row.end_time;
-    const released_by = opts.released_by || 'system';
-    const notes = opts.notes || '';
-
-    // ===========================
-    // 2. Insert freed slot helper
-    // ===========================
-    const insertFreedSlot = async (reasonText, extra = {}) => {
-      const venue_id = row.venue_id || null;
-      const venue_name = row.venue_name || null;
-      await conn.execute(
-        `INSERT INTO freed_slots (venue_id, venue_name, day, start_time, end_time, released_by, reason, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
-        [venue_id, venue_name, day, start_time, end_time, released_by, reasonText + (extra ? ' | ' + JSON.stringify(extra) : '')]
-      );
-    };
-
-    // ===========================
-    // 3. Helpers to get IDs
-    // ===========================
-    const getProgramId = async (progCode) => {
-      const [programRows] = await conn.execute('SELECT program_id FROM programs WHERE program_code = ?', [progCode]);
-      if (!programRows || programRows.length === 0) throw new Error('Program code not found: ' + progCode);
-      return programRows[0].program_id;
-    };
-
-    const getTutorId = async (tutorName) => {
-      const [userRows] = await conn.execute('SELECT user_id FROM users WHERE full_name = ?', [tutorName]);
-      if (!userRows || userRows.length === 0) throw new Error('Tutor not found: ' + tutorName);
-      return userRows[0].user_id;
-    };
-
-    // ===========================
-    // 4. Decrement LTPA safely
-    // ===========================
-    const decrementLtpa = async (progCode, subjCode, tutorName) => {
-      const program_id = await getProgramId(progCode);
-      const tutor_id = await getTutorId(tutorName);
-
-      // First fetch current LTPA
-      const [ltpaRows] = await conn.execute(
-        'SELECT ltpa FROM subjects WHERE program_id = ? AND subject_code = ? AND user_id = ?',
-        [program_id, subjCode, tutor_id]
-      );
-      if (!ltpaRows || ltpaRows.length === 0) return;
-
-      const currentLtpa = parseFloat(ltpaRows[0].ltpa) || 0;
-      const newLtpa = Math.max(0, currentLtpa - LTAP_DECREMENT); // ensure no negative
-
-      await conn.execute(
-        'UPDATE subjects SET ltpa = ? WHERE program_id = ? AND subject_code = ? AND user_id = ?',
-        [newLtpa, program_id, subjCode, tutor_id]
-      );
-    };
-
-    // ===========================
-    // 5. Parse combined programs
-    // ===========================
-    const programCodes = program_code_raw
-      .split(/[,+]/)       // split by comma or plus
-      .map(p => p.trim())  // remove extra spaces
-      .filter(Boolean);    // remove empty
-
-    // ===========================
-    // 6. Main logic based on reason
-    // ===========================
-    if (opts.reason === 'tutor_collision' || opts.reason === 'program_collision') {
-      // Only decrement LTPA, no freed slots
-      for (const prog of programCodes) {
-        await decrementLtpa(prog, subject_code, tutor_name);
-      }
-    } else if (opts.reason === 'unmix') {
-      // One freed slot for the combined programs
-      await insertFreedSlot('unmix freed slot', { subject_code, programs: programCodes, tutor_name, notes });
-      // Decrement LTPA for each program individually
-      for (const prog of programCodes) {
-        await decrementLtpa(prog, subject_code, tutor_name);
-      }
-    } else {
-      // General deletion: log freed slot
-      await insertFreedSlot(opts.reason || 'deleted', { subject_code, programs: programCodes, tutor_name, notes });
-      for (const prog of programCodes) {
-        await decrementLtpa(prog, subject_code, tutor_name);
-      }
+    if (tRows.length === 0) {
+      throw new Error(`Deletion Failed: Timetable ID ${id} was not found.`);
     }
 
-    // ===========================
-    // 7. Delete timetable row
-    // ===========================
+    const row = tRows[0];
+
+    cleanTutorName = (row.tutor_name || '').trim();
+    cleanSubjectCode = (row.subject_code || '').trim();
+    timetableProgramName = (row.program_name || '').trim();   // Tunatumia program_name
+
+    const cleanDay = (opts.day || row.day || '').toLowerCase().trim();
+    const rawVenueType = (row.venue_type || '').toLowerCase();
+
+    // Normalize time helper
+    const normalizeTime = (t) => {
+      if (!t) return null;
+      const s = String(t).trim();
+      if (/^\d{2}:\d{2}:\d{2}$/.test(s)) return s;
+      if (/^\d{2}:\d{2}$/.test(s)) return s + ':00';
+      return s;
+    };
+
+    const normStart = normalizeTime(row.start_time);
+    const normEnd = normalizeTime(row.end_time);
+
+    // --- 2. STRICT VALIDATION ---
+
+    // A. Validate Tutor (Exact match)
+    const [userRows] = await conn.execute(
+      `SELECT user_id FROM users WHERE full_name = ? LIMIT 1`,
+      [cleanTutorName]
+    );
+
+    if (userRows.length === 0) {
+      throw new Error(`CRITICAL: Tutor "${cleanTutorName}" does not exist in the users table. Deletion Aborted.`);
+    }
+
+    const tutor_id = userRows[0].user_id;
+
+    // B. Get subjects for this tutor (program_name + subject_code)
+    const [subjects] = await conn.execute(
+      `SELECT subject_id, subject_code, type_prac_or_theory, ltpa, program_name 
+       FROM subjects WHERE user_id = ?`,
+      [tutor_id]
+    );
+
+    if (subjects.length === 0) {
+      throw new Error(`CRITICAL: No subjects found assigned to tutor "${cleanTutorName}". Deletion Aborted.`);
+    }
+
+    // Normalize helper (strict - removes extra spaces only)
+    const normalize = (str) => String(str || '').trim().toUpperCase().replace(/\s+/g, ' ');
+
+    const normTimetableSubject = normalize(cleanSubjectCode);
+    const normTimetableProgram = normalize(timetableProgramName);
+
+    // Strict exact match: Subject Code + Program Name
+    const codeMatches = subjects.filter(s => {
+      const dbSubject = normalize(s.subject_code);
+      const dbProgram = normalize(s.program_name || '');
+
+      return dbSubject === normTimetableSubject && dbProgram === normTimetableProgram;
+    });
+
+    // Detailed error reporting if no match
+    if (codeMatches.length === 0) {
+      console.error(`[DELETE ERROR] Strict match failed - Timetable ID: ${id}`);
+      console.error(`   Timetable Subject Code : "${cleanSubjectCode}"`);
+      console.error(`   Timetable Program Name : "${timetableProgramName}"`);
+      console.error(`   Normalized Subject     : "${normTimetableSubject}"`);
+      console.error(`   Normalized Program     : "${normTimetableProgram}"`);
+      console.error(`   Tutor                  : "${cleanTutorName}"`);
+
+      console.error(`   Available subjects for this tutor (${subjects.length}):`);
+      subjects.forEach((sub, i) => {
+        console.error(`     ${i+1}. Subject: "${sub.subject_code}" | Program Name: "${sub.program_name || 'N/A'}" | Type: ${sub.type_prac_or_theory || 'N/A'} | LTPA: ${sub.ltpa}`);
+      });
+
+      throw new Error(`CRITICAL: Subject "${cleanSubjectCode}" with Program "${timetableProgramName}" is not exactly assigned to ${cleanTutorName}. Deletion Aborted.`);
+    }
+
+    // C. Resolve subject type (Theory / Lab etc.)
+    let finalSubject = null;
+
+    if (codeMatches.length === 1) {
+      finalSubject = codeMatches[0];
+    } else {
+      const isLabRelated = rawVenueType.includes('lab') || rawVenueType.includes('prac') || rawVenueType.includes('work');
+      
+      finalSubject = codeMatches.find(s => {
+        const sType = (s.type_prac_or_theory || '').toLowerCase();
+        if (isLabRelated) {
+          return sType.includes('lab') || sType.includes('prac') || sType.includes('work');
+        } else {
+          return sType.includes('theo') || sType.includes('lect');
+        }
+      }) || codeMatches[0];
+    }
+
+    if (!finalSubject) {
+      throw new Error(`CRITICAL: Could not resolve subject type for "${cleanSubjectCode}". Deletion Aborted.`);
+    }
+
+    // D. Validate Slot Column
+    const slotColumn = getSlotColumnName(cleanDay, normStart, normEnd);
+    if (!slotColumn) {
+      throw new Error(`CRITICAL: Time slot ${normStart}-${normEnd} is not recognized. Deletion Aborted.`);
+    }
+
+    // --- 3. EXECUTION SECTION ---
+
+    // 1. Decrement LTPA (never goes below 0)
+    const currentLtpa = parseFloat(finalSubject.ltpa) || 0;
+    const updatedLtpa = Math.max(0, currentLtpa - LTAP_DECREMENT);
+
+    await conn.execute(
+      'UPDATE subjects SET ltpa = ? WHERE subject_id = ?',
+      [updatedLtpa, finalSubject.subject_id]
+    );
+
+    // 2. Free the Venue Slot
+    if (row.venue_id) {
+      const statusCol = `${slotColumn}_status`;
+      await conn.execute(
+        `UPDATE venues SET ${statusCol} = 'unused' WHERE venue_id = ?`,
+        [row.venue_id]
+      );
+    }
+
+    // 3. Log the Deletion
+    await conn.execute(
+      `INSERT INTO timetable_deletion_log 
+        (timetable_id, venue_id, venue_name, day, start_time, end_time, subject_code, tutor_name, program_name, deleted_by, reason, created_at) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+      [
+        id, row.venue_id, row.venue_name, cleanDay, normStart, normEnd, 
+        cleanSubjectCode, cleanTutorName, timetableProgramName,
+        opts.deleted_by || 'system', opts.reason || 'manual deletion'
+      ]
+    );
+
+    // 4. Final Delete
     await conn.execute('DELETE FROM extracted_timetables WHERE id = ?', [id]);
 
     await conn.commit();
-    conn.release();
+
+    console.log(`✅ Timetable ID ${id} deleted successfully. LTPA: ${currentLtpa} → ${updatedLtpa}`);
+
+    return { success: true };
+
   } catch (err) {
-    await conn.rollback();
-    conn.release();
-    console.error('deleteTimetableByIdWithEffects error', err);
+    if (conn) await conn.rollback();
+
+    console.error(`[DELETE FAILED] Timetable ID: ${id}`);
+    console.error(`   Tutor          : ${cleanTutorName || 'N/A'}`);
+    console.error(`   Subject Code   : ${cleanSubjectCode || 'N/A'}`);
+    console.error(`   Program Name   : ${timetableProgramName || 'N/A'}`);
+    console.error(`   Error          : ${err.message}`);
+    console.error(err);
+
     throw err;
+  } finally {
+    if (conn) conn.release();
   }
 };
+
+
+function getSlotColumnName(day, start, end) {
+  const timeToSlot = {
+    "07:30:00-08:15:00": 1,
+    "08:15:00-09:00:00": 2,
+    "09:05:00-09:50:00": 3,
+    "09:50:00-10:35:00": 4,
+    "11:00:00-11:45:00": 5,
+    "11:45:00-12:30:00": 6,
+    "13:15:00-14:00:00": 7,
+    "14:00:00-14:45:00": 8,
+    "14:50:00-15:35:00": 9,
+    "15:35:00-16:20:00": 10,
+    "16:25:00-17:10:00": 11,
+    "17:10:00-17:55:00": 12,
+    "18:00:00-18:45:00": 13,
+    "18:45:00-19:30:00": 14,
+    "19:35:00-20:20:00": 15,
+    "20:20:00-21:05:00": 16,
+    "21:10:00-21:55:00": 17,
+    "21:55:00-22:40:00": 18,
+  };
+
+  const key = `${start}-${end}`;
+  const slotNumber = timeToSlot[key];
+
+  if (!slotNumber) return null;
+
+  return `${day}_slot${slotNumber}`;
+}
+
+async function getTutorUserId(conn, fullName) {
+  if (!fullName) return null;
+  const [rows] = await conn.execute(
+    'SELECT user_id FROM users WHERE full_name = ? LIMIT 1',
+    [fullName]
+  );
+  return rows.length ? rows[0].user_id : null;
+}
+
 
 // truncate function stays same as before
 // truncate function
@@ -223,356 +334,4 @@ export const truncateAllTimetables = async () => {
     throw err;
   }
 };
-
-
-
-
-
-
-// // models/timetablesModel.js
-// // import pool from '../db.js';
-
-// const LTAP_DECREMENT = 0.75; // 45min = 0.75
-
-// export const deleteTimetableByIdWithEffects = async (id, opts = {}) => {
-//   const conn = await pool.getConnection();
-//   try {
-//     await conn.beginTransaction();
-
-//     // ===========================
-//     // 1. Fetch timetable row
-//     // ===========================
-//     const [rows] = await conn.execute('SELECT * FROM extracted_timetables WHERE id = ?', [id]);
-//     if (!rows || rows.length === 0) throw new Error('Timetable row not found for id ' + id);
-//     const row = rows[0];
-
-//     const subject_code = opts.subject_code || row.subject_code;
-//     const program_code_raw = opts.program_code || row.program_code || row.program_name || '';
-//     const tutor_name = opts.tutor_name || row.tutor_name;
-//     const day = opts.day || row.day;
-//     const start_time = opts.start_time || row.start_time;
-//     const end_time = opts.end_time || row.end_time;
-//     const released_by = opts.released_by || 'system';
-//     const notes = opts.notes || '';
-
-//     // ===========================
-//     // 2. Insert freed slot helper
-//     // ===========================
-//     const insertFreedSlot = async (reasonText, extra = {}) => {
-//       const venue_id = row.venue_id || null;
-//       const venue_name = row.venue_name || null;
-//       await conn.execute(
-//         `INSERT INTO freed_slots (venue_id, venue_name, day, start_time, end_time, released_by, reason, created_at)
-//          VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
-//         [venue_id, venue_name, day, start_time, end_time, released_by, reasonText + (extra ? ' | ' + JSON.stringify(extra) : '')]
-//       );
-//     };
-
-//     // ===========================
-//     // 3. Helpers to get IDs
-//     // ===========================
-//     const getProgramId = async (progCode) => {
-//       const [programRows] = await conn.execute('SELECT program_id FROM programs WHERE program_code = ?', [progCode]);
-//       if (!programRows || programRows.length === 0) throw new Error('Program code not found: ' + progCode);
-//       return programRows[0].program_id;
-//     };
-
-//     const getTutorId = async (tutorName) => {
-//       const [userRows] = await conn.execute('SELECT user_id FROM users WHERE full_name = ?', [tutorName]);
-//       if (!userRows || userRows.length === 0) throw new Error('Tutor not found: ' + tutorName);
-//       return userRows[0].user_id;
-//     };
-
-//     const decrementLtpa = async (progCode, subjCode, tutorName) => {
-//       const program_id = await getProgramId(progCode);
-//       const tutor_id = await getTutorId(tutorName);
-//       await conn.execute(
-//         'UPDATE subjects SET ltpa = ltpa - ? WHERE program_id = ? AND subject_code = ? AND user_id = ?',
-//         [LTAP_DECREMENT, program_id, subjCode, tutor_id]
-//       );
-//     };
-
-//     // ===========================
-//     // 4. Parse combined programs
-//     // ===========================
-//     const programCodes = program_code_raw
-//       .split(/[,+]/)       // split by comma or plus
-//       .map(p => p.trim())  // remove extra spaces
-//       .filter(Boolean);    // remove empty
-
-//     // ===========================
-//     // 5. Main logic based on reason
-//     // ===========================
-//     if (opts.reason === 'tutor_collision' || opts.reason === 'program_collision') {
-//       // Only decrement LTPA, no freed slots
-//       for (const prog of programCodes) {
-//         await decrementLtpa(prog, subject_code, tutor_name);
-//       }
-//     } else if (opts.reason === 'unmix') {
-//       // One freed slot for the combined programs
-//       await insertFreedSlot('unmix freed slot', { subject_code, programs: programCodes, tutor_name, notes });
-//       // Decrement LTPA for each program individually
-//       for (const prog of programCodes) {
-//         await decrementLtpa(prog, subject_code, tutor_name);
-//       }
-//     } else {
-//       // General deletion: log freed slot
-//       await insertFreedSlot(opts.reason || 'deleted', { subject_code, programs: programCodes, tutor_name, notes });
-//       for (const prog of programCodes) {
-//         await decrementLtpa(prog, subject_code, tutor_name);
-//       }
-//     }
-
-//     // ===========================
-//     // 6. Delete timetable row
-//     // ===========================
-//     await conn.execute('DELETE FROM extracted_timetables WHERE id = ?', [id]);
-
-//     await conn.commit();
-//     conn.release();
-//   } catch (err) {
-//     await conn.rollback();
-//     conn.release();
-//     console.error('deleteTimetableByIdWithEffects error', err);
-//     throw err;
-//   }
-// };
-// models/timetablesModel.js
-// import pool from '../db.js';
-
-// export const truncateAllTimetables = async () => {
-//   try {
-//     await pool.execute('TRUNCATE TABLE extracted_timetables');
-//     await pool.execute('TRUNCATE TABLE freed_slots');
-//     await pool.execute(`
-//       UPDATE venues
-//       SET mnos=1,tnos=1,wnos=1,thnos=1,frnos=1,satnos=1,sunnos=1,totalnos=7
-//       WHERE mnos IS NOT NULL
-//     `);
-//     await pool.execute(`UPDATE subjects SET ltpa=0.00 WHERE ltpa IS NOT NULL`);
-//   } catch (err) {
-//     console.error(err);
-//     throw err;
-//   }
-// };
-
-// models/timetablesModel.js
-// import pool from '../db.js';
-
-// const LTAP_DECREMENT = 0.75; // dakika 45 = 0.75 in decimal as you said
-
-// export const deleteTimetableByIdWithEffects = async (id, opts = {}) => {
-//   const conn = await pool.getConnection();
-//   try {
-//     await conn.beginTransaction();
-
-//     // 1. fetch the timetable row
-//     const [rows] = await conn.execute('SELECT * FROM extracted_timetables WHERE id = ?', [id]);
-//     if (!rows || rows.length === 0) {
-//       throw new Error('Timetable row not found for id ' + id);
-//     }
-//     const row = rows[0];
-
-//     // Use passed values as fallback
-//     const subject_code = opts.subject_code || row.subject_code;
-//     const program_code_raw = opts.program_code || row.program_code || row.program_name || '';
-//     const tutor_name = opts.tutor_name || row.tutor_name;
-//     const day = opts.day || row.day;
-//     const start_time = opts.start_time || row.start_time;
-//     const end_time = opts.end_time || row.end_time;
-//     const released_by = opts.released_by || 'system';
-//     const notes = opts.notes || '';
-
-//     // Helper: insert freed slot record
-//     const insertFreedSlot = async (reasonText, extra = {}) => {
-//       const insertQ = `
-//         INSERT INTO freed_slots
-//           (venue_id, venue_name, day, start_time, end_time, released_by, reason, created_at)
-//         VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
-//       `;
-//       const venue_id = row.venue_id || null;
-//       const venue_name = row.venue_name || null;
-//       await conn.execute(insertQ, [venue_id, venue_name, day, start_time, end_time, released_by, reasonText + (extra ? (' | ' + JSON.stringify(extra)) : '')]);
-//     };
-
-//     // Helper: update ltpa for a given program_code & subject_code & maybe tutor
-// // Helper: decrement ltpa
-// const decrementLtpa = async (progCode, subjCode, tutorName) => {
-//   // 1. pata program_id kutoka programs table
-//   const [progRows] = await conn.execute(
-//     'SELECT program_id FROM programs WHERE program_code = ?',
-//     [progCode]
-//   );
-//   if (!progRows || progRows.length === 0) {
-//     throw new Error('Program code not found: ' + progCode);
-//   }
-//   const program_id = progRows[0].program_id;
-
-//   // 2. pata user_id (tutor) kutoka timetable tutor_name
-//   const [userRows] = await conn.execute(
-//     'SELECT user_id FROM users WHERE full_name = ?',
-//     [tutorName]
-//   );
-//   if (!userRows || userRows.length === 0) {
-//     throw new Error('Tutor not found: ' + tutorName);
-//   }
-//   const tutor_id = userRows[0].user_id;
-
-//   // 3. update subjects ltpa
-//   const q = `
-//     UPDATE subjects 
-//     SET ltpa = ltpa - ? 
-//     WHERE program_id = ? AND subject_code = ? AND user_id = ?
-//   `;
-//   await conn.execute(q, [LTAP_DECREMENT, program_id, subjCode, tutor_id]);
-// };
-
-
-//     // Decide behavior based on opts.reason
-//     switch (opts.reason) {
-//       case 'tutor_collision':
-//       case 'program_collision':
-//       case 'free_slot':
-//       case 'exceed_ltpa':
-//         // Put freed slot entry
-//         await insertFreedSlot(opts.reason, { subject_code, program_code_raw, tutor_name, notes });
-
-//         // decrement ltpa (single record) - most cases subtract 0.75 once
-//         // If the timetable row actually represented multiple program codes, handle below.
-//         if (program_code_raw && program_code_raw.includes(',')) {
-//           // if combined, split and update each
-//           const parts = program_code_raw.split(',').map(p => p.trim()).filter(Boolean);
-//           for (const p of parts) {
-//             await decrementLtpa(p, subject_code, tutor_name);
-//           }
-//         } else if (program_code_raw) {
-//           await decrementLtpa(program_code_raw, subject_code, tutor_name);
-//         } else {
-//           // fallback: try using program_name column if program_code not available
-//           await decrementLtpa(row.program_name || 'UNKNOWN', subject_code, tutor_name);
-//         }
-
-//         // For exceed_ltpa: also record more info in freed_slots table (already done)
-//         break;
-
-//       case 'unmix':
-//         // unmix: parse program_code_raw into individual program codes
-//         // For each parsed program code -> insert freed_slot and decrement ltpa for each
-//         {
-//           // ensure freed slot recorded
-//           await insertFreedSlot('Deleted due to impossible unmix : splitting combined program(s)', { program_code_raw, notes, tutor_name }, 'resulted to delete these mixed program and returned time assigned by tmaster by each and then to be assigned again at future by each then combine correctly');
-
-//           // parse program codes (assume comma-separated)
-//           const parts = program_code_raw.split(',').map(p => p.trim()).filter(Boolean);
-//           if (parts.length === 0) {
-//             // if nothing to parse, still decrement for main program_name
-//             await decrementLtpa(row.program_name || program_code_raw, subject_code, tutor_name);
-//           } else {
-//             for (const prog of parts) {
-//               // For each program in combined, decrement ltpa and optionally insert detail to freed_slots
-//               await decrementLtpa(prog, subject_code, tutor_name);
-//               // Optionally log each parsed program in freed_slots separately:
-//               await conn.execute(`
-//                 INSERT INTO freed_slots
-//                   (venue_id, venue_name, day, start_time, end_time, released_by, reason, created_at)
-//                 VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
-//               `, [row.venue_id || null, row.venue_name || null, day, start_time, end_time, released_by, `unmix: freed for program ${prog}`]);
-//             }
-//           }
-//         }
-//         break;
-
-//       case 'other':
-//       default:
-//         // generic handling: insert freed slot and decrement once
-//         await insertFreedSlot(opts.reason || 'deleted', { subject_code, program_code_raw, tutor_name, notes });
-//         if (program_code_raw && program_code_raw.includes(',')) {
-//           const parts = program_code_raw.split(',').map(p => p.trim()).filter(Boolean);
-//           for (const p of parts) {
-//             await decrementLtpa(p, subject_code, tutor_name);
-//           }
-//         } else {
-//           await decrementLtpa(program_code_raw || row.program_name || 'UNKNOWN', subject_code, tutor_name);
-//         }
-//         break;
-//     }
-
-//     // Finally, delete the timetable row (single)
-//     await conn.execute('DELETE FROM extracted_timetables WHERE id = ?', [id]);
-
-//     await conn.commit();
-//     conn.release();
-//   } catch (err) {
-//     await conn.rollback();
-//     conn.release();
-//     console.error('deleteTimetableByIdWithEffects error', err);
-//     throw err;
-//   }
-// };
-
-// Keep existing truncate function but leave as admin-only route if needed
-// export const truncateAllTimetables = async () => {
-//   // existing implementation: TRUNCATE extracted_timetables, TRUNCATE freed_slots, update venues & subjects etc.
-//   try {
-//     const query = 'TRUNCATE TABLE extracted_timetables';
-//      const query2 = 'TRUNCATE TABLE freed_slots';
-
-//     await pool.execute(query);
-//     await pool.execute(query2);
-
-//     // Define the update status query
-//     const updateQuery = `
-//       UPDATE venues
-//       SET mnos=1,tnos=1,wnos=1,thnos=1,frnos=1,satnos=1,sunnos=1,totalnos=7
-//       WHERE mnos IS NOT NULL
-//     `;
-//     await pool.execute(updateQuery);
-
-//     const setQuery = `
-//     UPDATE subjects
-//     SET ltpa=0.00
-//     WHERE ltpa IS NOT NULL
-//   `;
-//   await pool.execute(setQuery);
-
-
-
-//   } catch (err) {
-//     console.error(err);
-//     throw err;
-//   }
-// };
-
-
-// // Function to delete timetable and delete from freed slots
-// export const deletetimetable = async () => {
-//   try {
-//     const query = 'TRUNCATE TABLE extracted_timetables';
-//      const query2 = 'TRUNCATE TABLE freed_slots';
-
-//     await pool.execute(query);
-//     await pool.execute(query2);
-
-//     // Define the update status query
-//     const updateQuery = `
-//       UPDATE venues
-//       SET mnos=1,tnos=1,wnos=1,thnos=1,frnos=1,satnos=1,sunnos=1,totalnos=7
-//       WHERE mnos IS NOT NULL
-//     `;
-//     await pool.execute(updateQuery);
-
-//     const setQuery = `
-//     UPDATE subjects
-//     SET ltpa=0.00
-//     WHERE ltpa IS NOT NULL
-//   `;
-//   await pool.execute(setQuery);
-
-
-
-//   } catch (err) {
-//     console.error(err);
-//     throw err;
-//   }
-// };
 

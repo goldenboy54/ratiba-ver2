@@ -18,7 +18,6 @@ const router = express.Router();
 const upload = multer({ dest: 'uploads/' });
 
 
-
 // Route to search for timetables based on various criteria
 router.get('/', async (req, res) => {
     try {

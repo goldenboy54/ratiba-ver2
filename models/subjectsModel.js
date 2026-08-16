@@ -13,8 +13,6 @@ export const getAllSubjects = async () => {
   }
 };
 
-
-
 // models/subjectsModel.js
 
 // Helper: get user by email

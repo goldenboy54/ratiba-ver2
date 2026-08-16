@@ -124,6 +124,18 @@
         </select>
       </div>
 
+      <div class="col-md-4">
+      <label for="scode" class="form-label">Subject Code:</label>
+      <select id="scode" name="scode" class="form-select select2">
+        <option value="">Select Subject Code</option>
+        <% scodes.forEach(scode => { %>
+          <option value="<%= scode.subject_code %>" <%= subject_code === scode.subject_code ? 'selected' : '' %>>
+            <%= scode.subject_code %>
+          </option>
+        <% }); %>
+      </select>
+    </div>
+
     </div>
 
     <button type="submit" class="btn-filter-timetables">Filter</button>

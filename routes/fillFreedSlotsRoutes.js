@@ -7,3 +7,4 @@ router.get("/", renderFillFreedSlots);
 router.post("/add", handleAddTimetable);
 
 export default router;
+
