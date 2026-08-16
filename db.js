@@ -3,7 +3,9 @@ import "dotenv/config";
 
 const pool = mysql.createPool({
   host: process.env.HOST,
-  user: process.env.DB_USER,
+  // support either env var name: DB_USER (this codebase's convention)
+  // or USER (the production .env's convention), so either .env file works.
+  user: process.env.DB_USER ?? process.env.USER,
   password: process.env.PASSWORD,
   database: process.env.DATABASE,
   waitForConnections: true,

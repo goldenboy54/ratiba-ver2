@@ -83,7 +83,13 @@ export const addregistered_subject = async (registered_subject) => {
   const { registered_subject_name, registered_subject_code,credit,total_hours_per_week,registered_subject_department } = registered_subject;
   try {
     const dbquery = 'INSERT INTO registered_subjects (registered_subject_name,registered_subject_code,credit,total_hours_per_week,registered_subject_department) VALUES (?, ?,?,?,?)';
-    const valuesArray = [registered_subject_name,registered_subject_code,credit,total_hours_per_week,registered_subject_department ];
+    const valuesArray = [
+      registered_subject_name ?? null,
+      registered_subject_code ?? null,
+      credit ?? null,
+      total_hours_per_week ?? null,
+      registered_subject_department ?? null
+    ];
     const [results] = await pool.execute(dbquery, valuesArray);
     return results;
   } catch (err) {
@@ -97,7 +103,14 @@ export const updateregistered_subject = async (id, registered_subject) => {
   const { registered_subject_name,registered_subject_code,credit,total_hours_per_week,registered_subject_department} = registered_subject;
   try {
     const dbquery = 'UPDATE registered_subjects SET registered_subject_name=?, registered_subject_code=?,credit=?,total_hours_per_week=?,registered_subject_department=? WHERE registered_subject_id = ?';
-    const valuesArray = [registered_subject_name,registered_subject_code,credit,total_hours_per_week,registered_subject_department,id];
+    const valuesArray = [
+      registered_subject_name ?? null,
+      registered_subject_code ?? null,
+      credit ?? null,
+      total_hours_per_week ?? null,
+      registered_subject_department ?? null,
+      id
+    ];
     const [results] = await pool.execute(dbquery, valuesArray);
     return results;
   } catch (err) {

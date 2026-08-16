@@ -116,13 +116,14 @@ export const addProgramsFromFile = async (programs) => {
       VALUES (?, ?, ?, ?, ?, ?, ?)`;
 
     const values = [
-      program.program_name,
-      program.program_code,
-      program.duration,
-      program.level,
-      program.program_department,
-      program.program_capacity,
-      program.program_type,
+      program.program_name ?? null,
+      program.program_code ?? null,
+      program.duration ?? null,
+      program.level ?? null,
+      // accept either program_department or category from input files
+      (program.program_department ?? program.category ?? null),
+      program.program_capacity ?? null,
+      program.program_type ?? null,
     ];
 
     await pool.execute(query, values);
