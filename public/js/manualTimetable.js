@@ -17,6 +17,11 @@
   // ================================================================
 
   $(document).ready(function() {
+    // Only run on the manual timetable page
+    if (!document.getElementById('assign-btn')) {
+      return;
+    }
+
     // Initialize Select2 on all select elements
     initializeSelect2();
 

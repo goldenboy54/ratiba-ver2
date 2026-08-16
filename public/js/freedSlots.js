@@ -22,6 +22,11 @@
    * Initialize freed slots functionality
    */
   function initializeFreedSlots() {
+    // Only run on the freed slots page
+    if (!document.getElementById('venue_id')) {
+      return;
+    }
+
     initializeSelect2();
     initializeCharts();
     enhancePagination();

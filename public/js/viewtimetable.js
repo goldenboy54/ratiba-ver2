@@ -8,6 +8,11 @@
 
   // Initialize on page load
   $(document).ready(function() {
+    // Only run on the view timetable page
+    if (!document.getElementById('semesterForm')) {
+      return;
+    }
+
     initializeSelect2();
     initializeFormHandlers();
     initializePrintButton();
@@ -272,20 +277,20 @@
     return icons[type] || icons.info;
   }
 
-})();
+  // Add slide-in animations
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes slideInRight {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+  `;
+  document.head.appendChild(style);
 
-// Add slide-in animations
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes slideInRight {
-    from {
-      transform: translateX(100%);
-      opacity: 0;
-    }
-    to {
-      transform: translateX(0);
-      opacity: 1;
-    }
-  }
-`;
-document.head.appendChild(style);
+})();

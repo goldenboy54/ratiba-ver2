@@ -38,6 +38,11 @@
   // ================================================================
 
   document.addEventListener('DOMContentLoaded', function() {
+    // Only run on the timetables (system settings) page
+    if (!document.getElementById('scode')) {
+      return;
+    }
+
     // Initialize Select2
     initializeSelect2();
 

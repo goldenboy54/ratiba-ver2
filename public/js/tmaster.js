@@ -8,6 +8,11 @@
 
   // Initialize Select2 on page load
   $(document).ready(function() {
+    // Only run on the auto-generate timetable page
+    if (!document.getElementById('generateForm')) {
+      return;
+    }
+
     initializeSelect2();
     initializeGenerationForm();
   });

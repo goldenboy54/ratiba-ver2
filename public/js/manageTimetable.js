@@ -11,6 +11,11 @@
 
   // Initialize on page load
   $(document).ready(function() {
+    // Only run on the mix-programmes (manageTimetable) page
+    if (!document.getElementById('programSelect')) {
+      return;
+    }
+
     initializeSelect2();
     initializeProgramSelection();
   });
@@ -232,31 +237,31 @@
   // Make removeProgram globally accessible for onclick handlers
   window.removeProgram = removeProgram;
 
+  // Add slide-in animations
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes slideInRight {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes slideOutRight {
+      from {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+
 })();
-
-// Add slide-in animations
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes slideInRight {
-    from {
-      transform: translateX(100%);
-      opacity: 0;
-    }
-    to {
-      transform: translateX(0);
-      opacity: 1;
-    }
-  }
-
-  @keyframes slideOutRight {
-    from {
-      transform: translateX(0);
-      opacity: 1;
-    }
-    to {
-      transform: translateX(100%);
-      opacity: 0;
-    }
-  }
-`;
-document.head.appendChild(style);

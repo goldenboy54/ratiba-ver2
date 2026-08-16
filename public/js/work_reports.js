@@ -22,6 +22,11 @@
    * Initialize work reports functionality
    */
   function initializeWorkReports() {
+    // Only run on the work reports page
+    if (!document.getElementById('user')) {
+      return;
+    }
+
     initializeSelect2();
     initializeExportButtons();
     highlightActiveFilters();

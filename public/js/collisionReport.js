@@ -33,6 +33,11 @@
   // ================================================================
 
   document.addEventListener('DOMContentLoaded', function() {
+    // Only run on the collision report page
+    if (!document.getElementById('reportData')) {
+      return;
+    }
+
     // Load report data from server-rendered JSON
     loadReportData();
 

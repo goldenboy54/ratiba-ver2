@@ -11,6 +11,11 @@
   // ================================================================
 
   $(document).ready(function() {
+    // Only run on the registered subjects (modules) page
+    if (!document.getElementById('filter_name')) {
+      return;
+    }
+
     // Initialize Select2 on all select elements
     $('.select2').select2({
       theme: 'bootstrap-5',
@@ -296,7 +301,7 @@
   /**
    * Handles delete confirmation
    */
-  $(document).on('click', '.btn-action.delete', function(e) {
+  $(document).on('click', '#subjectsTable .btn-action.delete', function(e) {
     if (!confirm('Are you sure you want to delete this subject?')) {
       e.preventDefault();
       return false;
