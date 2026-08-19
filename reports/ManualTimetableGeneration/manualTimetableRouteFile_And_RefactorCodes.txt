@@ -1,0 +1,240 @@
+############### Imports (lines 1–9) ############### 
+
+import { searchTimetables, getDistinctValues, handleAddtimetable } from '../logics/manualTimetableLogic.js';
+import { getAllvenues } from '../models/venuesModel.js';
+import { getVenueSlots } from '../logics/manualTimetableLogic.js';
+
+
+Three functions come from the logic layer (manualTimetableLogic.js), and one comes directly from a model (venuesModel.js) — the route is skipping the logic layer for venues and reaching straight into the data-access layer. This is exactly the "inconsistent layering" pattern this codebase has throughout (routes sometimes go through logic, sometimes don't) — not a bug, just worth noticing. Also notice getVenueSlots is imported in a second, separate import statement even though it's from the same file as the first import — cosmetic untidiness, not a functional issue.
+
+############### the page-load handler ############### 
+router.get('/') — the page-load handler
+This runs when someone visits /manualTimetable, with or without query parameters
+
+This runs when someone visits /manualTimetable, with or without query parameters.
+
+Step 1 — read filters from the URL:
+
+
+const criteria = {
+  tutor_name: req.query.tutor || '',
+  semester: req.query.semester || '',
+  program_type: req.query.program_type || ''
+};
+
+Pulls ?tutor=&semester=&program_type= from the query string. All three default to an empty string if absent — so on first visit (no query params), criteria is { tutor_name: '', semester: '', program_type: '' }.
+
+
+Step 2 — fetch everything the page needs, sequentially:
+
+const timetables = await searchTimetables(criteria);
+const tutors = await getDistinctValues('u.full_name');
+const semesters = await getDistinctValues('s.semester');
+const ptypes = await getDistinctValues('program_type');
+const venues = await getAllvenues();
+const allSlots = await getVenueSlots();
+
+Six separate awaits, run one after another (not in parallel — each waits for the previous to finish, which is slower than it needs to be, though harmless functionally):
+
+searchTimetables(criteria) → the list of subjects still eligible for assignment, filtered by whatever tutor/semester/program_type was picked (empty criteria = everything eligible). This is what ends up in the "Subject" dropdown.
+getDistinctValues('u.full_name') / ('s.semester') / ('program_type') → three separate queries just to populate the three filter dropdowns (Tutor, Semester, Program Type) with their possible values.
+getAllvenues() → every venue row, for the Venue dropdown.
+getVenueSlots() → the big one: builds the entire list of currently-unused time slots across every venue, for all 7 days (this is the function that loops 7 days × 18 slots × every venue and keeps only the ones marked unused — see the trace doc for the full breakdown). The comment 🟢 FIXED — get all slots for ALL venues ONCE tells you this used to be computed differently (probably re-fetched per-venue, or computed client-side without server data) and was changed to compute it once here on the server.
+
+
+Step 3 — render the page:
+
+res.render('manualTimetable', {
+  timetables, tutors, semesters, venues, ptypes,
+  slots: allSlots,
+  ...criteria,
+  error: null, success: null, logs: null
+});
+Passes all six fetched values to the view, plus ...criteria spread in (so the view gets tutor_name, semester, program_type directly as top-level variables — used to re-select the previously-chosen dropdown option after a filter/reload). error, success, logs are explicitly nulled out here because this is a fresh page load, not the result of a form submission (those three only get real values when handleAddtimetable re-renders this same view after a POST).
+
+
+
+Step 4 — the catch block:
+
+
+} catch (error) {
+  res.status(500).render('manualTimetable', { ...all empty arrays..., error: '⚠️ Error loading page: ' + error.message, ... });
+}
+
+If any of those six await calls throws, the whole page falls back to rendering with empty data and a visible error message, plus an actual HTTP 500 status. Reasonable, but coarse — a failure in, say, getAllvenues() alone still wipes out the timetables/tutors/semesters data too, since it's one shared try/catch around all six calls.
+
+router.post('/add', handleAddtimetable)
+The assignment submission itself is a one-liner — all the real work (validation, collision checks, the transaction, the DB writes) happens entirely inside handleAddtimetable in manualTimetableLogic.js, which this file just wires up. Notice this handler has no try/catch of its own here — that's fine, because handleAddtimetable has its own internal error handling (as covered in the trace doc), but it does mean this route file's own error-handling style is inconsistent between its two handlers: the GET route wraps everything defensively, the POST route trusts the delegated function entirely.
+
+The bigger picture
+This file is a thin page-assembly layer: gather six pieces of data the view needs, hand them to manualTimetable.ejs, done. All the actual business logic (what makes a subject eligible, what counts as an available slot) lives one layer down, in manualTimetableLogic.js and manualTimetableModel.js — this file's only real "logic" is the query-string-to-criteria mapping and the render/error-fallback shape.
+
+
+####################### POSSIBLE REFACTOR IN THIS PAGE ######################
+
+
+1. getAllvenues() is fetched twice, redundantly — real performance issue
+ const venues = await getAllvenues();       // line 25 — direct fetch
+ const allSlots = await getVenueSlots();    // line 28 — but getVenueSlots() ALSO calls getAllvenues() internally!
+
+ I checked manualTimetableLogic.js::getVenueSlots() — it does its own const venues = await getAllvenues(); at the top. So this route hits SELECT * FROM  venues twice on every single page load, for the exact same data (and venues is a wide table — ~268 columns, per the reverse-engineering report). The fix: change getVenueSlots to accept venues as a parameter instead of re-fetching, and pass it the array already fetched here. Zero behavior change, cuts one full-table query per page load
+
+2. Six sequential awaits should be Promise.all() — real latency issue
+
+const timetables = await searchTimetables(criteria);
+const tutors = await getDistinctValues('u.full_name');
+const semesters = await getDistinctValues('s.semester');
+const ptypes = await getDistinctValues('program_type');
+const venues = await getAllvenues();
+const allSlots = await getVenueSlots();
+
+None of these six depend on each other's results — each only needs criteria (already available) or nothing. Running them one-after-another means the page waits for the sum of all six round-trips instead of the slowest one. Promise.all([...]) (or Promise.allSettled if you want partial-failure tolerance) would parallelize this safely.
+
+3. GET handler does logic-layer work that belongs in the logic layer
+This route directly orchestrates six separate data calls and imports straight from a model (venuesModel.js), bypassing the logic layer for that one call. Every other GET route in this codebase (per the trace) delegates the whole thing to one logics function. Wrapping this into something like manualTimetableLogic.js::renderManualTimetablePage(criteria) — which internally does the parallelized fetch — would make this route a one-line call, consistent with the rest of the app, and would fix the "route reaches straight into a model" inconsistency.
+
+4. The catch block duplicates the entire success-path object shape
+Both branches build a near-identical object (timetables, tutors, semesters, venues, ptypes, slots, ...), one with real data and error: null, one with empty arrays and a real error message. If a new field is ever added to one branch and forgotten in the other, the page silently breaks in one of the two paths — exactly the class of bug already found elsewhere in this codebase (e.g. the must_change_password field missing from getUserById's SELECT). A shared "default view model" object/builder used by both branches would remove that risk entirely.
+
+5. Minor, low-priority cleanups
+Two separate import { ... } from '../logics/manualTimetableLogic.js' statements — trivially mergeable into one.
+criteria.tutor_name is mapped from req.query.tutor — the name mismatch (tutor → tutor_name) makes the data flow harder to trace than it needs to be; consider aligning the query param name or adding a comment.
+No type-guarding on req.query values — Express turns ?tutor=a&tutor=b into an array, not a string, and nothing here rejects that before it reaches a SQL-facing function. Low probability, but worth a one-line guard if hardening this file.
+
+
+################### CODE FOR REFACTORING 1,2 and 6 ############
+Here's the code for all three. Two files are touched — manualTimetableLogic.js (to fix #1's double-fetch) and manualTimetableRoutes.js (for #1's call site, #2's parallelization, and #6's cleanups). I'm giving you full drop-in code, not editing the files myself.
+
+logics/manualTimetableLogic.js — change getVenueSlots to accept venues optionally
+Find this function:
+
+export const getVenueSlots = async () => {
+    const venues = await getAllvenues(); // array of venue objects
+
+    const days = [
+        'monday','tuesday','wednesday',
+        'thursday','friday','saturday','sunday'
+    ];
+    // ... rest unchanged
+
+Replace just the first line with a parameter that defaults to fetching if not passed — this keeps every other existing caller (e.g. inside handleAddtimetable) working unchanged, while letting the route pass in data it already has:
+
+export const getVenueSlots = async (venues = null) => {
+    if (!venues) {
+        venues = await getAllvenues(); // fallback: fetch only if not provided
+    }
+
+    const days = [
+        'monday','tuesday','wednesday',
+        'thursday','friday','saturday','sunday'
+    ];
+    // ... rest unchanged
+That's the only change needed in this file.
+
+
+
+routes/manualTimetableRoutes.js — full replacement for the active code (#1 call site + #2 parallelized + #6 cleanups)
+
+
+
+
+import express from 'express';
+import {
+  searchTimetables,
+  getDistinctValues,
+  getVenueSlots,
+  handleAddtimetable
+} from '../logics/manualTimetableLogic.js';
+
+import { getAllvenues } from '../models/venuesModel.js';
+
+const router = express.Router();
+
+router.get('/', async (req, res) => {
+  try {
+    const toSingleValue = (v) => (Array.isArray(v) ? v[0] : v) || '';
+
+    const criteria = {
+      tutor_name: toSingleValue(req.query.tutor),
+      semester: toSingleValue(req.query.semester),
+      program_type: toSingleValue(req.query.program_type)
+    };
+
+    const [timetables, tutors, semesters, ptypes, venues] = await Promise.all([
+      searchTimetables(criteria),
+      getDistinctValues('u.full_name'),
+      getDistinctValues('s.semester'),
+      getDistinctValues('program_type'),
+      getAllvenues()
+    ]);
+
+    // Reuse the venues we already fetched instead of querying them again
+    const allSlots = await getVenueSlots(venues);
+
+    res.render('manualTimetable', {
+      timetables,
+      tutors,
+      semesters,
+      venues,
+      ptypes,
+      slots: allSlots, // ← final slots list
+      ...criteria,
+      error: null,
+      success: null,
+      logs: null
+    });
+
+  } catch (error) {
+
+    res.status(500).render('manualTimetable', {
+      timetables: [],
+      tutors: [],
+      semesters: [],
+      venues: [],
+      ptypes: [],
+      slots: [],
+      tutor_name: '',
+      semester: '',
+      program_type: '',
+      error: '⚠️ Error loading page: ' + error.message,
+      success: null,
+      logs: null
+    });
+  }
+});
+
+router.post('/add', handleAddtimetable);
+
+export default router;
+
+####################################
+PLEASE CHANGE searchTimetable function name: cause it is confusing
+What changed and why:
+
+#1 — getAllvenues() is now called once (inside Promise.all), and its result is passed straight into getVenueSlots(venues) instead of letting that function fetch the same table again.
+#2 — the four independent calls that don't need venues first (searchTimetables, the three getDistinctValues) plus getAllvenues itself now run concurrently via Promise.all. getVenueSlots stays as a separate await right after, since it now depends on venues's result.
+#6 — merged the two manualTimetableLogic.js imports into one; added toSingleValue() to guard against Express turning a repeated query param (?tutor=a&tutor=b) into an array instead of a string, so criteria.tutor_name is always a plain string before it reaches the SQL-facing functions downstream.
+I left the tutor → tutor_name naming mismatch and the dead commented-out code below export default router; (that's #5, and the naming note) out of this — you said just #1/#2/#6, so I kept the diff scoped to those
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

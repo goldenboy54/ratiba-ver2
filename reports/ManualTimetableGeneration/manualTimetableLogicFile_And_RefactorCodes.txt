@@ -1,0 +1,135 @@
+This is logics/manualTimetableLogic.js — the business-logic layer for Manual Timetable. It has five exported functions; here's what each one does and how they relate to each other
+
+searchTimetables and getDistinctValues — one-line delegates
+
+export const searchTimetables = async (filters) => {
+  return await timetableModel.getTimetablesFromDB(filters);
+};
+export const getDistinctValues = async (column) => {
+  return await timetableModel.getDistinctValues(column);
+};
+
+
+Both just forward straight to the model with no added logic — the entire "eligibility" business rule (a subject needs ≥1.5 remaining hours to show up) lives inside getTimetablesFromDB itself, in the model, not here. These two functions exist purely so the route file can import from the logic layer instead of reaching into the model directly (which, ironically, the route file also does for venues — the layering is inconsistent, as already noted.
+
+
+getVenueSlots — computes every unused slot, across every venue, every day
+export const getVenueSlots = async () => {
+    const venues = await getAllvenues();
+    ...
+    venues.forEach(venue => {
+        days.forEach(day => {
+            for (let i = 1; i <= 18; i++) {
+                if (venue[`${day}_slot${i}_status`] === 'unused') {
+                    allSlots.push({ venue_id, venue_name, day, slot_number: i, slot: venue[`${day}_slot${i}`], status, column });
+                }
+            }
+        });
+    });
+    return allSlots;
+};
+
+Fetches every venue row, then in plain JavaScript loops 7 days × 18 slot-columns × every venue, keeping only the ones whose status column reads 'unused', and reshaping each into a flat {venue_id, day, slot, ...} object. This is what gets serialized into the <script id="slotsData"> JSON block the frontend JS reads to populate the Venue→Slot cascading dropdowns. It's a pure in-memory computation once venues is fetched — no other queries.
+
+
+handleAddtimetable — the POST /add handler
+This is the one real controller in the file:
+
+Read and normalize the request body: pulls day, venue_id, subject_ids[], slot from req.body, and coerces subject_ids into an array if a single value was sent (HTML form fields with [] in the name come through as a bare value, not an array, when only one option is selected).
+
+Validate presence: throws if any of the four required fields is missing — caught by the surrounding try/catch.
+
+Delegate the actual work: await addtimetable({ day, venue_id, subject_ids, slot, logs }) — this is the function with all the real business rules (eligibility, double-slot computation, the three-way collision check, the transaction) covered in the execution-trace document. Note logs is passed in by reference — addtimetable pushes its own success/failure messages directly into this same array as it processes each subject, rather than returning them.
+On success, re-fetch everything the page needs to redraw itself: tutors, semesters, ptypes, venues, timetables, and — inline, inside the res.render call itself — slots: await getVenueSlots(). This re-fetches venues a second time within this one function (once at line "const venues = await getAllvenues();", again inside getVenueSlots()), the same redundant-fetch pattern already fixed in the route file's GET handler, just recurring here in a different function. These five-plus-one awaits also run sequentially, not in parallel — the same Promise.all opportunity applies here too.
+On failure: pushes the error message into logs, then re-renders with everything else emptied out (tutors: [], semesters: [], ...) — meaning if addtimetable itself throws unexpectedly (rather than handling a per-subject failure internally, which it does via its own internal continue/logging), the user loses the whole page's dropdown data along with the error message, not just a note about what went wrong.
+
+
+
+
+########################### POSSIBLE REFACTOR
+
+The tutor_name/semester/program_type reset bug (already flagged, still here)
+
+res.render('manualTimetable', {
+  tutors, semesters, ptypes, venues, slots: await getVenueSlots(),
+  timetables, tutor_name:'', semester:'', program_type:'', error:null, success:null, logs
+});
+After a successful assignment, the user's filter selection gets wiped to '', which hides the entire "Assign New Timetable Slot" section on the next render (it's gated by tutor_name && timetables.length > 0 in the view). The real fix: carry the submitted tutor/semester/program_type through instead of hardcoding empty strings — which means the form needs to actually submit them as hidden fields, since right now handleAddtimetable only reads day, venue_id, subject_ids[], slot from req.body
+
+
+3. Which connects to #4: the unfiltered timetables fetch
+
+const timetables = await timetableModel.getTimetablesFromDB({});
+Fetching all eligible subjects unfiltered is currently pointless — the section that would display them is hidden by #2's bug. Once #2 is fixed, this should filter by the preserved criteria ({ tutor_name, semester, program_type }), not {} — otherwise a tmaster assigning to one tutor would see every other tutor's eligible subjects mixed into the same dropdown.
+
+5. Same double-getAllvenues() fetch, recurring here
+
+const venues = await getAllvenues();      // line 77
+...
+slots: await getVenueSlots(),             // getVenueSlots() re-fetches venues internally
+Identical issue to the one already fixed in the route file's GET handler, just showing up again in this function. If you applied the earlier getVenueSlots(venues = null) change, the fix here is the same one-liner: await getVenueSlots(venues) instead of await getVenueSlots().
+
+
+6. Five sequential awaits → Promise.all()
+
+const tutors = await timetableModel.getDistinctValues('u.full_name');
+const semesters = await timetableModel.getDistinctValues('s.semester');
+const ptypes = await timetableModel.getDistinctValues('program_type');
+const venues = await getAllvenues();
+const timetables = await timetableModel.getTimetablesFromDB({});
+Same latency opportunity as before — none of these five depend on each other.
+
+
+7. Minor cleanups
+Comment clutter above getVenueSlots: three near-duplicate comment lines (// Get venue-based slots, // Function to get available slots per venue, // Function to return ALL slots for ALL venues) followed by a JSDoc block saying the same thing a fourth time. Collapse to just the JSDoc.
+Doubled-up error prefix: the thrown validation error already starts with ⚠️, then the catch block prepends ❌ when logging it — logs.push('❌ ' + error.message) — so the user actually sees ❌ ⚠️ Missing required fields.... Pick one emoji convention.
+Duplicated empty-state render object in the catch block (tutors: [], semesters: [], ptypes: [], venues: [], slots: [], timetables: []...) — same risk as the route file: if a new field is added to the success-path render, it's easy to forget adding it here too. A small shared "empty view model" object would remove that risk.
+Suggested order: #1 (do now, it's a direct consequence of your edit), #7 (safe, mechanical), #5 (safe, matches the fix you already have elsewhere), #6, then #2+#3 together last, since they're the only pair that changes actual behavior (not just internal efficiency) and touches the view/form too — worth doing deliberately rather than as a quick pass.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

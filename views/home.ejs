@@ -43,28 +43,26 @@
             <div class="col-lg-10">
               <div class="card border-primary shadow-lg">
                 <div class="card-header bg-primary text-white">
-                  <h2 class="mb-0 text-uppercase"><i class="fas fa-bullhorn me-2"></i>Announcement</h2>
+                  <h2 class="mb-0 text-uppercase"><i class="fas fa-calendar-alt me-2"></i>Access Your Timetable</h2>
                 </div>
                 <div class="card-body p-4">
-                  <h5 class="card-title fw-bold text-dark mb-3">
-                    ATC Time Table Management System (TMS) – System Notice
-                  </h5>
-                  <p class="lead text-muted mb-3">
-                    The Time Table Management System is currently undergoing scheduled maintenance 
-                    aimed at enhancing system stability and performance.
+                  <p class="text-muted mb-2">
+                    <strong class="text-primary">Students:</strong> view your class schedule by program name or program code.
                   </p>
                   <p class="text-muted mb-3">
-                    For immediate access to your timetable for the academic year 
-                    <strong class="text-primary">
-                      (<script>
-                        document.write(`${((d=>d.getMonth()+1>=8?d.getFullYear():d.getFullYear()-1)(new Date()))}/${((d=>d.getMonth()+1>=8?d.getFullYear()+1:d.getFullYear())(new Date()))}`);
-                      </script>)
-                    </strong>, 
-                    kindly contact your respective Head of Department (HOD).
+                    <strong class="text-primary">Tutors:</strong> view your teaching schedule by searching your full name.
                   </p>
-                  <p class="text-muted fst-italic">
-                    <i class="fas fa-info-circle me-2"></i>Thank you for your patience and cooperation.
-                  </p>
+                  <div class="d-flex flex-wrap justify-content-center gap-2">
+                    <a href="/viewtimetable" class="btn btn-primary btn-sm">
+                      <i class="fas fa-calendar-alt me-1"></i>By Program Name
+                    </a>
+                    <a href="/timetable/by-program-code" class="btn btn-outline-primary btn-sm">
+                      <i class="fas fa-calendar-alt me-1"></i>By Program Code
+                    </a>
+                    <a href="/searchtimetable" class="btn btn-outline-primary btn-sm">
+                      <i class="fas fa-user me-1"></i>By Tutor Name
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>

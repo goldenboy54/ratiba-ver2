@@ -1,0 +1,257 @@
+I am trying to understand timetable manual timetable generation business function in this system.
+
+Business function I want to understand:
+
+Manual timetable generation
+
+Do not explain only the individual function or file. Reverse-engineer the COMPLETE execution flow of this functionality across the codebase.
+
+Trace the functionality from the moment the user initiates the action until the final result is produced.
+
+Follow this chain wherever applicable:
+
+USER ACTION
+→ UI / EJS / HTML
+→ Frontend JavaScript / AJAX / Fetch
+→ HTTP request
+→ Express route
+→ Middleware
+→ Controller / Route Handler
+→ Service / Business Logic
+→ Helper / Utility functions
+→ Model / Repository / Data Access
+→ SQL queries
+→ Database tables
+→ Transactions / triggers / stored procedures
+→ Response
+→ Frontend handling
+→ Final screen/result
+
+For every step, identify the EXACT:
+
+- File path
+- Function name
+- Class name, if applicable
+- Route
+- HTTP method
+- Middleware
+- Database table
+- SQL query
+- Function called next
+
+Do not stop at the first function. Follow the call chain until you reach the database and final response.
+
+## 1. FUNCTION OVERVIEW
+
+Explain in simple language:
+
+- What this functionality does
+- Why it exists
+- Who uses it
+- What starts it
+- What the expected result is
+
+## 2. END-TO-END FLOW
+
+Create a clear sequence such as:
+
+User
+↓
+Page
+↓
+JavaScript
+↓
+POST /example
+↓
+Authentication middleware
+↓
+Controller
+↓
+Service
+↓
+Database
+↓
+Response
+↓
+UI
+
+For each step explain what actually happens.
+
+## 3. FILE-BY-FILE TRACE
+
+Create a table:
+
+| Step | File | Function | Purpose | Calls |
+|---|---|---|---|---|
+
+Only include files actually involved in this functionality.
+
+## 4. ROUTE ANALYSIS
+
+Identify:
+
+- HTTP method
+- URL
+- Router file
+- Controller/handler
+- Middleware
+- Parameters
+- Request body
+- Authentication
+- Authorization
+- Validation
+
+Explain how the request reaches the business logic.
+
+## 5. BUSINESS LOGIC
+
+Explain every important decision.
+
+For example:
+
+- Why is this validation performed?
+- Why is this condition checked?
+- Why is this status required?
+- Why is this record created?
+- Why is this record updated?
+- What happens if the condition fails?
+
+Translate programming logic into business meaning.
+
+## 6. DATABASE ANALYSIS
+
+Identify every table involved.
+
+For each:
+
+- Table name
+- Purpose
+- Columns used
+- Primary key
+- Foreign keys
+- Records read
+- Records inserted
+- Records updated
+- Records deleted
+
+Explain every important SQL query in business terms.
+
+## 7. WORKFLOW / STATE CHANGES
+
+Identify any status changes.
+
+For example:
+
+Draft
+→ Submitted
+→ Approved
+→ Published
+
+Explain:
+
+- Who causes each transition
+- What triggers it
+- What code implements it
+- What database field stores the state
+
+Do not invent states.
+
+## 8. INPUT → PROCESSING → OUTPUT
+
+Show:
+
+INPUT
+→ VALIDATION
+→ BUSINESS LOGIC
+→ DATABASE
+→ OUTPUT
+
+Identify the exact data at each stage.
+
+## 9. ERROR PATHS
+
+Explain what happens when:
+
+- Input is invalid
+- User is unauthorized
+- Record does not exist
+- Database operation fails
+- Duplicate data exists
+- External service fails
+
+Trace the actual error-handling code.
+
+## 10. SECURITY
+
+Explain:
+
+- Authentication
+- Authorization
+- Permissions
+- Input validation
+- SQL injection protection
+- Session/JWT handling
+- File security if applicable
+
+Only describe security mechanisms that actually exist.
+
+## 11. BUSINESS RULES
+
+Extract every business rule implemented by this functionality.
+
+For each:
+
+- Rule ID
+- Rule
+- Where implemented
+- Evidence
+- Confidence
+
+Classify each as:
+
+CONFIRMED
+INFERRED
+UNKNOWN
+
+## 12. SIMPLE EXPLANATION
+
+After the technical analysis, explain the entire functionality as if explaining it to a non-programmer.
+
+Example:
+
+"An administrator selects a timetable record. The system first checks whether the administrator has permission to delete it. It then checks whether the timetable is already being used..."
+
+## 13. TECHNICAL DIAGRAM
+
+Create an ASCII architecture/sequence diagram showing the complete execution path.
+
+## 14. UNKNOWN AREAS
+
+Explicitly identify anything that cannot be determined from the code.
+
+Do NOT guess.
+
+For each unknown explain what additional evidence would be needed.
+
+## 15. FINAL SUMMARY
+
+At the end provide:
+
+1. What the function does
+2. Who uses it
+3. Complete execution path
+4. Main files involved
+5. Database tables involved
+6. Business rules
+7. Status transitions
+8. Security controls
+9. Error handling
+10. Unknowns
+
+IMPORTANT:
+
+Do not merely summarize files.
+
+I want to understand HOW THE FUNCTION ACTUALLY WORKS.
+
+Follow function calls across files and layers until the complete execution flow is understood.

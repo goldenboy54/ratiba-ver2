@@ -1,0 +1,131 @@
+<%- include('partials/nav') %>
+
+<div class="container viewtimetable-container">
+  <div class="page-header-section">
+    <div class="animated-graphic" title="Timetable autogenerating system">🕑</div>
+    <h2>FILTER YOUR TIMETABLE BY PROGRAM CODE</h2>
+  </div>
+
+  <!-- Combined Filter Form -->
+  <form id="mainFilterForm" method="get" action="/timetable/by-program-code" class="filter-form">
+    <div class="row g-3">
+      <div class="col-md-5">
+        <label for="semester" class="form-label">Semester:</label>
+        <select id="semester" name="semester" class="form-select select2" required>
+          <option value="">-- Select Semester --</option>
+          <% semesters.forEach(s => { %>
+            <option value="<%= s %>" <%= semester === s ? 'selected' : '' %>>
+              <%= s %>
+            </option>
+          <% }); %>
+        </select>
+      </div>
+
+      <% if (semester) { %>
+        <div class="col-md-5">
+          <label for="programCode" class="form-label">Program Code:</label>
+          <select id="programCode" name="programCode" class="form-select select2">
+            <option value="">-- Select Program Code --</option>
+            <% programCodes.forEach(pc => { %>
+              <option value="<%= pc %>" <%= programCode === pc ? 'selected' : '' %>>
+                <%= pc %>
+              </option>
+            <% }); %>
+          </select>
+        </div>
+      <% } %>
+
+      <div class="col-md-2 d-flex align-items-end">
+        <button type="submit" class="btn btn-primary w-100">Show</button>
+      </div>
+    </div>
+  </form>
+
+  <!-- TIMETABLE RESULTS -->
+  <% if (semester) { %>
+    <% if (programCode) { %>
+      <% if (timetables && timetables.length > 0) { %>
+
+        <div class="timetable-header">
+          <h3>ARUSHA TECHNICAL COLLEGE</h3>
+          <h5>TIMETABLE - SEMESTER <%= semester %> &bull; <%= programCode %></h5>
+        </div>
+
+        <%
+          const grouped = {};
+          timetables.forEach(t => {
+            const start = t.start_time ? t.start_time.slice(0, 5) : null;
+            const end = t.end_time ? t.end_time.slice(0, 5) : null;
+            if (start && end) {
+              const slot = `${start} - ${end}`;
+              if (!grouped[slot]) grouped[slot] = [];
+              grouped[slot].push(t);
+            }
+          });
+        %>
+
+        <div class="table-container" id="timetableContent">
+          <table class="table timetable-table">
+            <thead>
+              <tr>
+                <th>TIME</th>
+                <% uniqueDays.forEach(day => { %>
+                  <th><%= day %></th>
+                <% }); %>
+              </tr>
+            </thead>
+            <tbody>
+              <% allTimeSlots.forEach(slot => { %>
+                <tr>
+                  <td><b><%= slot %></b></td>
+                  <% uniqueDays.forEach(day => {
+                      const entry = grouped[slot] ? grouped[slot].find(t => t.day === day) : null;
+                      const brk = breaks.find(b => b.time === slot);
+                  %>
+                    <td>
+                      <% if (entry) { %>
+                        <b>Subject:</b> <%= entry.subject_name || '---' %> (<%= entry.subject_code || '---' %>)<br>
+                        <b>Venue:</b> <%= entry.venue_name || '---' %> (<%= entry.venue_type || '---' %>)<br>
+                        <b>Tutor:</b> <%= entry.tutor_name || '---' %><br>
+                        <b>Program:</b> <%= entry.program_code || '---' %> (<%= entry.program_level || '---' %>)
+                      <% } else if (brk) { %>
+                        <i><%= brk.type %></i>
+                      <% } else { %>
+                        <i>---</i>
+                      <% } %>
+                    </td>
+                  <% }); %>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="action-buttons">
+          <button id="frontendPrintBtn" class="btn btn-print">
+            <i class="fa fa-print"></i> Print Timetable
+          </button>
+        </div>
+
+      <% } else { %>
+        <div class="empty-state error">
+          <i class="fa fa-calendar-times"></i>
+          <p>No timetable entries found for <strong><%= programCode %></strong> in semester <strong><%= semester %></strong>.</p>
+        </div>
+      <% } %>
+    <% } else { %>
+      <div class="empty-state">
+        <i class="fa fa-filter"></i>
+        <p>Please select a Program Code to view the timetable.</p>
+      </div>
+    <% } %>
+  <% } else { %>
+    <div class="empty-state">
+      <i class="fa fa-filter"></i>
+      <p>Select a semester to continue.</p>
+    </div>
+  <% } %>
+</div>
+
+</main>
+<%- include('partials/footer') %>

@@ -1,0 +1,49 @@
+This is logics/manualTimetableLogic.js — the business-logic layer for Manual Timetable. It has five exported functions; here's what each one does and how they relate to each other.
+
+Imports
+Pulls in the venues/programs/users/departments/registered-subjects models (each just a "get everything" fetch), plus the two functions from manualTimetableModel.js that actually do work: timetableModel (the default export, containing getTimetablesFromDB/getDistinctValues) and addtimetable (the core assignment logic covered in the earlier trace)
+
+
+searchTimetables and getDistinctValues — one-line delegates
+
+export const searchTimetables = async (filters) => {
+  return await timetableModel.getTimetablesFromDB(filters);
+};
+export const getDistinctValues = async (column) => {
+  return await timetableModel.getDistinctValues(column);
+};
+Both just forward straight to the model with no added logic — the entire "eligibility" business rule (a subject needs ≥1.5 remaining hours to show up) lives inside getTimetablesFromDB itself, in the model, not here. These two functions exist purely so the route file can import from the logic layer instead of reaching into the model directly (which, ironically, the route file also does for venues — the layering is inconsistent, as already noted).
+
+
+getVenueSlots — computes every unused slot, across every venue, every day
+export const getVenueSlots = async () => {
+    const venues = await getAllvenues();
+    ...
+    venues.forEach(venue => {
+        days.forEach(day => {
+            for (let i = 1; i <= 18; i++) {
+                if (venue[`${day}_slot${i}_status`] === 'unused') {
+                    allSlots.push({ venue_id, venue_name, day, slot_number: i, slot: venue[`${day}_slot${i}`], status, column });
+                }
+            }
+        });
+    });
+    return allSlots;
+};
+
+Fetches every venue row, then in plain JavaScript loops 7 days × 18 slot-columns × every venue, keeping only the ones whose status column reads 'unused', and reshaping each into a flat {venue_id, day, slot, ...} object. This is what gets serialized into the <script id="slotsData"> JSON block the frontend JS reads to populate the Venue→Slot cascading dropdowns. It's a pure in-memory computation once venues is fetched — no other queries.
+
+
+
+handleAddtimetable — the POST /add handler
+This is the one real controller in the file:
+
+Read and normalize the request body: pulls day, venue_id, subject_ids[], slot from req.body, and coerces subject_ids into an array if a single value was sent (HTML form fields with [] in the name come through as a bare value, not an array, when only one option is selected).
+Validate presence: throws if any of the four required fields is missing — caught by the surrounding try/catch.
+
+Delegate the actual work: await addtimetable({ day, venue_id, subject_ids, slot, logs }) — this is the function with all the real business rules (eligibility, double-slot computation, the three-way collision check, the transaction) covered in the execution-trace document. Note logs is passed in by reference — addtimetable pushes its own success/failure messages directly into this same array as it processes each subject, rather than returning them.
+
+On success, re-fetch everything the page needs to redraw itself: tutors, semesters, ptypes, venues, timetables, and — inline, inside the res.render call itself — slots: await getVenueSlots(). This re-fetches venues a second time within this one function (once at line "const venues = await getAllvenues();", again inside getVenueSlots()), the same redundant-fetch pattern already fixed in the route file's GET handler, just recurring here in a different function. These five-plus-one awaits also run sequentially, not in parallel — the same Promise.all opportunity applies here too.
+On failure: pushes the error message into logs, then re-renders with everything else emptied out (tutors: [], semesters: [], ...) — meaning if addtimetable itself throws unexpectedly (rather than handling a per-subject failure internally, which it does via its own internal continue/logging), the user loses the whole page's dropdown data along with the error message, not just a note about what went wrong.
+
+

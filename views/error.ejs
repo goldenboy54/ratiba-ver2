@@ -1,0 +1,15 @@
+<%- include('partials/nav') %>
+
+<div class="container viewtimetable-container">
+  <div class="page-header-section">
+    <h2>Something Went Wrong</h2>
+  </div>
+
+  <div class="empty-state error">
+    <i class="fa fa-triangle-exclamation"></i>
+    <p><%= typeof message !== 'undefined' ? message : 'An unexpected error occurred. Please try again.' %></p>
+  </div>
+</div>
+
+</main>
+<%- include('partials/footer') %>
