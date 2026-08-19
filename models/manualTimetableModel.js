@@ -38,12 +38,49 @@ const programSlotMatch = (programType, slotTime) => {
   return false;
 };
 
+// ==================== SHARED CONSTANTS ====================
+// Single source of truth for the small set of fixed business rules used throughout this
+// file, instead of the same numbers appearing as unexplained literals in several places.
+
+// A manual assignment always books exactly one full class session: two consecutive
+// 45-minute slots, 1.5 hours total. Used by the eligibility queries below and by
+// addtimetable's own hours checks.
+const DOUBLE_SLOT_HOURS = 1.5;
+
+// Every day in the venues table has 18 time slots (monday_slot1 ... monday_slot18, etc.).
+const MAX_SLOTS_PER_DAY = 18;
+
+// Slots 7 and 8 are the Friday prayer/lunch break window and can never be booked.
+const FRIDAY_BREAK_FIRST_SLOT = 7;
+const FRIDAY_BREAK_LAST_SLOT = 8;
+
+// The venues table's slot-status column names follow a fixed, known pattern
+// ({day}_slot{1-18}_status) that never changes, so we generate the list directly instead
+// of asking the database via `SHOW COLUMNS FROM venues` on every single call.
+function getStatusColumnsForDay(dayLower) {
+  const cols = [];
+  for (let i = 1; i <= MAX_SLOTS_PER_DAY; i++) {
+    cols.push(`${dayLower}_slot${i}_status`);
+  }
+  return cols;
+}
+
 // ==================== RESOLVE SLOT COLUMN ====================
-async function resolveSlotColumn({ day, slot, venue_id }) {
+// `venue` is the venue row the caller already fetched (addtimetable runs
+// `SELECT * FROM venues WHERE venue_id = ?` before calling this function). Reusing it
+// here means we compare the submitted time string against data already in memory,
+// instead of running a separate `SELECT <column> FROM venues WHERE venue_id=?` for every
+// one of the up to 18 candidate slot columns just to find which one matches.
+async function resolveSlotColumn({ day, slot, venue_id, venue }) {
   const dayLower = day.toLowerCase();
-  const [cols] = await db.query(`SHOW COLUMNS FROM venues`);
-  const colNames = cols.map(c => c.Field);
-  const candidates = colNames.filter(c => c.startsWith(dayLower) && c.endsWith("_status")).sort();
+  // Generated in numeric order (slot1, slot2, ... slot18) - note this also fixes a latent
+  // ordering bug in the "slot passed as a number" branch just below: the previous
+  // SHOW COLUMNS + .sort() approach sorted alphabetically, so "slot10" landed right after
+  // "slot1" and before "slot2", which would have made candidates[idx] point at the wrong
+  // column for any numeric slot >= 2. That branch isn't reachable from anywhere in this
+  // codebase today (the form always sends slot as a time-range string), so this had no
+  // live effect, but it's correct now either way.
+  const candidates = getStatusColumnsForDay(dayLower);
 
   if (!candidates.length) {
     throw new Error(`No slot status columns found for day "${day}" in venues table.`);
@@ -58,12 +95,10 @@ async function resolveSlotColumn({ day, slot, venue_id }) {
   if (typeof slot === "string") {
     for (const statusCol of candidates) {
       const timeCol = statusCol.replace(/_status$/, "");
-      try {
-        const [rows] = await db.query(`SELECT \`${timeCol}\` AS timeVal FROM venues WHERE venue_id=? LIMIT 1`, [venue_id]);
-        if (rows.length && rows[0].timeVal && rows[0].timeVal.trim() === slot.trim()) {
-          return statusCol;
-        }
-      } catch (err) { continue; }
+      const timeVal = venue[timeCol];
+      if (timeVal && String(timeVal).trim() === slot.trim()) {
+        return statusCol;
+      }
     }
     throw new Error(`Time slot "${slot}" not found for day ${day} in venue ${venue_id}.`);
   }
@@ -97,7 +132,7 @@ export const addtimetable = async ({ day, venue_id, subject_ids, slot, logs = []
   // Resolve current status column
   let currentStatusCol;
   try {
-    currentStatusCol = await resolveSlotColumn({ day, slot, venue_id });
+    currentStatusCol = await resolveSlotColumn({ day, slot, venue_id, venue: V });
   } catch (err) {
     log(`❌ ${err.message}`);
     return;
@@ -140,8 +175,13 @@ export const addtimetable = async ({ day, venue_id, subject_ids, slot, logs = []
     const currentLtpa = Number(S.ltpa || 0);
     const totalHours = Number(S.total_hours_per_week || 0);
     const remainingHours = totalHours - currentLtpa;
+    // Manual assignment only ever books one full double-slot class at a time - declared
+    // here (from the shared DOUBLE_SLOT_HOURS constant) so both hours checks below (this
+    // one, and the one right before the insert) reference the exact same value instead of
+    // re-deriving the same rule two different ways.
+    const ltpaIncrement = DOUBLE_SLOT_HOURS;
 
-    if (remainingHours < 1.5) {
+    if (remainingHours < ltpaIncrement) {
       log(`⚠ Subject ${subject_id} (${S.title}) has insufficient remaining hours (${remainingHours}). Single slots not allowed. Skipping.`);
       continue;
     }
@@ -158,7 +198,7 @@ export const addtimetable = async ({ day, venue_id, subject_ids, slot, logs = []
     slotInfos.push(currentSlotInfo);
 
     // Try to add next slot for double (1.5 hours)
-    if (currentSlotNum >= 18) {
+    if (currentSlotNum >= MAX_SLOTS_PER_DAY) {
       canAssignDouble = false;
       log(`⚠ Subject ${subject_id}: Current slot ${currentSlotNum} too high for double slot.`);
     } else {
@@ -182,8 +222,8 @@ export const addtimetable = async ({ day, venue_id, subject_ids, slot, logs = []
       // Friday break check
       const isFriday = dayUpper === "FRIDAY";
       if (isFriday && (
-        (currentSlotNum >= 7 && currentSlotNum <= 8) || 
-        (nextSlotNum >= 7 && nextSlotNum <= 8)
+        (currentSlotNum >= FRIDAY_BREAK_FIRST_SLOT && currentSlotNum <= FRIDAY_BREAK_LAST_SLOT) ||
+        (nextSlotNum >= FRIDAY_BREAK_FIRST_SLOT && nextSlotNum <= FRIDAY_BREAK_LAST_SLOT)
       )) {
         canAssignDouble = false;
         log(`⚠ Subject ${subject_id}: Overlaps with Friday break period.`);
@@ -248,12 +288,16 @@ export const addtimetable = async ({ day, venue_id, subject_ids, slot, logs = []
       }
 
       // 4. Program Type vs Slot Time compatibility
-      if (!programSlotMatch(S.program_type, sInfo.slotTime)) {
+      // Computed once and reused below - programSlotMatch is a pure function, so calling
+      // it twice for the same (program_type, slotTime) pair here would just repeat the
+      // same lookup for no reason.
+      const typeMismatch = !programSlotMatch(S.program_type, sInfo.slotTime);
+      if (typeMismatch) {
         reasons.push(`PROGRAM TYPE MISMATCH: "${S.program_type}" not compatible with slot "${sInfo.slotTime}"`);
       }
 
       // If any conflict in this slot → cannot assign
-      if (tutorConflict || venueConflict || programConflict || !programSlotMatch(S.program_type, sInfo.slotTime)) {
+      if (tutorConflict || venueConflict || programConflict || typeMismatch) {
         canAssign = false;
       }
     }
@@ -267,20 +311,32 @@ export const addtimetable = async ({ day, venue_id, subject_ids, slot, logs = []
     }
 
     // ===================== HOURS CHECK =====================
-    const ltpaIncrement = 1.5; // Double slot = 1.5 hours
-    if (currentLtpa + ltpaIncrement > totalHours) {
+    // Same rule as the remainingHours check earlier in this loop iteration ("does this
+    // subject have at least ltpaIncrement hours left?"). Re-verified here, right before
+    // writing anything, in case that becomes untrue later - now expressed with the same
+    // remainingHours/ltpaIncrement values instead of a separately-derived comparison, so
+    // it's clearly the same rule rather than a second, different-looking one.
+    if (remainingHours < ltpaIncrement) {
       log(`⚠ Assigning would exceed total hours for subject ${subject_id}. Skipping.`);
       continue;
     }
 
     // ===================== FINAL INSERT WITH TRANSACTION =====================
+    // `db` is the shared connection pool, not one single connection. Calling
+    // db.query("START TRANSACTION") and then more db.query(...) calls afterward does NOT
+    // guarantee they all run on the same underlying MySQL connection under concurrent
+    // load (the pool can hand each .query() call to a different connection) - so the
+    // transaction below would not actually be atomic without checking out a dedicated
+    // connection first. This is the same fix already applied correctly elsewhere in this
+    // codebase, in logics/timetablesLogic.js :: handleUpdatetimetable.
+    const conn = await db.getConnection();
     try {
-      await db.query("START TRANSACTION");
+      await conn.beginTransaction();
 
       for (const sInfo of slotInfos) {
         const [startTime, endTime] = sInfo.slotTime.split("-").map(t => t.trim());
 
-        await db.query(`
+        await conn.query(`
           INSERT INTO extracted_timetables (
             day, slot, start_time, end_time,
             subject_code, subject_name, department_name,
@@ -321,19 +377,24 @@ export const addtimetable = async ({ day, venue_id, subject_ids, slot, logs = []
         ]);
 
         // Mark venue slot as used
-        await db.query(`UPDATE venues SET \`${sInfo.statusCol}\` = 'used' WHERE venue_id = ?`, [venue_id]);
+        await conn.query(`UPDATE venues SET \`${sInfo.statusCol}\` = 'used' WHERE venue_id = ?`, [venue_id]);
       }
 
       // Update ltpa (assigned hours)
-      await db.query(`UPDATE subjects SET ltpa = COALESCE(ltpa, 0) + ? WHERE subject_id = ?`, [ltpaIncrement, subject_id]);
+      await conn.query(`UPDATE subjects SET ltpa = COALESCE(ltpa, 0) + ? WHERE subject_id = ?`, [ltpaIncrement, subject_id]);
 
-      await db.query("COMMIT");
+      await conn.commit();
 
       log(`✔ SUCCESS: Assigned subject ${subject_id} (${S.title}) by ${S.full_name} to ${day} ${slotInfos.map(s => s.slotTime).join(" & ")} at Venue ${venue_id}`);
 
     } catch (insertErr) {
-      await db.query("ROLLBACK");
+      await conn.rollback();
       log(`❌ Database error while assigning subject ${subject_id}: ${insertErr.message}`);
+    } finally {
+      // Always release the connection back to the pool, whether this subject's
+      // transaction succeeded or failed - otherwise the pool leaks a connection
+      // on every failed assignment attempt.
+      conn.release();
     }
   }
 };
@@ -345,7 +406,7 @@ export const getTimetablesFromDB = async (filters) => {
            program_name, program_type, program_level, total_hours_per_week, semester
     FROM subjects s
     JOIN users u ON s.user_id = u.user_id
-    WHERE (ltpa + 1.5) <= total_hours_per_week
+    WHERE (ltpa + ${DOUBLE_SLOT_HOURS}) <= total_hours_per_week
   `;
   const params = [];
   if (filters.tutor_name) { query += ' AND u.full_name = ?'; params.push(filters.tutor_name); }
@@ -361,7 +422,7 @@ export const getDistinctValues = async (column) => {
     SELECT DISTINCT ${column}
     FROM subjects s
     JOIN users u ON s.user_id = u.user_id
-    WHERE (ltpa + 1.5) <= total_hours_per_week
+    WHERE (ltpa + ${DOUBLE_SLOT_HOURS}) <= total_hours_per_week
   `);
   return rows;
 };
