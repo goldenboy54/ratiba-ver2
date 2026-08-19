@@ -1,65 +1,6 @@
 import timetableModel from '../models/manualTimetableModel.js';
 import { getAllvenues } from '../models/venuesModel.js';
-import { getAllprograms } from '../models/programsModel.js';
-import { getAllusers } from '../models/usersModel.js';
-import { getAlldepartments } from '../models/departmentsModel.js';
-import { getAllregistered_subjects } from '../models/registered_subjectsModel.js';
 import { addtimetable } from '../models/manualTimetableModel.js';
-
-// Show subject form
-export const showSubjectForm = async (req, res) => {
-  try {
-    const departments = await getAlldepartments();
-    const venues = await getAllvenues();
-    const programs = await getAllprograms();
-    const users = await getAllusers();
-    const registered_subjects = await getAllregistered_subjects();
-    const tutors = await timetableModel.getDistinctValues('u.full_name');
-    const semesters = await timetableModel.getDistinctValues('s.semester');
-    const ptypes = await timetableModel.getDistinctValues('program_type');
-    const slots = await getVenueSlots();
-
-    res.render('manualTimetable', {
-      subject: null,
-      programs,
-      users,
-      registered_subjects,
-      venues,
-      departments,
-      tutors,
-      semesters,
-      ptypes,
-      slots,
-      timetables: [],
-      tutor_name: '',
-      semester: '',
-      program_type: '',
-      error: null,
-      success: null,
-      logs: null
-    });
-  } catch (error) {
-    res.status(500).render('manualTimetable', {
-      subject: null,
-      programs: [],
-      users: [],
-      registered_subjects: [],
-      venues: [],
-      departments: [],
-      tutors: [],
-      semesters: [],
-      ptypes: [],
-      slots: [],
-      timetables: [],
-      tutor_name: '',
-      semester: '',
-      program_type: '',
-      error: '⚠️ Error fetching data: ' + error.message,
-      success: null,
-      logs: null
-    });
-  }
-};
 
 // Search timetables
 export const searchTimetables = async (filters) => {
@@ -71,15 +12,16 @@ export const getDistinctValues = async (column) => {
   return await timetableModel.getDistinctValues(column);
 };
 
-// Get venue-based slots
-// Function to get available slots per venue
-// Function to return ALL slots for ALL venues
-
 /**
- * Return all unused slots from venues
+ * Return all unused slots across every venue.
+ * Accepts an already-fetched `venues` array to avoid re-querying when the
+ * caller already has one (e.g. handleAddtimetable below); otherwise fetches
+ * its own copy (e.g. the route's GET handler, which calls this with no arg).
  */
-export const getVenueSlots = async () => {
-    const venues = await getAllvenues(); // array of venue objects
+export const getVenueSlots = async (venues) => {
+    if (!venues) {
+        venues = await getAllvenues(); // array of venue objects
+    }
 
     const days = [
         'monday','tuesday','wednesday',
@@ -113,222 +55,51 @@ export const getVenueSlots = async () => {
     return allSlots;
 };
 
-// export const getVenueSlots = async () => {
-//   const venues = await getAllvenues();
-//   const allSlots = [];
-
-//   venues.forEach(v => {
-//     const days = ['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY','SUNDAY'];
-//     days.forEach(day => {
-//       for(let i=1;i<=18;i++){
-//         const slotKey = `${day.toLowerCase()}_slot${i}`;
-//         if(v[slotKey] && v[slotKey] !== "") {
-//           allSlots.push({ venue_id: v.venue_id, day, slot: v[slotKey] });
-//         }
-//       }
-//     });
-//   });
-//   return allSlots;
-// };
-
 // Handle add timetable
 export const handleAddtimetable = async (req, res) => {
-  let { day, venue_id, 'subject_ids[]': subject_ids, slot } = req.body;
+  let {
+    day, venue_id, 'subject_ids[]': subject_ids, slot,
+    tutor_name = '', semester = '', program_type = ''
+  } = req.body;
   if (!Array.isArray(subject_ids)) subject_ids = [subject_ids];
   const logs = [];
 
   try {
     if (!day || !venue_id || !subject_ids.length || !slot) {
-      throw new Error('⚠️ Missing required fields: day, venue, slot, or subject');
+      // No emoji here — the catch block below is the single place that adds
+      // the ❌ prefix, so every error (from here or from addtimetable) gets
+      // exactly one prefix instead of stacking ⚠️❌ when caught.
+      throw new Error('Missing required fields: day, venue, slot, or subject');
     }
 
     await addtimetable({ day, venue_id, subject_ids, slot, logs });
 
-    const tutors = await timetableModel.getDistinctValues('u.full_name');
-    const semesters = await timetableModel.getDistinctValues('s.semester');
-    const ptypes = await timetableModel.getDistinctValues('program_type');
-    const venues = await getAllvenues();
-    const timetables = await timetableModel.getTimetablesFromDB({});
+    // Re-apply the filter the user was on (posted back as hidden fields) so the
+    // page re-renders the same filtered view instead of resetting to "no filter"
+    // and hiding the assign-form section (it only shows when tutor_name is set).
+    const criteria = { tutor_name, semester, program_type };
+    // None of these five reads depend on each other, so run them concurrently
+    // instead of waiting on each round-trip in turn.
+    const [tutors, semesters, ptypes, venues, timetables] = await Promise.all([
+      timetableModel.getDistinctValues('u.full_name'),
+      timetableModel.getDistinctValues('s.semester'),
+      timetableModel.getDistinctValues('program_type'),
+      getAllvenues(),
+      timetableModel.getTimetablesFromDB(criteria)
+    ]);
+    const slots = await getVenueSlots(venues); // depends on venues, so runs after
 
     res.render('manualTimetable', {
-      tutors, semesters, ptypes, venues, slots: await getVenueSlots(),
-      timetables, tutor_name:'', semester:'', program_type:'', error:null, success:null, logs
+      tutors, semesters, ptypes, venues, slots,
+      timetables, tutor_name, semester, program_type, error:null, success:null, logs
     });
 
   } catch (error) {
-    logs.push('❌ ' + error.message);
+    const errMsg = '❌ ' + error.message;
+    logs.push(errMsg);
     res.render('manualTimetable', {
       tutors: [], semesters: [], ptypes: [], venues: [], slots: [],
-      timetables: [], tutor_name:'', semester:'', program_type:'', error: '❌ ' + error.message, success:null, logs
+      timetables: [], tutor_name:'', semester:'', program_type:'', error: errMsg, success:null, logs
     });
   }
 };
-
-
-// import timetableModel from '../models/manualTimetableModel.js';
-// import { getAllprograms } from '../models/programsModel.js';
-// import { getAllusers } from '../models/usersModel.js';
-// import { getAllvenues } from '../models/venuesModel.js';
-// import { getAlldepartments } from '../models/departmentsModel.js';
-// import { getAllregistered_subjects } from '../models/registered_subjectsModel.js';
-// import { addtimetable } from '../models/manualTimetableModel.js';
-
-// export const showSubjectForm = async (req, res) => {
-//   const { id } = req.params;
-//   try {
-//     const departments = await getAlldepartments();
-//     const venues = await getAllvenues();
-//     const programs = await getAllprograms();
-//     const users = await getAllusers();
-//     const registered_subjects = await getAllregistered_subjects();
-//     const tutors = await timetableModel.getDistinctValues('u.full_name');
-//     const semesters = await timetableModel.getDistinctValues('s.semester');
-//     const ptypes = await timetableModel.getDistinctValues('program_type');
-//     const slots = await timetableModel.getDistinctValues('s.slot');
-
-//     res.render('manualTimetable', {
-//       subject: id ? await getSubjectById(id) : null,
-//       programs,
-//       users,
-//       registered_subjects,
-//       venues,
-//       departments,
-//       tutors,
-//       semesters,
-//       ptypes,
-//       slots,
-//       timetables: [],
-//       tutor_name: '',
-//       semester: '',
-//       program_type: '',
-//       error: null,
-//       success: null,
-//       logs:null
-//     });
-//   } catch (error) {
-//     res.status(500).render('manualTimetable', {
-//       subject: null,
-//       programs: [],
-//       users: [],
-//       registered_subjects: [],
-//       venues: [],
-//       departments: [],
-//       tutors: [],
-//       semesters: [],
-//       ptypes: [],
-//       slots: [],
-//       timetables: [],
-//       tutor_name: '',
-//       semester: '',
-//       program_type: '',
-//       error: '⚠️ Error fetching data: ' + error.message,
-//       success: null,
-//       logs:null
-//     });
-//   }
-// };
-
-// export const searchTimetables = async (filters) => {
-//   try {
-//     return await timetableModel.getTimetablesFromDB(filters);
-//   } catch (error) {
-//     console.error('Error fetching timetables:', error);
-//     throw new Error('Error fetching timetables: ' + error.message);
-//   }
-// };
-
-// export const getDistinctValues = async (column) => {
-//   try {
-//     return await timetableModel.getDistinctValues(column);
-//   } catch (error) {
-//     console.error('Error fetching distinct values:', error);
-//     throw new Error('Error fetching distinct values: ' + error.message);
-//   }
-// };
-// export const handleAddtimetable = async (req, res) => {
-//   let { day, venue_id, 'subject_ids[]': subject_ids, slot } = req.body;
-//   if (!Array.isArray(subject_ids)) subject_ids = [subject_ids];
-
-//   const logs = []; // array ya ku-display kwenye page
-
-//   try {
-//     const departments = await getAlldepartments();
-//     const venues = await getAllvenues();
-//     const programs = await getAllprograms();
-//     const users = await getAllusers();
-//     const registered_subjects = await getAllregistered_subjects();
-//     const tutors = await timetableModel.getDistinctValues('u.full_name');
-//     const semesters = await timetableModel.getDistinctValues('s.semester');
-//     const ptypes = await timetableModel.getDistinctValues('p.program_type');
-//     const timetables = await timetableModel.getTimetablesFromDB({}); // fetch all timetables
-//     const slots = await timetableModel.getDistinctValues('s.slot');
-
-//     if (!day || !venue_id || !subject_ids.length) {
-//       return res.render('manualTimetable', {
-//         subject: null,
-//         programs,
-//         users,
-//         registered_subjects,
-//         venues,
-//         departments,
-//         tutors,
-//         semesters,
-//         ptypes,
-//         slots,
-//         timetables,
-//         tutor_name: '',
-//         semester: '',
-//         program_type: '',
-//         error: '⚠️ Missing required fields: day, venue or subjects',
-//         success: null,
-//         logs
-//       });
-//     }
-
-//     // Pass logs array to model
-//     await addtimetable({ day, venue_id, subject_ids,slot, logs });
-
-//     // Render page na logs
-//     res.render('manualTimetable', {
-//       subject: null,
-//       programs,
-//       users,
-//       registered_subjects,
-//       venues,
-//       departments,
-//       tutors,
-//       semesters,
-//       ptypes,
-//       timetables,
-//       slots,
-//       tutor_name: '',
-//       semester: '',
-//       program_type: '',
-//       error: null,
-//       success: null,
-//       logs
-//     });
-
-//   } catch (error) {
-//     logs.push('❌ ' + error.message);
-//     res.render('manualTimetable', {
-//       subject: null,
-//       programs: [],
-//       users: [],
-//       registered_subjects: [],
-//       venues: [],
-//       departments: [],
-//       tutors: [],
-//       semesters: [],
-//       ptypes: [],
-//       slots: [],
-//       timetables: [],
-//       tutor_name: '',
-//       semester: '',
-//       program_type: '',
-//       error: '❌ ' + error.message,
-//       success: null,
-//       logs
-//     });
-//   }
-// };

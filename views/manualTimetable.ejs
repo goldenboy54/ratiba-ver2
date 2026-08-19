@@ -136,6 +136,12 @@
 
       <form action="/manualTimetable/add" method="post">
 
+        <!-- Carry the active filter forward so the page can re-show this same
+             filtered view after the assignment succeeds, instead of resetting it -->
+        <input type="hidden" name="tutor_name" value="<%= tutor_name %>" />
+        <input type="hidden" name="semester" value="<%= semester %>" />
+        <input type="hidden" name="program_type" value="<%= program_type %>" />
+
         <div class="row g-3">
 
           <div class="col-md-3">
