@@ -4,6 +4,37 @@ import { getTimetableById, mixPrograms } from "../models/manageTimetableModel.js
 import { getAlltimetables,updatetimetable,  deleteTimetableByIdWithEffects,} from '../models/timetablesModel.js';
 import pool from '../db.js';
 
+// ==================== SEMESTER CALENDAR (VETA vs NON-VETA) ====================
+// A `semester` label ("I"/"II") only tells you which of a student's OWN two
+// semesters an entry belongs to - it does NOT tell you the real calendar months,
+// because VETA's academic calendar no longer lines up with everyone else's. Same
+// mapping as models/manualTimetableModel.js, confirmed against the real 2026/2027
+// ATC/VETA academic calendar; duplicated here rather than shared, matching this
+// codebase's existing style for small per-file collision helpers.
+const SEMESTER_CALENDAR = {
+  NON_VETA:  { I: ["OCT", "NOV", "DEC", "JAN", "FEB"], II: ["MAR", "APR", "MAY", "JUN", "JUL"] },
+  VETA_L1L2: { I: ["JAN", "FEB", "MAR", "APR", "MAY"], II: ["JUL", "AUG", "SEP", "OCT", "NOV"] },
+  VETA_L3:   { I: ["AUG", "SEP", "OCT", "NOV"],        II: ["JAN", "FEB", "MAR", "APR", "MAY"] },
+};
+
+function getProgramGroup(programType, programLevel) {
+  const type = (programType || "").trim().toUpperCase();
+  if (type === "VETA") {
+    return String(programLevel || "").trim() === "3" ? "VETA_L3" : "VETA_L1L2";
+  }
+  return "NON_VETA";
+}
+
+// Two entries can only really collide if their semesters run during the same real
+// months - falls back to "overlapping" (the cautious answer) if either side's
+// group/semester isn't recognized, instead of silently letting it slip through.
+function semestersOverlap(typeA, levelA, semA, typeB, levelB, semB) {
+  const monthsA = SEMESTER_CALENDAR[getProgramGroup(typeA, levelA)]?.[semA];
+  const monthsB = SEMESTER_CALENDAR[getProgramGroup(typeB, levelB)]?.[semB];
+  if (!monthsA || !monthsB) return true;
+  return monthsA.some(m => monthsB.includes(m));
+}
+
 export const showtimetableForm = (req, res) => {
   const { id } = req.params;
   if (id) {
@@ -219,9 +250,9 @@ export const handleUpdatetimetable = async (req, res) => {
       progStr ? String(progStr).split('+').map(p => p.trim().toUpperCase()).filter(Boolean) : [];
 
     const [others] = await conn.query(
-      `SELECT * FROM extracted_timetables 
-       WHERE id != ? AND semester = ? AND day = ?`,
-      [id, t.semester, t.day]
+      `SELECT * FROM extracted_timetables
+       WHERE id != ? AND day = ?`,
+      [id, t.day]
     );
 
     let action = null;
@@ -229,6 +260,10 @@ export const handleUpdatetimetable = async (req, res) => {
 
     for (const e of others) {
       if (!overlap(t.start_time, t.end_time, e.start_time, e.end_time)) continue;
+      // Same-time overlap alone isn't enough anymore - a matching semester
+      // label no longer means "same real time" now that VETA's calendar
+      // diverges from non-VETA's (see SEMESTER_CALENDAR above).
+      if (!semestersOverlap(t.program_type, t.program_level, t.semester, e.program_type, e.program_level, e.semester)) continue;
 
       // 1. TUTOR CONFLICT (Highest priority)
       if (sanitize(t.tutor_name) === sanitize(e.tutor_name)) {

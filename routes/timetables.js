@@ -127,6 +127,37 @@ const programsOverlap = (prog1, prog2) => {
   return codes1.some(code => codes2.includes(code));
 };
 
+// ==================== SEMESTER CALENDAR (VETA vs NON-VETA) ====================
+// A `semester` label ("I"/"II") only tells you which of a student's OWN two
+// semesters an entry belongs to - it does NOT tell you the real calendar months,
+// because VETA's academic calendar no longer lines up with everyone else's. Same
+// mapping as models/manualTimetableModel.js, confirmed against the real 2026/2027
+// ATC/VETA academic calendar; duplicated here rather than shared, matching this
+// codebase's existing style for small per-file collision helpers.
+const SEMESTER_CALENDAR = {
+  NON_VETA:  { I: ["OCT", "NOV", "DEC", "JAN", "FEB"], II: ["MAR", "APR", "MAY", "JUN", "JUL"] },
+  VETA_L1L2: { I: ["JAN", "FEB", "MAR", "APR", "MAY"], II: ["JUL", "AUG", "SEP", "OCT", "NOV"] },
+  VETA_L3:   { I: ["AUG", "SEP", "OCT", "NOV"],        II: ["JAN", "FEB", "MAR", "APR", "MAY"] },
+};
+
+const getProgramGroup = (programType, programLevel) => {
+  const type = (programType || "").trim().toUpperCase();
+  if (type === "VETA") {
+    return String(programLevel || "").trim() === "3" ? "VETA_L3" : "VETA_L1L2";
+  }
+  return "NON_VETA";
+};
+
+// Two entries can only really collide if their semesters run during the same real
+// months - falls back to "overlapping" (the cautious answer) if either side's
+// group/semester isn't recognized, instead of silently letting it slip through.
+const semestersOverlap = (typeA, levelA, semA, typeB, levelB, semB) => {
+  const monthsA = SEMESTER_CALENDAR[getProgramGroup(typeA, levelA)]?.[semA];
+  const monthsB = SEMESTER_CALENDAR[getProgramGroup(typeB, levelB)]?.[semB];
+  if (!monthsA || !monthsB) return true;
+  return monthsA.some(m => monthsB.includes(m));
+};
+
 // =====================
 // Exchange Route (Updated with better collision detection)
 // =====================
@@ -174,7 +205,6 @@ router.post('/exchange', async (req, res) => {
       const [conflicts] = await conn.query(`
         SELECT * FROM extracted_timetables
         WHERE id NOT IN (?)
-          AND semester = ?
           AND day = ?
           AND (
             (start_time < ? AND end_time > ?) OR
@@ -182,7 +212,6 @@ router.post('/exchange', async (req, res) => {
           )
       `, [
         ignoreIds.length ? ignoreIds : [0],
-        entry.semester,
         entry.day,
         entry.end_time, entry.start_time,
         entry.start_time, entry.end_time
@@ -191,6 +220,11 @@ router.post('/exchange', async (req, res) => {
       const results = [];
 
       for (const c of conflicts) {
+        // Same-time overlap alone isn't enough anymore - a matching semester
+        // label no longer means "same real time" now that VETA's calendar
+        // diverges from non-VETA's (see SEMESTER_CALENDAR above).
+        if (!semestersOverlap(entry.program_type, entry.program_level, entry.semester, c.program_type, c.program_level, c.semester)) continue;
+
         // Tutor conflict
         if (c.tutor_name && entry.tutor_name && 
             sanitize(c.tutor_name) === sanitize(entry.tutor_name)) {
