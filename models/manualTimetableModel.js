@@ -38,6 +38,36 @@ const programSlotMatch = (programType, slotTime) => {
   return false;
 };
 
+// ==================== SEMESTER CALENDAR (VETA vs NON-VETA) ====================
+const SEMESTER_CALENDAR = {
+  NON_VETA:  { I: ["OCT", "NOV", "DEC", "JAN", "FEB"], II: ["MAR", "APR", "MAY", "JUN", "JUL"] },
+  VETA_L1L2: { I: ["JAN", "FEB", "MAR", "APR", "MAY"], II: ["JUL", "AUG", "SEP", "OCT", "NOV"] },
+  VETA_L3:   { I: ["AUG", "SEP", "OCT", "NOV"],        II: ["JAN", "FEB", "MAR", "APR", "MAY"] },
+};
+
+// Which row of SEMESTER_CALENDAR a subject/timetable entry belongs to. VETA Level 3
+// runs on its own calendar, offset from VETA Levels 1 & 2, so program_type alone
+// ("VETA") isn't enough to tell them apart - program_level is what distinguishes them.
+function getProgramGroup(programType, programLevel) {
+  const type = (programType || "").trim().toUpperCase();
+  if (type === "VETA") {
+    return String(programLevel || "").trim() === "3" ? "VETA_L3" : "VETA_L1L2";
+  }
+  return "NON_VETA";
+}
+
+// Two entries can only really collide if their semesters run during the same real
+// months - "same semester label" stopped being a safe proxy for that once VETA's
+// calendar diverged from everyone else's (see SEMESTER_CALENDAR above). Falls back
+// to "overlapping" (the cautious answer) if either side's group/semester isn't
+// recognized, instead of silently letting an unrecognized case slip through as safe.
+function semestersOverlap(typeA, levelA, semA, typeB, levelB, semB) {
+  const monthsA = SEMESTER_CALENDAR[getProgramGroup(typeA, levelA)]?.[semA];
+  const monthsB = SEMESTER_CALENDAR[getProgramGroup(typeB, levelB)]?.[semB];
+  if (!monthsA || !monthsB) return true;
+  return monthsA.some(m => monthsB.includes(m));
+}
+
 // ==================== SHARED CONSTANTS ====================
 // Single source of truth for the small set of fixed business rules used throughout this
 // file, instead of the same numbers appearing as unexplained literals in several places.
@@ -254,11 +284,21 @@ export const addtimetable = async ({ day, venue_id, subject_ids, slot, logs = []
     const reasons = [];
 
     for (const sInfo of slotInfos) {
-      // Fetch ALL existing timetables for this exact day + slot + semester
-      const [existingEntries] = await db.query(`
-        SELECT * FROM extracted_timetables 
-        WHERE day = ? AND slot = ? AND semester = ?
-      `, [day, sInfo.slotTime, S.semester]);
+      // Fetch ALL existing timetables for this exact day + slot, regardless of
+      // semester label - a matching label no longer means "same real time" now
+      // that VETA's calendar diverges from non-VETA's (see SEMESTER_CALENDAR
+      // above). Narrow down to entries that actually overlap in real calendar
+      // months before running the collision checks below, which are otherwise
+      // unchanged.
+      const [allEntriesThisSlot] = await db.query(`
+        SELECT * FROM extracted_timetables
+        WHERE day = ? AND slot = ?
+      `, [day, sInfo.slotTime]);
+
+      const existingEntries = allEntriesThisSlot.filter(e => semestersOverlap(
+        S.program_type, S.program_level, S.semester,
+        e.program_type, e.program_level, e.semester
+      ));
 
       // 1. Tutor Collision Check
       const tutorConflict = existingEntries.some(e => Number(e.created_by) === Number(S.tutor_db_id));
