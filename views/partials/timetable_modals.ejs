@@ -11,7 +11,7 @@
         </div>
         <div class="modal-body">
           <p>Select reason for deletion:</p>
-          <select name="reason" class="form-select select2" required>
+          <select id="reason_<%= timetable.id %>" name="reason" class="form-select select2" required>
             <option value="">-- Choose Reason --</option>
             <option value="tutor_collision">Tutor Collision</option>
             <option value="program_collision">Program Collision</option>
@@ -68,7 +68,7 @@
             <!-- Start Time -->
             <div class="col-md-6">
               <label for="start_time_<%= timetable.id %>" class="form-label">Start Time:</label>
-              <select id="start_time" name="start_time" class="form-select select2" required>
+              <select id="start_time_<%= timetable.id %>" name="start_time" class="form-select select2" required>
                 <option value="">Select Start Time</option>
                 <option>07:30</option>
                 <option>08:15</option>
@@ -96,10 +96,10 @@
             <!-- End Time -->
             <div class="col-md-6">
               <label for="end_time_<%= timetable.id %>" class="form-label">End Time:</label>
-              <input 
-                type="time" 
-                id="end_time" 
-                name="end_time" 
+              <input
+                type="time"
+                id="end_time_<%= timetable.id %>"
+                name="end_time"
                 class="form-control" 
                 value="<%= timetable.end_time %>" 
                 readonly 

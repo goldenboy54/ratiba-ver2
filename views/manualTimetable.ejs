@@ -123,6 +123,10 @@
         <i class="bi bi-search"></i>
         Filter Timetable Data
       </button>
+      <a href="/manualTimetable" class="btn btn-secondary ms-2">
+        <i class="bi bi-arrow-clockwise"></i>
+        Reset
+      </a>
     </form>
   </div>
 
@@ -226,6 +230,10 @@
           <button type="submit" id="assign-btn" class="btn-assign">
             <i class="bi bi-plus-circle"></i>
             Assign to Timetable
+          </button>
+          <button type="button" class="btn btn-secondary ms-2" onclick="window.manualTimetable.clearForm()">
+            <i class="bi bi-x-circle"></i>
+            Clear
           </button>
         </div>
 

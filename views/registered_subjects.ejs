@@ -28,7 +28,7 @@
           >
             <option value="">All Subjects</option>
             <% Rsname.forEach(r => { %>
-              <option value="<%= r.registered_subject_name %>">
+              <option value="<%= r.registered_subject_name %>" <%= locals.registered_subject_name === r.registered_subject_name ? 'selected' : '' %>>
                 <%= r.registered_subject_name %>
               </option>
             <% }) %>
@@ -44,7 +44,7 @@
           >
             <option value="">All Codes</option>
             <% Rscode.forEach(r => { %>
-              <option value="<%= r.registered_subject_code %>">
+              <option value="<%= r.registered_subject_code %>" <%= locals.registered_subject_code === r.registered_subject_code ? 'selected' : '' %>>
                 <%= r.registered_subject_code %>
               </option>
             <% }) %>
@@ -60,7 +60,7 @@
           >
             <option value="">All Credits</option>
             <% Rscredit.forEach(r => { %>
-              <option value="<%= r.credit %>">
+              <option value="<%= r.credit %>" <%= locals.credit == r.credit ? 'selected' : '' %>>
                 <%= r.credit %>
               </option>
             <% }) %>
@@ -76,7 +76,7 @@
           >
             <option value="">All Hours</option>
             <% Rsltpa.forEach(r => { %>
-              <option value="<%= r.total_hours_per_week %>">
+              <option value="<%= r.total_hours_per_week %>" <%= locals.total_hours_per_week == r.total_hours_per_week ? 'selected' : '' %>>
                 <%= r.total_hours_per_week %>
               </option>
             <% }) %>
@@ -92,13 +92,22 @@
           >
             <option value="">All Departments</option>
             <% Rsdepartment.forEach(r => { %>
-              <option value="<%= r.registered_subject_department %>">
+              <option value="<%= r.registered_subject_department %>" <%= locals.registered_subject_department === r.registered_subject_department ? 'selected' : '' %>>
                 <%= r.registered_subject_department %>
               </option>
             <% }) %>
           </select>
         </div>
 
+      </div>
+
+      <div class="text-center mt-3">
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-filter"></i> Filter
+        </button>
+        <a href="/registered_subjects" class="btn btn-secondary ms-2">
+          <i class="fas fa-sync"></i> Reset
+        </a>
       </div>
     </form>
 

@@ -33,7 +33,7 @@ router.get('/', async (req, res) => {
         venue_capacity: req.query.capacity,
         venue_location: req.query.location,
         venue_type: req.query.type,
-        venue_quality: req.query.venue_quality,
+        venue_quality: req.query.quality,
         venue_department: req.query.department,
         venue_status: req.query.status,
       

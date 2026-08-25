@@ -94,6 +94,9 @@
           <button type="submit" class="btn btn-primary">
             <i class="fas fa-filter"></i> Filter
           </button>
+          <a href="/programs" class="btn btn-secondary ms-2">
+            <i class="fas fa-sync"></i> Reset
+          </a>
         </div>
       </form>
     </div>
@@ -134,7 +137,7 @@
                   <td><%= program.program_type %></td>
 
                   <td>
-                    <button type="button" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#updateModal<%= program.program_id %>">Edit</button>
+                    <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#updateModal<%= program.program_id %>">Edit</button>
                     <a href="/programs/delete/<%= program.program_id %>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this program?');">Delete</a>
                   </td>
                 </tr>
@@ -146,7 +149,7 @@
 
                       <div class="modal-header">
                         <h5 class="modal-title">Update Program</h5>
-                        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                       </div>
 
                       <div class="modal-body">
@@ -173,8 +176,8 @@
                           </div>
 
                           <div class="form-group">
-                            <label class="text-info">Department:</label>
-                            <select name="category" class="form-control select2" required>
+                            <label for="category_<%= program.program_id %>" class="text-info">Department:</label>
+                            <select id="category_<%= program.program_id %>" name="category" class="form-control select2" required>
                               <% departments.forEach(d => { %>
                                 <option value="<%= d.department_name %>" <%= program.category === d.department_name ? 'selected' : '' %>><%= d.department_name %></option>
                               <% }); %>
@@ -182,13 +185,13 @@
                           </div>
 
                           <div class="form-group">
-                            <label class="text-info">Program Capacity:</label>
-                            <input type="text" name="program_capacity" class="form-control" value="<%= program.program_capacity %>">
+                            <label for="program_capacity_<%= program.program_id %>" class="text-info">Program Capacity:</label>
+                            <input type="text" id="program_capacity_<%= program.program_id %>" name="program_capacity" class="form-control" value="<%= program.program_capacity %>">
                           </div>
 
                           <div class="form-group">
-                            <label class="text-info">Program Type:</label>
-                            <select name="program_type" class="form-control select2" required>
+                            <label for="program_type_<%= program.program_id %>" class="text-info">Program Type:</label>
+                            <select id="program_type_<%= program.program_id %>" name="program_type" class="form-control select2" required>
                               <option value="full-time" <%= program.program_type === 'full-time' ? 'selected' : '' %>>full-time</option>
                               <option value="evening" <%= program.program_type === 'evening' ? 'selected' : '' %>>evening</option>
                               <option value="veta" <%= program.program_type === 'veta' ? 'selected' : '' %>>veta</option>
@@ -275,17 +278,13 @@
 
   </div>
 
-<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  </main>
+<%- include('partials/footer') %>
 
 <script>
 $(document).ready(function(){
 
-  $('.select2').select2();
+  // Select2 is initialized by partials/footer.ejs (with allowClear + placeholder)
 
   $('#filterForm select').on('change', function(){ $('#filterForm').submit(); });
 

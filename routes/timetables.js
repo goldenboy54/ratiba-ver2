@@ -23,6 +23,7 @@ router.get('/', async (req, res) => {
       tutor_name: req.query.tutor || '',
       program_level: req.query.level || '',
       program_type: req.query.program_type || '',
+      semester: req.query.semester || '',
     };
 
     const timetables = await searchTimetables(criteria);
@@ -69,8 +70,10 @@ router.get('/', async (req, res) => {
       levels: [],
       departments: [],
       subjects: [],
+      scodes: [],
       semesters: [],
       ptypes: [],
+      allTutors: [],
       department_name: '',
       program_name: '',
       subject_name: '',
@@ -79,6 +82,7 @@ router.get('/', async (req, res) => {
       tutor_name: '',
       program_level: '',
       program_type: '',
+      semester: '',
       error: 'Error fetching timetables: ' + err.message,
       success: '',
       user: req.user || {}

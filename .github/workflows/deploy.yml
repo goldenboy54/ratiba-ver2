@@ -1,0 +1,38 @@
+name: Deploy to GoldenTech
+
+on:
+  push:
+    branches:
+      - main
+      - Main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 🔍 DEBUG STEP
+      - name: Debug secrets
+        run: |
+          echo "HOST=${{ secrets.GOLDENTECH_DEPLOY_HOST }}"
+          echo "USER=${{ secrets.GOLDENTECH_DEPLOY_USERNAME }}"
+          if [ -z "${{ secrets.GOLDENTECH_DEPLOY_SSH_KEY }}" ]; then
+            echo "SSH KEY is EMPTY ❌"
+          else
+            echo "SSH KEY is PRESENT ✅"
+          fi
+
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.GOLDENTECH_DEPLOY_HOST }}
+          username: ${{ secrets.GOLDENTECH_DEPLOY_USERNAME }}
+          key: ${{ secrets.GOLDENTECH_DEPLOY_SSH_KEY }}
+          script: |
+            cd /var/www/table.com
+            git pull origin Main || git pull origin main
+            npm install
+            pm2 restart app.js || pm2 start app.js

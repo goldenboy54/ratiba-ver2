@@ -97,8 +97,8 @@
             <label for="semester" class="form-label">Semester:</label>
             <select id="semester" name="semester" class="form-select select2">
               <option value="">Select semester</option>
-              <% semesters.forEach(semester => { %>
-                <option value="<%= semester.semester %>" <%= semester === semester.semester ? 'selected' : '' %>><%= semester.semester %></option>
+              <% semesters.forEach(opt => { %>
+                <option value="<%= opt.semester %>" <%= locals.semester === opt.semester ? 'selected' : '' %>><%= opt.semester %></option>
               <% }); %>
             </select>
           </div>
@@ -118,6 +118,9 @@
           <button type="submit" class="btn btn-primary">
             <i class="fas fa-filter"></i> Filter
           </button>
+          <a href="/subjects" class="btn btn-secondary ms-2">
+            <i class="fas fa-sync"></i> Reset
+          </a>
         </div>
       </form>
     </div>
@@ -199,8 +202,8 @@
                     <div class="modal-body">
                       <form action="/subjects/edit/<%= subject.subject_id %>" method="post">
                         <div class="mb-3">
-                          <label for="user_id" class="form-label text-info">User Name:</label>
-                          <select id="user_id" name="user_id" class="form-select select2" required>
+                          <label for="user_id_<%= subject.subject_id %>" class="form-label text-info">User Name:</label>
+                          <select id="user_id_<%= subject.subject_id %>" name="user_id" class="form-select select2" required>
                             <% users.forEach(user => { %>
                               <option value="<%= user.user_id %>" <%= subject.user_id === user.user_id ? 'selected' : '' %>>
                                 <%= user.user_id %> - <%= user.full_name %>
@@ -208,32 +211,32 @@
                             <% }); %>
                           </select>
                         </div>
-                        
+
                         <div class="mb-3">
-                          <label for="title" class="form-label text-info">Subject Name:</label>
-                          <input type="text" id="title" name="title" class="form-control" value="<%= subject.title %>" required>
+                          <label for="title_<%= subject.subject_id %>" class="form-label text-info">Subject Name:</label>
+                          <input type="text" id="title_<%= subject.subject_id %>" name="title" class="form-control" value="<%= subject.title %>" required>
                         </div>
-                        
+
                         <div class="mb-3">
-                          <label for="subject_code" class="form-label text-info">Subject Code:</label>
-                          <input type="text" id="subject_code" name="subject_code" class="form-control" value="<%= subject.subject_code %>" required>
+                          <label for="subject_code_<%= subject.subject_id %>" class="form-label text-info">Subject Code:</label>
+                          <input type="text" id="subject_code_<%= subject.subject_id %>" name="subject_code" class="form-control" value="<%= subject.subject_code %>" required>
                         </div>
-                        
+
                         <div class="row">
                           <div class="col-md-6 mb-3">
-                            <label for="credit" class="form-label text-info">Subject Credit:</label>
-                            <input type="number" id="credit" name="credit" class="form-control" value="<%= subject.credit %>" required>
+                            <label for="credit_<%= subject.subject_id %>" class="form-label text-info">Subject Credit:</label>
+                            <input type="number" id="credit_<%= subject.subject_id %>" name="credit" class="form-control" value="<%= subject.credit %>" required>
                           </div>
-                          
+
                           <div class="col-md-6 mb-3">
-                            <label for="total_hours_per_week" class="form-label text-info">Total Hours Per Week:</label>
-                            <input type="number" id="total_hours_per_week" name="total_hours_per_week" class="form-control" value="<%= subject.total_hours_per_week %>" required>
+                            <label for="total_hours_per_week_<%= subject.subject_id %>" class="form-label text-info">Total Hours Per Week:</label>
+                            <input type="number" id="total_hours_per_week_<%= subject.subject_id %>" name="total_hours_per_week" class="form-control" value="<%= subject.total_hours_per_week %>" required>
                           </div>
                         </div>
-                        
+
                         <div class="mb-3">
-                          <label for="program_id" class="form-label text-info">Program:</label>
-                          <select id="program_id" name="program_id" class="form-select select2" required>
+                          <label for="program_id_<%= subject.subject_id %>" class="form-label text-info">Program:</label>
+                          <select id="program_id_<%= subject.subject_id %>" name="program_id" class="form-select select2" required>
                             <% programs.forEach(program => { %>
                               <option value="<%= program.program_id %>" <%= subject.program_id === program.program_id ? 'selected' : '' %>>
                                 <%= program.program_name %> (CODE: <%= program.program_code %>, LEVEL <%= program.level %> <%= program.program_type %>)
@@ -241,22 +244,22 @@
                             <% }); %>
                           </select>
                         </div>
-                        
+
                         <div class="row">
                           <div class="col-md-6 mb-3">
-                            <label for="subject_department" class="form-label text-info">Subject Department:</label>
-                            <input type="text" id="subject_department" name="subject_department" class="form-control" value="<%= subject.subject_department %>" required>
+                            <label for="subject_department_<%= subject.subject_id %>" class="form-label text-info">Subject Department:</label>
+                            <input type="text" id="subject_department_<%= subject.subject_id %>" name="subject_department" class="form-control" value="<%= subject.subject_department %>" required>
                           </div>
-                          
+
                           <div class="col-md-6 mb-3">
-                            <label for="type_prac_or_theory" class="form-label text-info">Subject Type:</label>
-                            <input type="text" id="type_prac_or_theory" name="type_prac_or_theory" class="form-control" value="<%= subject.type_prac_or_theory %>" required>
+                            <label for="type_prac_or_theory_<%= subject.subject_id %>" class="form-label text-info">Subject Type:</label>
+                            <input type="text" id="type_prac_or_theory_<%= subject.subject_id %>" name="type_prac_or_theory" class="form-control" value="<%= subject.type_prac_or_theory %>" required>
                           </div>
                         </div>
-                        
+
                         <div class="mb-3">
-                          <label for="semester" class="form-label text-info">Semester:</label>
-                          <input type="text" id="semester" name="semester" class="form-control" value="<%= subject.semester %>" required>
+                          <label for="semester_<%= subject.subject_id %>" class="form-label text-info">Semester:</label>
+                          <input type="text" id="semester_<%= subject.subject_id %>" name="semester" class="form-control" value="<%= subject.semester %>" required>
                         </div>
                         
                         <button type="submit" class="btn btn-success">

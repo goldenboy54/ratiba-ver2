@@ -1,17 +1,14 @@
 // Users Page JavaScript
+// Select2 on the main filter selects is initialized by partials/footer.ejs (with allowClear + placeholder)
 $(document).ready(function() {
-  // Initialize Select2 on page load
-  $('.select2').select2({
-    theme: 'bootstrap-5',
-    width: '100%'
-  });
-
-  // Re-initialize Select2 inside modals when opened
+  // Re-initialize Select2 inside modals when opened (needs dropdownParent to render inside the modal)
   $('body').on('shown.bs.modal', '.modal', function () {
     $(this).find('.select2-modal').select2({
       dropdownParent: $(this).find('.modal-content'),
       theme: 'bootstrap-5',
-      width: '100%'
+      width: '100%',
+      allowClear: true,
+      placeholder: function() { return $(this).data('placeholder') || $(this).find('option[value=""]').first().text() || 'Select an option'; }
     });
   });
 

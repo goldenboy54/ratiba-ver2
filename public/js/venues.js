@@ -1,11 +1,6 @@
 // Venues Page JavaScript
+// Select2 is initialized by partials/footer.ejs (with allowClear + placeholder)
 $(document).ready(function() {
-  // Initialize Select2
-  $('.select2').select2({
-    theme: 'bootstrap-5',
-    width: '100%'
-  });
-
   // Auto filter on selection change
   $('.filterInput').on('change', function() {
     const form = $('#filterForm');

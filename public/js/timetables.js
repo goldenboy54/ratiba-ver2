@@ -86,8 +86,8 @@
     const modals = document.querySelectorAll('.modal');
 
     modals.forEach(modal => {
-      const startInput = modal.querySelector('#start_time');
-      const endInput = modal.querySelector('#end_time');
+      const startInput = modal.querySelector('select[name="start_time"]');
+      const endInput = modal.querySelector('input[name="end_time"]');
 
       // Skip if inputs don't exist
       if (!startInput || !endInput) return;
@@ -190,6 +190,7 @@
       theme: 'bootstrap-5',
       width: '100%',
       placeholder: 'Select an option',
+      allowClear: true,
       dropdownParent: $(this)
     });
   });

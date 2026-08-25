@@ -15,40 +15,40 @@
       <div class="row">
         <div class="col-md-3 mb-3">
           <label for="department_name" class="form-label">Department Name:</label>
-          <select id="department_name" name="department_name" class="form-select select2">
-              <option value="">department_name</option>
-              <% dname.forEach(department_name => { %>
-                <option value="<%= department_name.department_name %>" <%= department_name === department_name.department_name ? 'selected' : '' %>><%= department_name.department_name %></option>
+          <select id="department_name" name="department_name" class="form-select select2" data-placeholder="Department Name">
+              <option value="">Select department name</option>
+              <% dname.forEach(opt => { %>
+                <option value="<%= opt.department_name %>" <%= locals.department_name === opt.department_name ? 'selected' : '' %>><%= opt.department_name %></option>
               <% }); %>
             </select>
         </div>
 
         <div class="col-md-3 mb-3">
           <label for="department_code" class="form-label">Department Code:</label>
-          <select id="department_code" name="department_code" class="form-select select2">
-              <option value="">department_code</option>
-              <% dcode.forEach(department_code => { %>
-                <option value="<%= department_code.department_code %>" <%= department_code === department_code.department_code ? 'selected' : '' %>><%= department_code.department_code %></option>
+          <select id="department_code" name="department_code" class="form-select select2" data-placeholder="Department Code">
+              <option value="">Select department code</option>
+              <% dcode.forEach(opt => { %>
+                <option value="<%= opt.department_code %>" <%= locals.department_code === opt.department_code ? 'selected' : '' %>><%= opt.department_code %></option>
               <% }); %>
             </select>
         </div>
 
         <div class="col-md-3 mb-3">
           <label for="hod_name" class="form-label">HOD Name:</label>
-          <select id="hod_name" name="hod_name" class="form-select select2">
-              <option value="">hod_name</option>
-              <% dhname.forEach(hod_name => { %>
-                <option value="<%= hod_name.hod_name %>" <%= hod_name === hod_name.hod_name ? 'selected' : '' %>><%= hod_name.hod_name %></option>
+          <select id="hod_name" name="hod_name" class="form-select select2" data-placeholder="HOD Name">
+              <option value="">Select HOD name</option>
+              <% dhname.forEach(opt => { %>
+                <option value="<%= opt.hod_name %>" <%= locals.hod_name === opt.hod_name ? 'selected' : '' %>><%= opt.hod_name %></option>
               <% }); %>
             </select>
         </div>
 
         <div class="col-md-3 mb-3">
           <label for="hod_email" class="form-label">HOD Email:</label>
-          <select id="hod_email" name="hod_email" class="form-select select2">
-              <option value="">hod_email</option>
-              <% dhemail.forEach(hod_email => { %>
-                <option value="<%= hod_email.hod_email %>" <%= hod_email === hod_email.hod_email ? 'selected' : '' %>><%= hod_email.hod_email %></option>
+          <select id="hod_email" name="hod_email" class="form-select select2" data-placeholder="HOD Email">
+              <option value="">Select HOD email</option>
+              <% dhemail.forEach(opt => { %>
+                <option value="<%= opt.hod_email %>" <%= locals.hod_email === opt.hod_email ? 'selected' : '' %>><%= opt.hod_email %></option>
               <% }); %>
             </select>
         </div>
@@ -58,6 +58,9 @@
         <button type="submit" class="btn btn-primary">
           <i class="fas fa-filter"></i> Filter
         </button>
+        <a href="/departments" class="btn btn-secondary ms-2">
+          <i class="fas fa-sync"></i> Reset
+        </a>
       </div>
     </form>
 
@@ -105,23 +108,23 @@
                   <div class="modal-body">
                     <form action="/departments/edit/<%= department.department_id %>" method="post">
                       <div class="mb-3">
-                        <label for="department_name" class="form-label text-info">Department Name:</label>
-                        <input type="text" id="department_name" name="department_name" class="form-control" value="<%= department.department_name %>" required>
+                        <label for="department_name_<%= department.department_id %>" class="form-label text-info">Department Name:</label>
+                        <input type="text" id="department_name_<%= department.department_id %>" name="department_name" class="form-control" value="<%= department.department_name %>" required>
                       </div>
 
                       <div class="mb-3">
-                        <label for="department_code" class="form-label text-info">Department Code:</label>
-                        <input type="text" id="department_code" name="department_code" class="form-control" value="<%= department.department_code %>" required>
+                        <label for="department_code_<%= department.department_id %>" class="form-label text-info">Department Code:</label>
+                        <input type="text" id="department_code_<%= department.department_id %>" name="department_code" class="form-control" value="<%= department.department_code %>" required>
                       </div>
 
                       <div class="mb-3">
-                        <label for="hod_name" class="form-label text-info">HOD Name:</label>
-                        <input type="text" id="hod_name" name="hod_name" class="form-control" value="<%= department.hod_name %>" required>
+                        <label for="hod_name_<%= department.department_id %>" class="form-label text-info">HOD Name:</label>
+                        <input type="text" id="hod_name_<%= department.department_id %>" name="hod_name" class="form-control" value="<%= department.hod_name %>" required>
                       </div>
 
                       <div class="mb-3">
-                        <label for="hod_email" class="form-label text-info">HOD Email:</label>
-                        <input type="email" id="hod_email" name="hod_email" class="form-control" value="<%= department.hod_email %>" required>
+                        <label for="hod_email_<%= department.department_id %>" class="form-label text-info">HOD Email:</label>
+                        <input type="email" id="hod_email_<%= department.department_id %>" name="hod_email" class="form-control" value="<%= department.hod_email %>" required>
                       </div>
 
                       <button type="submit" class="btn btn-success">
@@ -197,9 +200,9 @@
 
 </main>
 
-<script src="/js/departments.js"></script>
-
 <%- include('partials/footer') %>
+
+<script src="/js/departments.js"></script>
 
 
 

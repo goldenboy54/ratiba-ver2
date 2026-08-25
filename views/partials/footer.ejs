@@ -3,16 +3,16 @@
   All Rights Reserved. (<script>document.write(`${((d=>d.getMonth()+1>=8?d.getFullYear():d.getFullYear()-1)(new Date()))}/${((d=>d.getMonth()+1>=8?d.getFullYear()+1:d.getFullYear())(new Date()))}`)</script>)
 </footer>
 
-<!-- jQuery -->
-<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<!-- jQuery (self-hosted: CDN scanning/rewriting by some browser security suites was corrupting the JS) -->
+<script src="/vendor/jquery/jquery-3.7.0.min.js"></script>
 <!-- Bootstrap 5 JS Bundle -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <!-- Select2 JS -->
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="/vendor/select2/js/select2.min.js"></script>
 <!-- jsPDF -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="/vendor/jspdf/jspdf.umd.min.js"></script>
 <!-- html2canvas -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="/vendor/html2canvas/html2canvas.min.js"></script>
 <!-- Custom Navigation JS -->
 <script src="/js/navigation.js"></script>
 <!-- Tmaster JS -->
@@ -40,10 +40,19 @@
 
 <script>
   $(document).ready(function() {
-    // Initialize Select2 on all select elements with select2 class
-    $('.select2').select2({
-      theme: 'bootstrap-5',
-      width: '100%'
+    // Initialize Select2 on all select elements with select2 class.
+    // Skip elements a page-specific script already initialized (e.g. modal-scoped
+    // selects needing dropdownParent, or custom matchers) so this stays a safe default,
+    // not a clobber of more specific config.
+    $('.select2').each(function() {
+      var $el = $(this);
+      if ($el.hasClass('select2-hidden-accessible')) return;
+      $el.select2({
+        theme: 'bootstrap-5',
+        width: '100%',
+        allowClear: true,
+        placeholder: $el.data('placeholder') || $el.find('option[value=""]').first().text() || 'Select an option'
+      });
     });
   });
 </script>

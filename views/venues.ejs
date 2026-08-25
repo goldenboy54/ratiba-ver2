@@ -14,73 +14,82 @@
       <div class="row">
         <div class="col-md-4 mb-3">
           <label for="venue_name" class="form-label">Venue Name:</label>
-          <select id="venue_name" name="venue_name" class="form-select select2 filterInput">
-            <option value="">venue_name</option>
-            <% vname.forEach(venue_name => { %>
-              <option value="<%= venue_name.venue_name %>" <%= venue_name === venue_name.venue_name ? 'selected' : '' %>><%= venue_name.venue_name %></option>
+          <select id="venue_name" name="venue_name" class="form-select select2 filterInput" data-placeholder="Venue Name">
+            <option value="">Select venue name</option>
+            <% vname.forEach(opt => { %>
+              <option value="<%= opt.venue_name %>" <%= locals.venue_name === opt.venue_name ? 'selected' : '' %>><%= opt.venue_name %></option>
             <% }); %>
           </select>
         </div>
 
         <div class="col-md-4 mb-3">
           <label for="capacity" class="form-label">Capacity:</label>
-          <select id="capacity" name="capacity" class="form-select select2 filterInput">
-            <option value="">capacity</option>
-            <% vcapacity.forEach(capacity => { %>
-              <option value="<%= capacity.capacity %>" <%= capacity === capacity.capacity ? 'selected' : '' %>><%= capacity.capacity %></option>
+          <select id="capacity" name="capacity" class="form-select select2 filterInput" data-placeholder="Capacity">
+            <option value="">Select capacity</option>
+            <% vcapacity.forEach(opt => { %>
+              <option value="<%= opt.capacity %>" <%= locals.venue_capacity == opt.capacity ? 'selected' : '' %>><%= opt.capacity %></option>
             <% }); %>
           </select>
         </div>
 
         <div class="col-md-4 mb-3">
           <label for="location" class="form-label">Location:</label>
-          <select id="location" name="location" class="form-select select2 filterInput">
-            <option value="">location</option>
-            <% vlocation.forEach(location => { %>
-              <option value="<%= location.location %>" <%= location === location.location ? 'selected' : '' %>><%= location.location %></option>
+          <select id="location" name="location" class="form-select select2 filterInput" data-placeholder="Location">
+            <option value="">Select location</option>
+            <% vlocation.forEach(opt => { %>
+              <option value="<%= opt.location %>" <%= locals.venue_location === opt.location ? 'selected' : '' %>><%= opt.location %></option>
             <% }); %>
           </select>
         </div>
 
         <div class="col-md-4 mb-3">
           <label for="type" class="form-label">Type:</label>
-          <select id="type" name="type" class="form-select select2 filterInput">
-            <option value="">type</option>
-            <% vtype.forEach(type => { %>
-              <option value="<%= type.type %>" <%= type === type.type ? 'selected' : '' %>><%= type.type %></option>
+          <select id="type" name="type" class="form-select select2 filterInput" data-placeholder="Type">
+            <option value="">Select type</option>
+            <% vtype.forEach(opt => { %>
+              <option value="<%= opt.type %>" <%= locals.venue_type === opt.type ? 'selected' : '' %>><%= opt.type %></option>
             <% }); %>
           </select>
         </div>
 
         <div class="col-md-4 mb-3">
           <label for="quality" class="form-label">Quality:</label>
-          <select id="quality" name="quality" class="form-select select2 filterInput">
-            <option value="">quality</option>
-            <% vquality.forEach(quality => { %>
-              <option value="<%= quality.quality %>" <%= quality === quality.quality ? 'selected' : '' %>><%= quality.quality %></option>
+          <select id="quality" name="quality" class="form-select select2 filterInput" data-placeholder="Quality">
+            <option value="">Select quality</option>
+            <% vquality.forEach(opt => { %>
+              <option value="<%= opt.quality %>" <%= locals.venue_quality === opt.quality ? 'selected' : '' %>><%= opt.quality %></option>
             <% }); %>
           </select>
         </div>
         
         <div class="col-md-4 mb-3">
           <label for="department" class="form-label">Department:</label>
-          <select id="department1" name="department" class="form-select select2 filterInput">
-            <option value="">department</option>
-            <% vdepartment.forEach(department => { %>
-              <option value="<%= department.department %>" <%= department === department.department ? 'selected' : '' %>> <%= department.department %> </option>
+          <select id="department1" name="department" class="form-select select2 filterInput" data-placeholder="Department">
+            <option value="">Select department</option>
+            <% vdepartment.forEach(opt => { %>
+              <option value="<%= opt.department %>" <%= locals.venue_department === opt.department ? 'selected' : '' %>> <%= opt.department %> </option>
             <% }); %>
           </select>
         </div>
 
         <div class="col-md-4 mb-3">
           <label for="status" class="form-label">Status:</label>
-          <select id="status" name="status" class="form-select select2 filterInput">
-            <option value="">status</option>
-            <% vstatus.forEach(status => { %>
-              <option value="<%= status.status %>" <%= status === status.status ? 'selected' : '' %>><%= status.status %></option>
+          <select id="status" name="status" class="form-select select2 filterInput" data-placeholder="Status">
+            <option value="">Select status</option>
+            <% vstatus.forEach(opt => { %>
+              <option value="<%= opt.status %>" <%= locals.venue_status === opt.status ? 'selected' : '' %>><%= opt.status %></option>
             <% }); %>
           </select>
         </div>
+      </div>
+
+      <div class="text-center mt-3">
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-filter"></i> Filter
+        </button>
+        <a href="/venues" class="btn btn-secondary ms-2">
+          <i class="fas fa-sync"></i> Reset
+        </a>
       </div>
     </form>
 
@@ -157,36 +166,36 @@
                     <div class="modal-body">
                       <form action="/venues/edit/<%= venue.venue_id %>" method="post">
                         <div class="mb-3">
-                          <label for="venue_name" class="form-label text-info">Name:</label>
-                          <input type="text" id="name" name="name" class="form-control" value="<%= venue.venue_name %>" required>
+                          <label for="name_<%= venue.venue_id %>" class="form-label text-info">Name:</label>
+                          <input type="text" id="name_<%= venue.venue_id %>" name="name" class="form-control" value="<%= venue.venue_name %>" required>
                         </div>
                         <div class="mb-3">
-                          <label for="capacity" class="form-label text-info">Capacity:</label>
-                          <input type="number" id="capacity" name="capacity" class="form-control" value="<%= venue.capacity %>" required>
+                          <label for="capacity_<%= venue.venue_id %>" class="form-label text-info">Capacity:</label>
+                          <input type="number" id="capacity_<%= venue.venue_id %>" name="capacity" class="form-control" value="<%= venue.capacity %>" required>
                         </div>
                         <div class="mb-3">
-                          <label for="location" class="form-label text-info">Location:</label>
-                          <input type="text" id="location" name="location" class="form-control" value="<%= venue.location %>" required>
+                          <label for="location_<%= venue.venue_id %>" class="form-label text-info">Location:</label>
+                          <input type="text" id="location_<%= venue.venue_id %>" name="location" class="form-control" value="<%= venue.location %>" required>
                         </div>
                         <div class="mb-3">
-                          <label for="type" class="form-label text-info">Type:</label>
-                          <input type="text" id="type" name="type" class="form-control" value="<%= venue.type %>" required>
+                          <label for="type_<%= venue.venue_id %>" class="form-label text-info">Type:</label>
+                          <input type="text" id="type_<%= venue.venue_id %>" name="type" class="form-control" value="<%= venue.type %>" required>
                         </div>
                         <div class="mb-3">
-                          <label for="quality" class="form-label text-info">Quality:</label>
-                          <input type="text" id="quality" name="quality" class="form-control" value="<%= venue.quality %>">
+                          <label for="quality_<%= venue.venue_id %>" class="form-label text-info">Quality:</label>
+                          <input type="text" id="quality_<%= venue.venue_id %>" name="quality" class="form-control" value="<%= venue.quality %>">
                         </div>
                         <div class="mb-3">
-                          <label for="department" class="form-label text-info">Department:</label>
-                          <select id="department" name="department" class="form-select select2" required>
+                          <label for="department_<%= venue.venue_id %>" class="form-label text-info">Department:</label>
+                          <select id="department_<%= venue.venue_id %>" name="department" class="form-select select2" required>
                             <% departments.forEach(department => { %>
-                              <option value="<%= department.department_name %>"><%= department.department_name %></option>
+                              <option value="<%= department.department_name %>" <%= venue.department === department.department_name ? 'selected' : '' %>><%= department.department_name %></option>
                             <% }); %>
                           </select>
                         </div>
                         <div class="mb-3">
-                          <label for="status" class="form-label text-info">Status:</label>
-                          <input type="text" id="status" name="status" class="form-control" value="<%= venue.status %>" required>
+                          <label for="status_<%= venue.venue_id %>" class="form-label text-info">Status:</label>
+                          <input type="text" id="status_<%= venue.venue_id %>" name="status" class="form-control" value="<%= venue.status %>" required>
                         </div>
                         <button type="submit" class="btn btn-success">
                           <i class="fas fa-save"></i> Submit Changes
@@ -318,6 +327,6 @@
 
 </main>
 
-<script src="/js/venues.js"></script>
-
 <%- include('partials/footer') %>
+
+<script src="/js/venues.js"></script>

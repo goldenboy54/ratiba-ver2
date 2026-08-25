@@ -116,9 +116,9 @@
         <label for="semester" class="form-label">Semester:</label>
         <select id="semester" name="semester" class="form-select select2">
           <option value="">Select Semester</option>
-          <% semesters.forEach(semester => { %>
-            <option value="<%= semester.semester %>" <%= semester === semester.semester ? 'selected' : '' %>>
-              <%= semester.semester %>
+          <% semesters.forEach(opt => { %>
+            <option value="<%= opt.semester %>" <%= locals.semester === opt.semester ? 'selected' : '' %>>
+              <%= opt.semester %>
             </option>
           <% }); %>
         </select>
@@ -126,7 +126,7 @@
 
       <div class="col-md-4">
       <label for="scode" class="form-label">Subject Code:</label>
-      <select id="scode" name="scode" class="form-select select2">
+      <select id="scode" name="subject_code" class="form-select select2">
         <option value="">Select Subject Code</option>
         <% scodes.forEach(scode => { %>
           <option value="<%= scode.subject_code %>" <%= subject_code === scode.subject_code ? 'selected' : '' %>>
@@ -139,6 +139,7 @@
     </div>
 
     <button type="submit" class="btn-filter-timetables">Filter</button>
+    <a href="/timetables" class="btn btn-secondary ms-2">Reset</a>
   </form>
 
   <!-- Clean All Button -->
@@ -149,7 +150,7 @@
   </form>
 
   <!-- Display Timetables -->
-  <% if (program_name || program_level || venue_name || tutor_name || department_name || subject_name) { %>
+  <% if (program_name || program_level || venue_name || tutor_name || department_name || subject_name || locals.semester || locals.subject_code) { %>
     <% if (timetables.length > 0) { %>
 
       <div class="table-container-timetables">
