@@ -65,7 +65,7 @@
    */
   function initializeSelect2() {
     if (typeof $ !== 'undefined' && $.fn.select2) {
-      $('.select2').select2({
+      $('select.select2').select2({
         theme: 'bootstrap-5',
         width: '100%',
         placeholder: 'Select an option',
@@ -185,8 +185,10 @@
    * Re-initialize Select2 when modals are shown
    */
   $(document).on('shown.bs.modal', '.modal', function() {
-    // Re-initialize Select2 for elements inside the modal
-    $(this).find('.select2').select2({
+    // Re-initialize Select2 for elements inside the modal (scoped to `select` - Select2's
+    // own wrapper span also carries a bare "select2" class, which would otherwise get
+    // re-wrapped and produce an empty widget if this modal is opened a second time)
+    $(this).find('select.select2').select2({
       theme: 'bootstrap-5',
       width: '100%',
       placeholder: 'Select an option',

@@ -40,7 +40,7 @@
    * Initialize Select2 with Bootstrap 5 theme
    */
   function initializeSelect2() {
-    $('.select2').select2({
+    $('select.select2').select2({
       theme: 'bootstrap-5',
       width: '100%',
       placeholder: 'Select an option',

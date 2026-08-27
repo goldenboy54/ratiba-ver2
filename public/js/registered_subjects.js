@@ -17,7 +17,7 @@
     }
 
     // Initialize Select2 on all select elements
-    $('.select2').select2({
+    $('select.select2').select2({
       theme: 'bootstrap-5',
       width: '100%',
       placeholder: 'Select an option',

@@ -40,11 +40,15 @@
 
 <script>
   $(document).ready(function() {
-    // Initialize Select2 on all select elements with select2 class.
+    // Initialize Select2 on all <select> elements with the select2 class.
+    // Scoped to the `select` tag specifically - Select2's own generated wrapper
+    // <span> also carries a bare "select2" class for theming, and without this
+    // scope this loop would match that wrapper too, wrapping it a second time
+    // and producing an empty, non-functional outer widget over the real one.
     // Skip elements a page-specific script already initialized (e.g. modal-scoped
     // selects needing dropdownParent, or custom matchers) so this stays a safe default,
     // not a clobber of more specific config.
-    $('.select2').each(function() {
+    $('select.select2').each(function() {
       var $el = $(this);
       if ($el.hasClass('select2-hidden-accessible')) return;
       $el.select2({
