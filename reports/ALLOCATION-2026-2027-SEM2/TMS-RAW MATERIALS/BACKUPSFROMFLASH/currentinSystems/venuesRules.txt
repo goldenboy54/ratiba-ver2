@@ -1,0 +1,3 @@
+RULES TO CONSIDER IN VENUE
+if it is not neautral,venue_department column must be exact the same to the department name
+Venue type must start with Capital Letter

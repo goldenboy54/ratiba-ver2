@@ -1,0 +1,60 @@
+venue_name,venue_capacity,venue_location,venue_type,venue_quality,venue_department,venue_status
+LAB LST (PHY),50,Dass Offices Near Mechanical w/shops,Lab,good,DASS,Available
+Solar/Wind Lab,50,Electrical workshop block,Lab,good,ELECTRICAL,Available
+M2C W/S,30,Mechanical workshop 2,Lab,good,MECHANICAL,Available
+Mechatronics Lab,40,ATC-Ufundi tower,Lab,Good,MECHANICAL,Available
+Comp R42,60,ICT Building,Lab,good,ICT,Available
+Telcom lab1,50,ATC-Ufundi tower,Lab,good,ELECTRICAL,Available
+Comp R31,30,ICT Building,Lab,good,ICT,Available
+M2B W/S,30,Mechanical workshop 2,Lab,good,MECHANICAL,Available
+M2A W/S,30,Mechanical workshop 2,Lab,good,MECHANICAL,Available
+Biomedical1,50,ATC-Ufundi tower,Lab,good,ELECTRICAL,Available
+BIOMEDICAL LAB1,40,Irrigation Building,Lab,good,ELECTRICAL,Available
+Biomedical LAB2,50,ATC-Ufundi tower,Lab,good,ELECTRICAL,Available
+ELECTRONICS LAB4,100,Electrical workshop block,Lab,good,ELECTRICAL,Available
+W/S E1,20,Electrical workshop block,Lab,good,Electrical,Available
+M/W II,60,Mechanical Workshop,Lab,good,MECHANICAL,Available
+Telcom lab2,50,ATC-Ufundi tower,Lab,good,ELECTRICAL,Available
+LAB LST (CHEM),50,Dass Offices Near Mechanical w/shops,Lab,good,DASS,Available
+W/S E2,40,Electrical workshop block,Lab,good,Electrical,Available
+LAB LST BIOL,50,Dass Offices Near Mechanical w/shops,Lab,good,DASS,Available
+W/S AUTO 1,40,ATC-Automotive block,Lab,good,AUTOMOTIVE,Available
+MASONRY,54,ACCT Building,Lab,good,CIVIL,Available
+AUTOMATION LAB,15,ATC-Automotive block,Lab,good,Automotive,Available
+W/S AUTO 2,60,ATC-Automotive block,Lab,good,Automotive,Available
+Soil and Plant Laboratory,30,Irrigation Building,Lab,good,CIVIL,Available
+DRAWING ROOM,60,ATC,Lab,good,CIVIL,Available
+W/S CIVIL,40,ATC,Lab,good,CIVIL,Available
+Soil and Bitumen Lab,50,Soil Lab,Lab,good,H-WAY,Available
+Water Quality Laboratory-F13,30,Irrigation Building,Lab,good,CIVIL,Available
+W/S CARP,30,ATC,Lab,good,VET,Available
+AUTOMOTIVE SIMULATION LAB,30,AUTOMOTIVE WORKSHOP 2,Lab,STANDARD,AUTOMOTIVE,Available
+Room 12/13,180,ICT Building,Theory,good,NEUTRAL,Available
+Room S06,66,Irrigation Building,Theory,good,NEUTRAL,Available
+Room T10,110,Irrigation Building,Theory,good,NEUTRAL,Available
+Room T12,66,Irrigation Building,Theory,good,NEUTRAL,Available
+Room 14,60,ICT Building,Theory,good,NEUTRAL,Available
+LANGUAGE LAB,30,Irrigation Building,Theory,good,NEUTRAL,Available
+Room 24,66,ICT Building,Theory,good,NEUTRAL,Available
+Room S12,20,Irrigation Building,Theory,good,ICT,Available
+UT-01,80,ATC-Ufundi tower,Theory,good,neutral,Available
+Room F12,110,Irrigation Building,Theory,good,NEUTRAL,Available
+Room 44,60,ICT Building,Theory,good,neutral,Available
+UF-01,114,ATC-Ufundi tower,Theory,good,neutral,Available
+UG-06,130,ATC-Ufundi tower,Theory,good,neutral,Available
+Room 34,66,ICT Building,Theory,good,NEUTRAL,Available
+HIGHWAY,121,Highway Building,Theory,good,NEUTRAL,Available
+Room S07,66,Irrigation Building,Theory,good,NEUTRAL,Available
+UF-05,125,ATC-Ufundi tower,Theory,good,neutral,Available
+Room T11,66,Irrigation Building,Theory,good,NEUTRAL,Available
+UG-07,130,ATC-Ufundi tower,Theory,good,neutral,Available
+US-01,80,ATC-Ufundi tower,Theory,good,neutral,Available
+EBR-1,80,ATC,Theory,good,NEUTRAL,Available
+Room G11,110,Irrigation Building,Theory,good,NEUTRAL,Available
+Comp R32/33,100,ICT Building,Lab,good,ICT,Available
+Room 11,72,ICT Building,Theory,good,NEUTRAL,Available
+US-02,114,ATC-Ufundi tower,Theory,good,neutral,Available
+Room S10,110,Irrigation Building,Theory,good,NEUTRAL,Available
+Comp R22/23,100,ICT Building,Lab,good,ICT,Available
+M/W I,60,Mechanical Workshop,Lab,good,MECHANICAL,Available
+Lapidary Lab,20,ATC-Ufundi tower,Lab,Good,MECHANICAL,Available
