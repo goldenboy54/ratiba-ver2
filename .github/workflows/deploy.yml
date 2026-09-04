@@ -31,8 +31,12 @@ jobs:
           host: ${{ secrets.GOLDENTECH_DEPLOY_HOST }}
           username: ${{ secrets.GOLDENTECH_DEPLOY_USERNAME }}
           key: ${{ secrets.GOLDENTECH_DEPLOY_SSH_KEY }}
+          script_stop: true
           script: |
+            set -e
             cd /var/www/table.com
-            git pull origin Main || git pull origin main
+            git fetch origin
+            git reset --hard origin/main
             npm install
             pm2 restart app.js || pm2 start app.js
+            pm2 save
