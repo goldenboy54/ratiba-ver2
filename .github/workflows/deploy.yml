@@ -4,27 +4,27 @@ on:
   push:
     branches:
       - main
-      - Main
+
+# Least-privilege default: this workflow only SSHes into the deploy server, it never
+# calls back into the GitHub API beyond what actions/checkout would need (and this
+# workflow doesn't even use checkout - the deploy runs entirely on the remote server).
+permissions:
+  contents: read
+
+# Prevent two pushes in quick succession from running overlapping deploys against the
+# same server (interleaved `git reset --hard` / `pm2 restart` would corrupt the working
+# tree or race on the same process). Queue instead of cancelling, since cancelling the
+# Actions job doesn't stop a command that's already running over SSH on the server.
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      # 🔍 DEBUG STEP
-      - name: Debug secrets
-        run: |
-          echo "HOST=${{ secrets.GOLDENTECH_DEPLOY_HOST }}"
-          echo "USER=${{ secrets.GOLDENTECH_DEPLOY_USERNAME }}"
-          if [ -z "${{ secrets.GOLDENTECH_DEPLOY_SSH_KEY }}" ]; then
-            echo "SSH KEY is EMPTY ❌"
-          else
-            echo "SSH KEY is PRESENT ✅"
-          fi
-
       - name: Deploy to server
         uses: appleboy/ssh-action@v0.1.10
         with:
@@ -32,11 +32,28 @@ jobs:
           username: ${{ secrets.GOLDENTECH_DEPLOY_USERNAME }}
           key: ${{ secrets.GOLDENTECH_DEPLOY_SSH_KEY }}
           script_stop: true
+          command_timeout: 8m
           script: |
             set -e
             cd /var/www/table.com
+
+            # Deterministic sync: fails loudly (via set -e + script_stop) instead of a
+            # mergeable `git pull`, which could previously fail on local server drift
+            # without failing this job.
             git fetch origin
             git reset --hard origin/main
-            npm install
+
+            # npm ci installs exactly what's in package-lock.json and skips devDependencies
+            # (nodemon, unused in production - pm2 runs app.js directly) - faster and
+            # reproducible, unlike npm install which can silently drift from the lockfile.
+            npm ci --omit=dev
+
             pm2 restart app.js || pm2 start app.js
             pm2 save
+
+            # Post-deploy health check: pm2 restart/start "succeeding" as a command does
+            # not mean the app actually came up - a startup error would otherwise still
+            # report this job as green. Give it a moment to boot, then confirm it's
+            # actually answering on its port before calling the deploy successful.
+            sleep 3
+            curl -f -s -o /dev/null http://localhost:3000/ || (echo "❌ Health check failed: app not responding on port 3000 after deploy" && exit 1)
