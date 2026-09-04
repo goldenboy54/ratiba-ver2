@@ -93,7 +93,7 @@ const FRIDAY_BREAK_LAST_SLOT = 8;
 
 // Capacity check tolerance
 const CAPACITY_TOLERANCE = 0.20;
-const UNDERUTILIZATION_THRESHOLD = 0.30;
+const UNDERUTILIZATION_THRESHOLD = 0.30;//this good
 
 // Co-teaching: at most this many distinct tutors may share one session (see
 // isSameSession above). A tutor trying to join a session that's already at this cap
