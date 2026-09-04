@@ -12,8 +12,7 @@ const SLOT_RANGES = {
     "16:25-17:10", "17:10-17:55", "18:00-18:45", "18:45-19:30", 
     "19:35-20:20", "20:20-21:05", "21:10-21:55", "21:55-22:40"
   ],
-  "VETA": ["07:30-08:15", "08:15-09:00", "09:05-09:50", "09:50-10:35","11:00-11:45",
-      "11:45-12:30","13:15-14:00","14:00-14:45", "14:50-15:35", "15:35-16:20",
+  "VETA": ["13:15-14:00","14:00-14:45", "14:50-15:35", "15:35-16:20",
     "16:25-17:10", "17:10-17:55"],
   "full-evening": ["16:25-17:10", "17:10-17:55"]
 };
@@ -45,9 +44,9 @@ const SEMESTER_CALENDAR = {
   VETA_L3:   { I: ["AUG", "SEP", "OCT", "NOV"],        II: ["JAN", "FEB", "MAR", "APR", "MAY"] },
 };
 
-// Which row of SEMESTER_CALENDAR a subject/timetable entry belongs to. VETA Level 3
-// runs on its own calendar, offset from VETA Levels 1 & 2, so program_type alone
-// ("VETA") isn't enough to tell them apart - program_level is what distinguishes them.
+
+// distinguish  VETA programs semester using
+//  program_level 
 function getProgramGroup(programType, programLevel) {
   const type = (programType || "").trim().toUpperCase();
   if (type === "VETA") {
@@ -56,11 +55,7 @@ function getProgramGroup(programType, programLevel) {
   return "NON_VETA";
 }
 
-// Two entries can only really collide if their semesters run during the same real
-// months - "same semester label" stopped being a safe proxy for that once VETA's
-// calendar diverged from everyone else's (see SEMESTER_CALENDAR above). Falls back
-// to "overlapping" (the cautious answer) if either side's group/semester isn't
-// recognized, instead of silently letting an unrecognized case slip through as safe.
+// Check for semister overlap
 function semestersOverlap(typeA, levelA, semA, typeB, levelB, semB) {
   const monthsA = SEMESTER_CALENDAR[getProgramGroup(typeA, levelA)]?.[semA];
   const monthsB = SEMESTER_CALENDAR[getProgramGroup(typeB, levelB)]?.[semB];
@@ -68,25 +63,44 @@ function semestersOverlap(typeA, levelA, semA, typeB, levelB, semB) {
   return monthsA.some(m => monthsB.includes(m));
 }
 
+// ==================== CO-TEACHING (COMPANION) DETECTION ====================
+// An existing entry `e` belongs to one of the OTHER TUTORS on the same co-taught
+// session as the subject being inserted (`S`) - not a real collision - only if
+// everything that identifies "the same class" matches (subject, cohort, and
+// overlapping program code) and only the tutor differs. Deliberately does NOT
+// require the same venue_id: co-teachers are allowed to
+// run the session from different rooms (confirmed business rule), so venue collision
+// already resolves itself naturally whenever they pick different venues, and only needs
+// this exemption when they happen to pick the same one.
+function isSameSession(e, S) {
+  if (!e.subject_code || !S.subject_code || e.subject_code !== S.subject_code) return false;
+  if (String(e.semester) !== String(S.semester)) return false;
+  if (String(e.program_level) !== String(S.program_level)) return false;
+  // `subjects` has no `year` column - what lands in extracted_timetables.year is
+  // S.year || S.program_duration (see the INSERT below), so that's what must be
+  // compared here too, or this would always mismatch against a freshly-fetched S.
+  if (String(e.year) !== String(S.year || S.program_duration)) return false;
+  const eParts = e.program_code ? e.program_code.split("+").map(p => p.trim().toLowerCase()) : [];
+  const sParts = S.program_code ? S.program_code.split("+").map(p => p.trim().toLowerCase()) : [];
+  return eParts.some(p => sParts.includes(p));
+}
+
 // ==================== SHARED CONSTANTS ====================
-// Single source of truth for the small set of fixed business rules used throughout this
-// file, instead of the same numbers appearing as unexplained literals in several places.
-
-// A manual assignment always books exactly one full class session: two consecutive
-// 45-minute slots, 1.5 hours total. Used by the eligibility queries below and by
-// addtimetable's own hours checks.
 const DOUBLE_SLOT_HOURS = 1.5;
-
-// Every day in the venues table has 18 time slots (monday_slot1 ... monday_slot18, etc.).
 const MAX_SLOTS_PER_DAY = 18;
-
-// Slots 7 and 8 are the Friday prayer/lunch break window and can never be booked.
 const FRIDAY_BREAK_FIRST_SLOT = 7;
 const FRIDAY_BREAK_LAST_SLOT = 8;
 
-// The venues table's slot-status column names follow a fixed, known pattern
-// ({day}_slot{1-18}_status) that never changes, so we generate the list directly instead
-// of asking the database via `SHOW COLUMNS FROM venues` on every single call.
+// Capacity check tolerance
+const CAPACITY_TOLERANCE = 0.20;
+const UNDERUTILIZATION_THRESHOLD = 0.30;
+
+// Co-teaching: at most this many distinct tutors may share one session (see
+// isSameSession above). A tutor trying to join a session that's already at this cap
+// is blocked as a real collision, same as any other conflict.
+const MAX_CO_TEACHERS = 5;
+
+//Get each all 18 column names status of the a venue.
 function getStatusColumnsForDay(dayLower) {
   const cols = [];
   for (let i = 1; i <= MAX_SLOTS_PER_DAY; i++) {
@@ -95,21 +109,9 @@ function getStatusColumnsForDay(dayLower) {
   return cols;
 }
 
-// ==================== RESOLVE SLOT COLUMN ====================
-// `venue` is the venue row the caller already fetched (addtimetable runs
-// `SELECT * FROM venues WHERE venue_id = ?` before calling this function). Reusing it
-// here means we compare the submitted time string against data already in memory,
-// instead of running a separate `SELECT <column> FROM venues WHERE venue_id=?` for every
-// one of the up to 18 candidate slot columns just to find which one matches.
+// ===returns the exact _status column name for  db update(used or unused) ====================
 async function resolveSlotColumn({ day, slot, venue_id, venue }) {
   const dayLower = day.toLowerCase();
-  // Generated in numeric order (slot1, slot2, ... slot18) - note this also fixes a latent
-  // ordering bug in the "slot passed as a number" branch just below: the previous
-  // SHOW COLUMNS + .sort() approach sorted alphabetically, so "slot10" landed right after
-  // "slot1" and before "slot2", which would have made candidates[idx] point at the wrong
-  // column for any numeric slot >= 2. That branch isn't reachable from anywhere in this
-  // codebase today (the form always sends slot as a time-range string), so this had no
-  // live effect, but it's correct now either way.
   const candidates = getStatusColumnsForDay(dayLower);
 
   if (!candidates.length) {
@@ -137,11 +139,12 @@ async function resolveSlotColumn({ day, slot, venue_id, venue }) {
 
 // ==================== MAIN FUNCTION: addtimetable (FULLY UPDATED) ====================
 export const addtimetable = async ({ day, venue_id, subject_ids, slot, logs = [] }) => {
+  //function to produce logs
   const log = (msg) => { 
     logs.push(msg); 
     console.log(msg); 
   };
-
+//make sure all required input are available
   if (!day || !venue_id || !Array.isArray(subject_ids) || subject_ids.length === 0 || !slot) {
     throw new Error("Missing required parameters: day, venue_id, subject_ids (array), slot.");
   }
@@ -159,7 +162,7 @@ export const addtimetable = async ({ day, venue_id, subject_ids, slot, logs = []
   }
   const V = venueDataRes[0];
 
-  // Resolve current status column
+  // Get current column/slot status name
   let currentStatusCol;
   try {
     currentStatusCol = await resolveSlotColumn({ day, slot, venue_id, venue: V });
@@ -167,16 +170,15 @@ export const addtimetable = async ({ day, venue_id, subject_ids, slot, logs = []
     log(`❌ ${err.message}`);
     return;
   }
-
   log(`Using status column: ${currentStatusCol}`);
 
+  // current Time of the  current column/slot status name
   const currentTimeCol = currentStatusCol.replace(/_status$/, "");
   let currentSlotTime = null;
   try {
     const [trows] = await db.query(`SELECT \`${currentTimeCol}\` AS t FROM venues WHERE venue_id=? LIMIT 1`, [venue_id]);
     if (trows.length) currentSlotTime = trows[0].t;
   } catch (e) {}
-
   const finalCurrentSlot = currentSlotTime || (typeof slot === "string" ? slot : `slot${slot}`);
 
   // Extract current slot number
@@ -205,10 +207,6 @@ export const addtimetable = async ({ day, venue_id, subject_ids, slot, logs = []
     const currentLtpa = Number(S.ltpa || 0);
     const totalHours = Number(S.total_hours_per_week || 0);
     const remainingHours = totalHours - currentLtpa;
-    // Manual assignment only ever books one full double-slot class at a time - declared
-    // here (from the shared DOUBLE_SLOT_HOURS constant) so both hours checks below (this
-    // one, and the one right before the insert) reference the exact same value instead of
-    // re-deriving the same rule two different ways.
     const ltpaIncrement = DOUBLE_SLOT_HOURS;
 
     if (remainingHours < ltpaIncrement) {
@@ -284,12 +282,6 @@ export const addtimetable = async ({ day, venue_id, subject_ids, slot, logs = []
     const reasons = [];
 
     for (const sInfo of slotInfos) {
-      // Fetch ALL existing timetables for this exact day + slot, regardless of
-      // semester label - a matching label no longer means "same real time" now
-      // that VETA's calendar diverges from non-VETA's (see SEMESTER_CALENDAR
-      // above). Narrow down to entries that actually overlap in real calendar
-      // months before running the collision checks below, which are otherwise
-      // unchanged.
       const [allEntriesThisSlot] = await db.query(`
         SELECT * FROM extracted_timetables
         WHERE day = ? AND slot = ?
@@ -300,23 +292,40 @@ export const addtimetable = async ({ day, venue_id, subject_ids, slot, logs = []
         e.program_type, e.program_level, e.semester
       ));
 
+      // Co-teaching companions: existing entries for one of the OTHER TUTORS on the same
+      // session as S (see isSameSession), not a real conflict - but only up to
+      // MAX_CO_TEACHERS distinct tutors per session. Once a session already has
+      // MAX_CO_TEACHERS tutors, any further match is treated as a real collision instead
+      // of being exempted below.
+      const sessionCompanions = existingEntries.filter(e =>
+        isSameSession(e, S) && Number(e.created_by) !== Number(S.tutor_db_id)
+      );
+      const distinctCoTeachers = new Set(sessionCompanions.map(e => Number(e.created_by)));
+      const withinCoTeachCap = distinctCoTeachers.size < MAX_CO_TEACHERS;
+      const companionSet = withinCoTeachCap ? new Set(sessionCompanions) : new Set();
+
+      if (!withinCoTeachCap && sessionCompanions.length) {
+        reasons.push(`CO-TEACH LIMIT REACHED: ${S.subject_code} on ${day} ${sInfo.slotTime} already has ${MAX_CO_TEACHERS} tutor(s) assigned`);
+      }
+
       // 1. Tutor Collision Check
       const tutorConflict = existingEntries.some(e => Number(e.created_by) === Number(S.tutor_db_id));
       if (tutorConflict) {
         reasons.push(`TUTOR COLLISION: ${S.full_name} is already teaching on ${day} ${sInfo.slotTime}`);
       }
 
-      // 2. Venue Collision Check
-      const venueConflict = existingEntries.some(e => Number(e.venue_id) === Number(venue_id));
+      // 2. Venue Collision Check (co-teach companions within the cap don't count)
+      const venueConflict = existingEntries.some(e => Number(e.venue_id) === Number(venue_id) && !companionSet.has(e));
       if (venueConflict) {
         reasons.push(`VENUE COLLISION: Venue ${venue_id} (${V.venue_name}) is already in use on ${day} ${sInfo.slotTime}`);
       }
 
-      // 3. Program Collision Check
+      // 3. Program Collision Check (co-teach companions within the cap don't count)
       let programConflict = false;
       const newParts = S.program_code ? S.program_code.split("+").map(p => p.trim().toLowerCase()) : [];
       for (const e of existingEntries) {
         if (!e.program_code) continue;
+        if (companionSet.has(e)) continue;
         const existingParts = e.program_code.split("+").map(p => p.trim().toLowerCase());
         if (existingParts.some(p => newParts.includes(p))) {
           programConflict = true;
@@ -328,9 +337,6 @@ export const addtimetable = async ({ day, venue_id, subject_ids, slot, logs = []
       }
 
       // 4. Program Type vs Slot Time compatibility
-      // Computed once and reused below - programSlotMatch is a pure function, so calling
-      // it twice for the same (program_type, slotTime) pair here would just repeat the
-      // same lookup for no reason.
       const typeMismatch = !programSlotMatch(S.program_type, sInfo.slotTime);
       if (typeMismatch) {
         reasons.push(`PROGRAM TYPE MISMATCH: "${S.program_type}" not compatible with slot "${sInfo.slotTime}"`);
@@ -342,6 +348,18 @@ export const addtimetable = async ({ day, venue_id, subject_ids, slot, logs = []
       }
     }
 
+    // 5. Capacity Check - not slot-dependent (venue/class sizes don't change per slot),
+    // so it runs once per subject rather than inside the slotInfos loop above.
+    const classSize = Number(S.program_capacity) || 0;
+    const venueCapacity = Number(V.capacity) || 0;
+    const capacityExceeded = classSize > venueCapacity * (1 + CAPACITY_TOLERANCE);
+    if (capacityExceeded) {
+      reasons.push(`CAPACITY EXCEEDED: Class size ${classSize} exceeds venue ${V.venue_name}'s capacity of ${venueCapacity} (even with ${CAPACITY_TOLERANCE * 100}% tolerance)`);
+      canAssign = false;
+    } else if (venueCapacity > 0 && classSize < venueCapacity * UNDERUTILIZATION_THRESHOLD) {
+      log(`ℹ Venue ${V.venue_name} (capacity ${venueCapacity}) is oversized for class of ${classSize} - consider a smaller venue.`);
+    }
+
     // If any reason found, skip completely (NO INSERT)
     if (!canAssign) {
       log(`❌ COLLISION DETECTED for subject ${subject_id} (${S.title} - ${S.full_name}):`);
@@ -351,11 +369,6 @@ export const addtimetable = async ({ day, venue_id, subject_ids, slot, logs = []
     }
 
     // ===================== HOURS CHECK =====================
-    // Same rule as the remainingHours check earlier in this loop iteration ("does this
-    // subject have at least ltpaIncrement hours left?"). Re-verified here, right before
-    // writing anything, in case that becomes untrue later - now expressed with the same
-    // remainingHours/ltpaIncrement values instead of a separately-derived comparison, so
-    // it's clearly the same rule rather than a second, different-looking one.
     if (remainingHours < ltpaIncrement) {
       log(`⚠ Assigning would exceed total hours for subject ${subject_id}. Skipping.`);
       continue;
