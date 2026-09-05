@@ -140,13 +140,18 @@ router.get('/download-timetable-pdf', async (req, res) => {
       timetableHTML += `<tr><td><b>${timeSlot}</b></td>`;
 
       uniqueDays.forEach(day => {
-        const entry = timetables.find(t => `${t.start_time} - ${t.end_time}` === timeSlot && t.day === day);
+        // A co-taught session puts one row per tutor into extracted_timetables, all sharing
+        // the same day/slot/subject/program - filter() (not find()) collects every one of
+        // them instead of silently dropping all but the first.
+        const entries = timetables.filter(t => `${t.start_time} - ${t.end_time}` === timeSlot && t.day === day);
+        const entry = entries[0];
+        const tutorNames = [...new Set(entries.map(e => e.tutor_name).filter(Boolean))].join(' & ');
         timetableHTML += `<td>`;
         if (entry) {
           timetableHTML += `
             <b>Venue:</b> ${entry.venue_name} (${entry.venue_type})<br>
             <b>Subject:</b> ${entry.subject_name} (${entry.subject_code})<br>
-            <b>Tutor:</b> ${entry.tutor_name}<br>
+            <b>Tutor:</b> ${tutorNames}<br>
             <b>Program:</b> ${entry.program_name} (${entry.program_level})<br>
           `;
         } else {

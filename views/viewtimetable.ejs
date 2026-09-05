@@ -127,14 +127,19 @@
               <tr>
                 <td><b><%= slot %></b></td>
                 <% uniqueDays.forEach(day => {
-                    const entry = grouped[slot] ? grouped[slot].find(t => t.day === day) : null;
+                    // A co-taught session puts one row per tutor into extracted_timetables, all
+                    // sharing the same day/slot/subject/program - filter() (not find()) collects
+                    // every one of them instead of silently dropping all but the first.
+                    const entries = grouped[slot] ? grouped[slot].filter(t => t.day === day) : [];
+                    const entry = entries[0] || null;
+                    const tutorNames = [...new Set(entries.map(e => e.tutor_name).filter(Boolean))].join(' & ');
                     const brk = breaks.find(b => b.time === slot);
                 %>
                   <td>
                     <% if(entry){ %>
                       <b>Venue:</b> <%= entry.venue_name || '---' %> (<%= entry.venue_type || '---' %>)<br>
                       <b>Subject:</b> <%= entry.subject_name || '---' %> (<%= entry.subject_code || '---' %>)<br>
-                      <b>Tutor:</b> <%= entry.tutor_name || '---' %><br>
+                      <b>Tutor:</b> <%= tutorNames || '---' %><br>
                       <b>Program:</b> <%= entry.program_code || '---' %> (<%= entry.program_level || '---' %>)
                     <% } else if(brk){ %>
                       <i><%= brk.type %></i>
