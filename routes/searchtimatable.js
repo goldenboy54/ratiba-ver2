@@ -1,5 +1,6 @@
 import express from 'express';
 import { searchTimetables, getDistinctValues } from '../logics/timetableLogic.js';
+import { buildTimetableGrid, BREAKS } from '../logics/timetableGridLogic.js';
 
 const router = express.Router();
 
@@ -17,6 +18,7 @@ router.get('/', async (req, res) => {
     };
 
     const timetables = await searchTimetables(criteria);
+    const { uniqueDays, allSlots, grid } = buildTimetableGrid(timetables);
 
     const programs = await getDistinctValues('program_name');
     const venues = await getDistinctValues('venue_name');
@@ -29,6 +31,10 @@ router.get('/', async (req, res) => {
 
     res.render('searchtimetable', {
       timetables,
+      uniqueDays,
+      allSlots,
+      grid,
+      breaks: BREAKS,
       programs,
       venues,
       tutors,
@@ -147,9 +153,7 @@ router.get('/download-timetable-pdf', async (req, res) => {
     };
 
     const timetables = await searchTimetables(criteria);
-
-    const uniqueDays = [...new Set(timetables.map(t => t.day))];
-    const uniqueTimes = [...new Set(timetables.map(t => `${t.start_time} - ${t.end_time}`))];
+    const { uniqueDays, allSlots, grid } = buildTimetableGrid(timetables);
 
     // Build HTML content for PDF
     let htmlContent = `
@@ -186,27 +190,25 @@ router.get('/download-timetable-pdf', async (req, res) => {
 
     htmlContent += `</tr></thead><tbody>`;
 
-    uniqueTimes.forEach(timeSlot => {
-      htmlContent += `<tr><td><b>${timeSlot}</b></td>`;
+    // A class occupying several consecutive slots (session_group_id) gets one taller cell
+    // spanning all of them, labeled with its combined time range, instead of repeating the
+    // same class in every 45-minute row it covers.
+    allSlots.forEach((slot, i) => {
+      htmlContent += `<tr><td><b>${slot}</b></td>`;
       uniqueDays.forEach(day => {
-        // A co-taught session puts one row per tutor into extracted_timetables, all sharing
-        // the same day/slot/subject/program - filter() (not find()) collects every one of
-        // them instead of silently dropping all but the first.
-        const entries = timetables.filter(t => `${t.start_time} - ${t.end_time}` === timeSlot && t.day === day);
-        const entry = entries[0];
-        const tutorNames = [...new Set(entries.map(e => e.tutor_name).filter(Boolean))].join(' & ');
-        htmlContent += `<td>`;
-        if (entry) {
-          htmlContent += `
-            <b>Venue:</b> ${entry.venue_name} (${entry.venue_type})<br>
-            <b>Subject:</b> ${entry.subject_name} (${entry.subject_code})<br>
-            <b>Tutor:</b> ${tutorNames}<br>
-            <b>Program:</b> ${entry.program_name} (${entry.program_level})<br>
-          `;
-        } else {
-          htmlContent += `<i>-</i>`;
-        }
-        htmlContent += `</td>`;
+        const cell = grid[day][i];
+        if (cell.type === 'skip') return; // covered by a rowspan from an earlier row
+        if (cell.type === 'break') { htmlContent += `<td><i>${cell.label}</i></td>`; return; }
+        if (cell.type === 'empty') { htmlContent += `<td><i>-</i></td>`; return; }
+
+        const entry = cell.entries[0];
+        htmlContent += `<td${cell.rowspan > 1 ? ` rowspan="${cell.rowspan}"` : ''}>
+          <b>Time:</b> ${cell.combinedLabel}<br>
+          <b>Venue:</b> ${entry.venue_name} (${entry.venue_type})<br>
+          <b>Subject:</b> ${entry.subject_name} (${entry.subject_code})<br>
+          <b>Tutor:</b> ${cell.tutorNames}<br>
+          <b>Program:</b> ${entry.program_name} (${entry.program_level})<br>
+        </td>`;
       });
       htmlContent += `</tr>`;
     });

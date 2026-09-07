@@ -1,5 +1,6 @@
 // models/manualTimetableModel.js
 import db from '../db.js';
+import crypto from 'crypto';
 
 // ==================== SLOT RANGES ====================
 const SLOT_RANGES = {
@@ -386,11 +387,22 @@ export const addtimetable = async ({ day, venue_id, subject_ids, slot, logs = []
     try {
       await conn.beginTransaction();
 
+      // One id per booking, shared by both rows of its double slot - lets edit/exchange/
+      // delete operate on "this class" as a whole instead of guessing from adjacent times.
+      // Deliberately always a NEW id per call (not reused across separate "assign" clicks,
+      // even when they land on adjacent slots): exchange/edit/delete must always act on
+      // exactly one double slot (2 x 45min), never a larger merged block. Multi-period
+      // classes still display as one combined block on the timetable grid pages - see
+      // logics/timetableGridLogic.js, which merges consecutive same-class bookings for
+      // display only, independently of this id.
+      const sessionGroupId = crypto.randomUUID();
+
       for (const sInfo of slotInfos) {
         const [startTime, endTime] = sInfo.slotTime.split("-").map(t => t.trim());
 
         await conn.query(`
           INSERT INTO extracted_timetables (
+            session_group_id,
             day, slot, start_time, end_time,
             subject_code, subject_name, department_name,
             venue_id, venue_name, tutor_name, venue_location,
@@ -399,8 +411,9 @@ export const addtimetable = async ({ day, venue_id, subject_ids, slot, logs = []
             semester, venue_capacity, program_capacity,
             program_type, total_hours_per_week,
             arrange, program_code, created_by, created_at
-          ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+          ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         `, [
+          sessionGroupId,
           day,
           sInfo.slotTime,
           startTime || null,

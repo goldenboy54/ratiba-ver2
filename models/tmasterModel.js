@@ -1,5 +1,6 @@
 import db from '../db.js';
 import fs from "fs";
+import crypto from 'crypto';
 
 // ==================== SEMESTER CALENDAR (VETA vs NON-VETA) ====================
 // A `semester` label ("I"/"II") only tells you which of a student's OWN two
@@ -394,17 +395,31 @@ export async function addtimetable({ semester }) {
                 try {
                   await db.query("START TRANSACTION");
 
+                  // One id per booking, shared by every row this assignment writes (1 for a
+                  // single slot, 2 for a double slot) - lets edit/exchange/delete operate on
+                  // "this class" as a whole instead of guessing from adjacent times.
+                  // Deliberately always a NEW id per call (not reused across separate
+                  // assignments, even when they land on adjacent slots): exchange/edit/
+                  // delete must always act on exactly one double slot, never a larger
+                  // merged block. Multi-period classes still display as one combined block
+                  // on the timetable grid pages - see logics/timetableGridLogic.js, which
+                  // merges consecutive same-class bookings for display only, independently
+                  // of this id.
+                  const sessionGroupId = crypto.randomUUID();
+
                   for (const s of slotCols) {
                     const [startTime, endTime] = s.slotTime.split("-");
                     await db.query(`
                       INSERT INTO extracted_timetables (
+                        session_group_id,
                         day, slot, start_time, end_time, subject_code, subject_name, department_name,
                         venue_id, venue_name, tutor_name, venue_location, program_name, subject_credit,
                         program_level, year, venue_type, venue_status, semester, venue_capacity,
                         program_capacity, program_type, total_hours_per_week, arrange, program_code,
                         created_by, created_at
-                      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                     `, [
+                      sessionGroupId,
                       day, s.slotTime, startTime.trim(), endTime.trim(),
                       S.subject_code, S.title, S.subject_department,
                       venue.venue_id, venue.venue_name, S.full_name, venue.location,

@@ -79,23 +79,23 @@
   // ================================================================
 
   /**
-   * Setup time slot change handlers for all modals
+   * Setup time slot change handlers for all modals.
+   *
+   * Select2 fires its change event via jQuery's own `.trigger("change")` - and unlike
+   * click/focus/submit, "change" has no native DOM method for jQuery to fall back to
+   * dispatching natively. A listener bound with plain addEventListener('change', ...)
+   * therefore never sees a Select2 selection at all - only handlers bound through jQuery's
+   * own event system do. Delegating through $(document).on(...) (rather than looking up
+   * each modal's select once at page load) also means this keeps working regardless of
+   * when Select2 re-wraps the underlying <select> on modal open.
    */
   function setupTimeSlotHandlers() {
-    // Get all modals
-    const modals = document.querySelectorAll('.modal');
+    if (typeof $ === 'undefined') return;
 
-    modals.forEach(modal => {
-      const startInput = modal.querySelector('select[name="start_time"]');
-      const endInput = modal.querySelector('input[name="end_time"]');
-
-      // Skip if inputs don't exist
-      if (!startInput || !endInput) return;
-
-      // Add change event listener to start time
-      startInput.addEventListener('change', function() {
-        updateEndTime(this, endInput);
-      });
+    $(document).on('change', 'select[name="start_time"]', function() {
+      const modal = this.closest('.modal');
+      const endInput = modal ? modal.querySelector('input[name="end_time"]') : null;
+      if (endInput) updateEndTime(this, endInput);
     });
   }
 
@@ -182,18 +182,24 @@
   // ================================================================
 
   /**
-   * Re-initialize Select2 when modals are shown
+   * Initialize Select2 for elements inside a modal, scoped to `select` (Select2's own
+   * wrapper span also carries a bare "select2" class, which would otherwise get re-wrapped
+   * and produce an empty widget) and guarded against re-initializing a select that's
+   * already Select2-enabled (same guard as the generic initializer in partials/footer.ejs)
+   * so repeatedly opening the same modal can't stack redundant re-inits on top of it.
    */
   $(document).on('shown.bs.modal', '.modal', function() {
-    // Re-initialize Select2 for elements inside the modal (scoped to `select` - Select2's
-    // own wrapper span also carries a bare "select2" class, which would otherwise get
-    // re-wrapped and produce an empty widget if this modal is opened a second time)
-    $(this).find('select.select2').select2({
-      theme: 'bootstrap-5',
-      width: '100%',
-      placeholder: 'Select an option',
-      allowClear: true,
-      dropdownParent: $(this)
+    const $modal = $(this);
+    $modal.find('select.select2').each(function() {
+      const $el = $(this);
+      if ($el.hasClass('select2-hidden-accessible')) return;
+      $el.select2({
+        theme: 'bootstrap-5',
+        width: '100%',
+        placeholder: 'Select an option',
+        allowClear: true,
+        dropdownParent: $modal
+      });
     });
   });
 

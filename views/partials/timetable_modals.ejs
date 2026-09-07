@@ -55,6 +55,15 @@
         <form action="/timetables/edit/<%= timetable.id %>" method="post">
           <div class="row g-3">
 
+            <!-- Current combined class time (informational only - a double-slot class books
+                 two 45-minute rows; Start Time below edits this row's own half, and its
+                 sibling row moves with it automatically, see handleUpdatetimetable). -->
+            <div class="col-12">
+              <div class="alert alert-secondary py-2 px-3 mb-0" style="font-size:.9rem;">
+                Muda wa sasa wa somo hili: <strong><%= timetable.day %> <%= timetable.slot %></strong>
+              </div>
+            </div>
+
             <!-- Day -->
             <div class="col-md-6">
               <label for="day_<%= timetable.id %>" class="form-label">Day:</label>
@@ -68,28 +77,29 @@
             <!-- Start Time -->
             <div class="col-md-6">
               <label for="start_time_<%= timetable.id %>" class="form-label">Start Time:</label>
+              <%
+                // Current value comes back from the DB as "07:30:00" (with seconds); option
+                // values below are the plain "HH:MM" the select actually submits.
+                const currentStartTime = timetable.start_time ? String(timetable.start_time).slice(0, 5) : null;
+                const startTimeOptions = [
+                  { time: '07:30' }, { time: '08:15' }, { time: '09:05' }, { time: '09:50' },
+                  { breakLabel: 'Tea Break 10:35 - 11:00' },
+                  { time: '11:00' }, { time: '11:45' },
+                  { breakLabel: 'Lunch Break 12:30 - 13:15' },
+                  { time: '13:15' }, { time: '14:00' }, { time: '14:50' }, { time: '15:35' },
+                  { time: '16:25' }, { time: '17:10' }, { time: '18:00' }, { time: '18:45' },
+                  { time: '19:35' }, { time: '20:20' }, { time: '21:10' }, { time: '21:55' }
+                ];
+              %>
               <select id="start_time_<%= timetable.id %>" name="start_time" class="form-select select2" required>
                 <option value="">Select Start Time</option>
-                <option>07:30</option>
-                <option>08:15</option>
-                <option>09:05</option>
-                <option>09:50</option>
-                <option disabled>-- Tea Break 10:35 - 11:00 --</option>
-                <option>11:00</option>
-                <option>11:45</option>
-                <option disabled>-- Lunch Break 12:30 - 13:15 --</option>
-                <option>13:15</option>
-                <option>14:00</option>
-                <option>14:50</option>
-                <option>15:35</option>
-                <option>16:25</option>
-                <option>17:10</option>
-                <option>18:00</option>
-                <option>18:45</option>
-                <option>19:35</option>
-                <option>20:20</option>
-                <option>21:10</option>
-                <option>21:55</option>
+                <% startTimeOptions.forEach(o => { %>
+                  <% if (o.breakLabel) { %>
+                    <option disabled>-- <%= o.breakLabel %> --</option>
+                  <% } else { %>
+                    <option value="<%= o.time %>" <%= currentStartTime === o.time ? 'selected' : '' %>><%= o.time %></option>
+                  <% } %>
+                <% }); %>
               </select>
             </div>
 

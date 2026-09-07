@@ -81,37 +81,6 @@
         <h5>TIMETABLE - SEMESTER <%= semester %></h5>
       </div>
 
-      <% 
-        const weekdayOrder = ["MONDAY","TUESDAY","WEDNESDAY","THURSDAY","FRIDAY","SATURDAY","SUNDAY"];
-        const uniqueDays = weekdayOrder.filter(day => timetables.some(t => t.day === day));
-
-        const grouped = timetables.reduce((acc, t) => {
-          const start = t.start_time ? t.start_time.split(":").slice(0,2).join(":") : null;
-          const end = t.end_time ? t.end_time.split(":").slice(0,2).join(":") : null;
-          if(start && end){
-            const slot = `${start} - ${end}`;
-            if(!acc[slot]) acc[slot] = [];
-            acc[slot].push(t);
-          }
-          return acc;
-        }, {});
-
-        const breaks = [
-          {nos:5, time:"10:35 - 11:00", type:"Tea Break"},
-          {nos:6, time:"12:30 - 13:15", type:"Lunch Break"}
-        ];
-
-        const allSlots = [...new Set([...Object.keys(grouped), ...breaks.map(b => b.time)])]
-          .sort((a,b) => {
-            const getMinutes = time => {
-              const [start] = time.split(" - ");
-              const [h,m] = start.split(":").map(Number);
-              return h*60 + m;
-            };
-            return getMinutes(a) - getMinutes(b);
-          });
-      %>
-
       <div class="table-container" id="timetableContent">
         <table class="table timetable-table">
           <thead>
@@ -123,30 +92,29 @@
             </tr>
           </thead>
           <tbody>
-            <% allSlots.forEach(slot => { %>
+            <% allSlots.forEach((slot, i) => { %>
               <tr>
                 <td><b><%= slot %></b></td>
                 <% uniqueDays.forEach(day => {
-                    // A co-taught session puts one row per tutor into extracted_timetables, all
-                    // sharing the same day/slot/subject/program - filter() (not find()) collects
-                    // every one of them instead of silently dropping all but the first.
-                    const entries = grouped[slot] ? grouped[slot].filter(t => t.day === day) : [];
-                    const entry = entries[0] || null;
-                    const tutorNames = [...new Set(entries.map(e => e.tutor_name).filter(Boolean))].join(' & ');
-                    const brk = breaks.find(b => b.time === slot);
+                  const cell = grid[day][i];
                 %>
-                  <td>
-                    <% if(entry){ %>
+                  <% if (cell.type === 'skip') { %>
+                    <%# covered by a rowspan from an earlier row - render nothing %>
+                  <% } else if (cell.type === 'break') { %>
+                    <td><i><%= cell.label %></i></td>
+                  <% } else if (cell.type === 'empty') { %>
+                    <td><i>---</i></td>
+                  <% } else {
+                    const entry = cell.entries[0];
+                  %>
+                    <td<%- cell.rowspan > 1 ? ` rowspan="${cell.rowspan}"` : '' %>>
+                      <b>Time:</b> <%= cell.combinedLabel %><br>
                       <b>Venue:</b> <%= entry.venue_name || '---' %> (<%= entry.venue_type || '---' %>)<br>
                       <b>Subject:</b> <%= entry.subject_name || '---' %> (<%= entry.subject_code || '---' %>)<br>
-                      <b>Tutor:</b> <%= tutorNames || '---' %><br>
+                      <b>Tutor:</b> <%= cell.tutorNames || '---' %><br>
                       <b>Program:</b> <%= entry.program_code || '---' %> (<%= entry.program_level || '---' %>)
-                    <% } else if(brk){ %>
-                      <i><%= brk.type %></i>
-                    <% } else { %>
-                      <i>---</i>
-                    <% } %>
-                  </td>
+                    </td>
+                  <% } %>
                 <% }); %>
               </tr>
             <% }); %>

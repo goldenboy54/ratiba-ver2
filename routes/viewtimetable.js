@@ -1,6 +1,7 @@
 import express from 'express';
 // import { viewtimetable, getDistinctValues } from '../logics/viewtimetableLogic.js';
 import { viewtimetable, getDistinctValues, getDistinctPrograms } from '../logics/viewtimetableLogic.js';
+import { buildTimetableGrid, BREAKS } from '../logics/timetableGridLogic.js';
 
 import pdf from 'html-pdf'; // html-pdf-node instead of puppeteer
 
@@ -21,8 +22,8 @@ router.get('/viewtimetable', async (req, res) => {
     };
 
     const timetables = await viewtimetable(criteria);
+    const { uniqueDays, allSlots, grid } = buildTimetableGrid(timetables);
 
-    
     // const programs = await getDistinctValues('program_name');
     const programs = await getDistinctPrograms();  // Hii ndiyo sahihi
     const venues = await getDistinctValues('venue_name');
@@ -35,6 +36,10 @@ router.get('/viewtimetable', async (req, res) => {
 
     res.render('viewtimetable', {
       timetables,
+      uniqueDays,
+      allSlots,
+      grid,
+      breaks: BREAKS,
       programs,
       venues,
       tutors,
@@ -103,9 +108,7 @@ router.get('/download-timetable-pdf', async (req, res) => {
     };
 
     const timetables = await viewtimetable(criteria);
-
-    const uniqueDays = [...new Set(timetables.map(t => t.day))];
-    const uniqueTimes = [...new Set(timetables.map(t => `${t.start_time} - ${t.end_time}`))];
+    const { uniqueDays, allSlots, grid } = buildTimetableGrid(timetables);
 
     let timetableHTML = `
       <html>
@@ -136,28 +139,26 @@ router.get('/download-timetable-pdf', async (req, res) => {
 
     timetableHTML += `</tr></thead><tbody>`;
 
-    uniqueTimes.forEach(timeSlot => {
-      timetableHTML += `<tr><td><b>${timeSlot}</b></td>`;
+    // A class occupying several consecutive slots (session_group_id) gets one taller cell
+    // spanning all of them, labeled with its combined time range, instead of repeating the
+    // same class in every 45-minute row it covers.
+    allSlots.forEach((slot, i) => {
+      timetableHTML += `<tr><td><b>${slot}</b></td>`;
 
       uniqueDays.forEach(day => {
-        // A co-taught session puts one row per tutor into extracted_timetables, all sharing
-        // the same day/slot/subject/program - filter() (not find()) collects every one of
-        // them instead of silently dropping all but the first.
-        const entries = timetables.filter(t => `${t.start_time} - ${t.end_time}` === timeSlot && t.day === day);
-        const entry = entries[0];
-        const tutorNames = [...new Set(entries.map(e => e.tutor_name).filter(Boolean))].join(' & ');
-        timetableHTML += `<td>`;
-        if (entry) {
-          timetableHTML += `
-            <b>Venue:</b> ${entry.venue_name} (${entry.venue_type})<br>
-            <b>Subject:</b> ${entry.subject_name} (${entry.subject_code})<br>
-            <b>Tutor:</b> ${tutorNames}<br>
-            <b>Program:</b> ${entry.program_name} (${entry.program_level})<br>
-          `;
-        } else {
-          timetableHTML += `<i>-</i>`;
-        }
-        timetableHTML += `</td>`;
+        const cell = grid[day][i];
+        if (cell.type === 'skip') return;
+        if (cell.type === 'break') { timetableHTML += `<td><i>${cell.label}</i></td>`; return; }
+        if (cell.type === 'empty') { timetableHTML += `<td><i>-</i></td>`; return; }
+
+        const entry = cell.entries[0];
+        timetableHTML += `<td${cell.rowspan > 1 ? ` rowspan="${cell.rowspan}"` : ''}>
+          <b>Time:</b> ${cell.combinedLabel}<br>
+          <b>Venue:</b> ${entry.venue_name} (${entry.venue_type})<br>
+          <b>Subject:</b> ${entry.subject_name} (${entry.subject_code})<br>
+          <b>Tutor:</b> ${cell.tutorNames}<br>
+          <b>Program:</b> ${entry.program_name} (${entry.program_level})<br>
+        </td>`;
       });
 
       timetableHTML += `</tr>`;

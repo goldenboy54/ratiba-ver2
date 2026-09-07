@@ -2,7 +2,7 @@
 import express from 'express';
 import pool from '../db.js';
 import { showtimetableForm, getEdittimetableForm, handleUpdatetimetable, handleDeletetimetable, listtimetables } from '../logics/timetablesLogic.js';
-import { searchTimetables, getDistinctValues } from '../logics/timetableLogic.js';
+import { searchTimetables, getDistinctValues, groupTimetablesBySession } from '../logics/timetableLogic.js';
 import { truncateAllTimetables } from '../models/timetablesModel.js';
 import { getDistinctPrograms } from '../logics/viewtimetableLogic.js';
 import { getAllusers } from '../models/usersModel.js';
@@ -26,7 +26,11 @@ router.get('/', async (req, res) => {
       semester: req.query.semester || '',
     };
 
-    const timetables = await searchTimetables(criteria);
+    // This admin list wants one row per class (a class may book several rows sharing
+    // session_group_id) - the public /searchtimetable grid needs every individual row, so
+    // the grouping is applied here only, not inside searchTimetables itself.
+    const rawTimetables = await searchTimetables(criteria);
+    const timetables = groupTimetablesBySession(rawTimetables);
 
     const programs = await getDistinctPrograms() || [];
     const venues = await getDistinctValues('venue_name') || [];
@@ -180,19 +184,45 @@ router.post('/exchange', async (req, res) => {
       return res.status(400).send('Both timetable IDs are required');
     }
 
-    // Fetch both records
-    const [rows] = await conn.query(
+    // Fetch both anchor records, then each one's FULL session group - a class books one or
+    // two rows sharing session_group_id (see models/manualTimetableModel.js / tmasterModel.js),
+    // and swapping just the single anchor row would leave its sibling behind in the old
+    // day/time/venue, splitting the class across two disconnected slots.
+    const [anchorRows] = await conn.query(
       `SELECT * FROM extracted_timetables WHERE id IN (?, ?)`,
       [first_id, second_id]
     );
 
-    if (rows.length !== 2) {
+    if (anchorRows.length !== 2) {
       conn.release();
       return res.status(404).send('One or both timetables not found');
     }
 
-    const first = rows.find(r => r.id == first_id);
-    const second = rows.find(r => r.id == second_id);
+    const firstAnchor = anchorRows.find(r => r.id == first_id);
+    const secondAnchor = anchorRows.find(r => r.id == second_id);
+
+    const [firstGroup] = await conn.query(
+      `SELECT * FROM extracted_timetables WHERE session_group_id = ? ORDER BY start_time`,
+      [firstAnchor.session_group_id]
+    );
+    const [secondGroup] = await conn.query(
+      `SELECT * FROM extracted_timetables WHERE session_group_id = ? ORDER BY start_time`,
+      [secondAnchor.session_group_id]
+    );
+
+    if (firstGroup.length !== secondGroup.length) {
+      conn.release();
+      return res.status(400).send(
+        `Haiwezekani ku-swap: kundi la kwanza lina slot ${firstGroup.length}, la pili lina slot ${secondGroup.length}. ` +
+        `Exchange inafanya kazi tu kati ya madarasa yenye idadi sawa ya slots (mfano double-slot na double-slot).`
+      );
+    }
+
+    // Pair up each group's rows by position (both sorted by start_time, so index 0 is
+    // always each class's earlier half) - swapping pair-by-pair keeps each class's own
+    // internal slot ordering intact while relocating the whole class as one unit.
+    const pairs = firstGroup.map((f, i) => ({ first: f, second: secondGroup[i] }));
+    const allGroupIds = [...firstGroup.map(r => r.id), ...secondGroup.map(r => r.id)];
 
     // Helper to get program codes
     const getProgramCodes = (progStr) => {
@@ -201,6 +231,8 @@ router.post('/exchange', async (req, res) => {
         .map(p => p.trim().toUpperCase())
         .filter(Boolean);
     };
+
+    const sanitize = (v) => (v === undefined || v === "" ? null : String(v).trim());
 
     // =========================
     // Check for collisions after swap
@@ -230,14 +262,14 @@ router.post('/exchange', async (req, res) => {
         if (!semestersOverlap(entry.program_type, entry.program_level, entry.semester, c.program_type, c.program_level, c.semester)) continue;
 
         // Tutor conflict
-        if (c.tutor_name && entry.tutor_name && 
+        if (c.tutor_name && entry.tutor_name &&
             sanitize(c.tutor_name) === sanitize(entry.tutor_name)) {
           results.push({ ...c, collisionType: 'tutor' });
           continue;
         }
 
         // Venue conflict
-        if (c.venue_name && entry.venue_name && 
+        if (c.venue_name && entry.venue_name &&
             sanitize(c.venue_name) === sanitize(entry.venue_name)) {
           results.push({ ...c, collisionType: 'venue' });
           continue;
@@ -255,26 +287,30 @@ router.post('/exchange', async (req, res) => {
       return results.length > 0 ? results : null;
     };
 
-    const sanitize = (v) => (v === undefined || v === "" ? null : String(v).trim());
-
-    // Simulate swap for checking
-    const firstAfter = { ...first };
-    const secondAfter = { ...second };
-
-    const swapFields = ['day', 'start_time', 'end_time', 'venue_name', 'venue_location', 
+    // Simulate the swap for every pair, checking each resulting slot against everything
+    // EXCEPT the two full groups being swapped (not just the two anchor ids).
+    const swapFields = ['day', 'start_time', 'end_time', 'venue_name', 'venue_location',
                        'venue_type', 'venue_status', 'venue_id'];
 
-    swapFields.forEach(field => {
-      const temp = firstAfter[field];
-      firstAfter[field] = secondAfter[field];
-      secondAfter[field] = temp;
-    });
+    const collisionsByPair = [];
+    for (const { first, second } of pairs) {
+      const firstAfter = { ...first };
+      const secondAfter = { ...second };
 
-    // Check collisions after swap
-    const firstCollisions = await checkCollisionsAfterSwap(firstAfter, [first_id, second_id]);
-    const secondCollisions = await checkCollisionsAfterSwap(secondAfter, [first_id, second_id]);
+      swapFields.forEach(field => {
+        const temp = firstAfter[field];
+        firstAfter[field] = secondAfter[field];
+        secondAfter[field] = temp;
+      });
 
-    if ((firstCollisions || secondCollisions) && !force) {
+      const firstCollisions = await checkCollisionsAfterSwap(firstAfter, allGroupIds);
+      const secondCollisions = await checkCollisionsAfterSwap(secondAfter, allGroupIds);
+
+      if (firstCollisions) collisionsByPair.push({ label: `${first.start_time} - ${first.end_time} → ${second.day} ${second.start_time}-${second.end_time}`, collisions: firstCollisions });
+      if (secondCollisions) collisionsByPair.push({ label: `${second.start_time} - ${second.end_time} → ${first.day} ${first.start_time}-${first.end_time}`, collisions: secondCollisions });
+    }
+
+    if (collisionsByPair.length && !force) {
       conn.release();
 
       let html = `
@@ -284,9 +320,9 @@ router.post('/exchange', async (req, res) => {
             Swap inaweza kusababisha mgongano. Tumia FORCE SWAP ikiwa una uhakika.
           </div>`;
 
-      if (firstCollisions) {
-        html += `<h5 style="color:#c0392b;">Slot 1 baada ya swap:</h5>`;
-        firstCollisions.forEach(c => {
+      collisionsByPair.forEach(({ label, collisions }) => {
+        html += `<h5 style="color:#c0392b;">Baada ya swap (${label}):</h5>`;
+        collisions.forEach(c => {
           html += `
             <div style="margin:12px 0;padding:12px;background:#f8d7da;border-radius:6px;">
               <strong>${c.subject_name} (${c.subject_code})</strong><br>
@@ -295,20 +331,7 @@ router.post('/exchange', async (req, res) => {
               Type: ${c.collisionType.toUpperCase()}
             </div>`;
         });
-      }
-
-      if (secondCollisions) {
-        html += `<h5 style="color:#c0392b;">Slot 2 baada ya swap:</h5>`;
-        secondCollisions.forEach(c => {
-          html += `
-            <div style="margin:12px 0;padding:12px;background:#f8d7da;border-radius:6px;">
-              <strong>${c.subject_name} (${c.subject_code})</strong><br>
-              Program: ${c.program_name} (${c.program_code || 'N/A'})<br>
-              Tutor: ${c.tutor_name} | Venue: ${c.venue_name}<br>
-              Type: ${c.collisionType.toUpperCase()}
-            </div>`;
-        });
-      }
+      });
 
       html += `
           <form method="POST" action="/timetables/exchange" style="display:inline;">
@@ -325,9 +348,9 @@ router.post('/exchange', async (req, res) => {
     }
 
     // =========================
-    // EXECUTE THE SWAP
+    // EXECUTE THE SWAP (every pair, one transaction)
     // =========================
-    await conn.beginTransaction(); // Ensure transaction for swap
+    await conn.beginTransaction();
 
     const swapQuery = `
       UPDATE extracted_timetables t1
@@ -336,13 +359,15 @@ router.post('/exchange', async (req, res) => {
         t1.day = t2.day, t1.start_time = t2.start_time, t1.end_time = t2.end_time,
         t1.venue_name = t2.venue_name, t1.venue_location = t2.venue_location,
         t1.venue_type = t2.venue_type, t1.venue_status = t2.venue_status, t1.venue_id = t2.venue_id,
-        
+
         t2.day = t1.day, t2.start_time = t1.start_time, t2.end_time = t1.end_time,
         t2.venue_name = t1.venue_name, t2.venue_location = t1.venue_location,
         t2.venue_type = t1.venue_type, t2.venue_status = t1.venue_status, t2.venue_id = t1.venue_id
       WHERE t1.id = ? AND t2.id = ?`;
 
-    await conn.execute(swapQuery, [first_id, second_id, first_id, second_id]);
+    for (const { first, second } of pairs) {
+      await conn.execute(swapQuery, [first.id, second.id, first.id, second.id]);
+    }
 
     await conn.commit();
     conn.release();

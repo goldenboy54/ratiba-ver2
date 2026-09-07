@@ -54,19 +54,6 @@
           <h5>TIMETABLE - SEMESTER <%= semester %> &bull; <%= programCode %></h5>
         </div>
 
-        <%
-          const grouped = {};
-          timetables.forEach(t => {
-            const start = t.start_time ? t.start_time.slice(0, 5) : null;
-            const end = t.end_time ? t.end_time.slice(0, 5) : null;
-            if (start && end) {
-              const slot = `${start} - ${end}`;
-              if (!grouped[slot]) grouped[slot] = [];
-              grouped[slot].push(t);
-            }
-          });
-        %>
-
         <div class="table-container" id="timetableContent">
           <table class="table timetable-table">
             <thead>
@@ -78,30 +65,29 @@
               </tr>
             </thead>
             <tbody>
-              <% allTimeSlots.forEach(slot => { %>
+              <% allTimeSlots.forEach((slot, i) => { %>
                 <tr>
                   <td><b><%= slot %></b></td>
                   <% uniqueDays.forEach(day => {
-                      // A co-taught session puts one row per tutor into extracted_timetables, all
-                      // sharing the same day/slot/subject/program - filter() (not find()) collects
-                      // every one of them instead of silently dropping all but the first.
-                      const entries = grouped[slot] ? grouped[slot].filter(t => t.day === day) : [];
-                      const entry = entries[0] || null;
-                      const tutorNames = [...new Set(entries.map(e => e.tutor_name).filter(Boolean))].join(' & ');
-                      const brk = breaks.find(b => b.time === slot);
+                    const cell = grid[day][i];
                   %>
-                    <td>
-                      <% if (entry) { %>
+                    <% if (cell.type === 'skip') { %>
+                      <%# covered by a rowspan from an earlier row - render nothing %>
+                    <% } else if (cell.type === 'break') { %>
+                      <td><i><%= cell.label %></i></td>
+                    <% } else if (cell.type === 'empty') { %>
+                      <td><i>---</i></td>
+                    <% } else {
+                      const entry = cell.entries[0];
+                    %>
+                      <td<%- cell.rowspan > 1 ? ` rowspan="${cell.rowspan}"` : '' %>>
+                        <b>Time:</b> <%= cell.combinedLabel %><br>
                         <b>Subject:</b> <%= entry.subject_name || '---' %> (<%= entry.subject_code || '---' %>)<br>
                         <b>Venue:</b> <%= entry.venue_name || '---' %> (<%= entry.venue_type || '---' %>)<br>
-                        <b>Tutor:</b> <%= tutorNames || '---' %><br>
+                        <b>Tutor:</b> <%= cell.tutorNames || '---' %><br>
                         <b>Program:</b> <%= entry.program_code || '---' %> (<%= entry.program_level || '---' %>)
-                      <% } else if (brk) { %>
-                        <i><%= brk.type %></i>
-                      <% } else { %>
-                        <i>---</i>
-                      <% } %>
-                    </td>
+                      </td>
+                    <% } %>
                   <% }); %>
                 </tr>
               <% }); %>

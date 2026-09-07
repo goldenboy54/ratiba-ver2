@@ -67,7 +67,27 @@ export const handleDeletetimetable = async (req, res) => {
   const id = req.params.id;
 
   try {
-    const result = await deleteTimetableByIdWithEffects(id, {
+    // A class books one or two rows (a "double slot") sharing session_group_id (see
+    // models/manualTimetableModel.js / tmasterModel.js). Deleting just the clicked row
+    // would leave its sibling behind as an orphaned single 45-minute entry - the same
+    // split-class problem fixed for edit/exchange in earlier stages, now closed here too.
+    const [[current]] = await pool.query(
+      `SELECT id, session_group_id FROM extracted_timetables WHERE id = ?`, [id]
+    );
+
+    if (!current) {
+      return res.redirect(
+        '/timetables?error=' + encodeURIComponent('Timetable entry not found.')
+      );
+    }
+
+    const [groupRows] = await pool.query(
+      `SELECT id FROM extracted_timetables WHERE session_group_id = ?`,
+      [current.session_group_id]
+    );
+    const idsToDelete = groupRows.map(r => r.id);
+
+    const opts = {
       reason:       req.body.reason || 'manual deletion',
       notes:        req.body.notes  || '',
       deleted_by:   req.user ? req.user.name : (req.body.released_by || 'system'),
@@ -77,11 +97,50 @@ export const handleDeletetimetable = async (req, res) => {
       day:          req.body.day,
       start_time:   req.body.start_time,
       end_time:     req.body.end_time
-    });
+    };
+
+    // deleteTimetableByIdWithEffects already does everything correctly for ONE row (LTPA
+    // decrement, venue-slot freeing, deletion log, the actual delete) - both rows of a
+    // group share identical tutor/subject/program by construction, so calling it once per
+    // row composes correctly (e.g. a 1.5h double slot decrements LTPA by 0.75 twice).
+    const allWarnings = [];
+    let partialFailure = null;
+
+    for (const rowId of idsToDelete) {
+      try {
+        const result = await deleteTimetableByIdWithEffects(rowId, opts);
+        if (result.warnings) allWarnings.push(...result.warnings);
+      } catch (rowErr) {
+        // Surfaced rather than silently left behind - if the sibling row genuinely can't
+        // be deleted (e.g. a data-integrity mismatch), the admin needs to know instead of
+        // ending up with the exact orphaned-row state this fix exists to prevent.
+        partialFailure = rowErr;
+        break;
+      }
+    }
+
+    if (partialFailure) {
+      console.error('Error deleting timetable sibling row:', partialFailure);
+      return res.send(`
+        <div style="max-width:750px;margin:40px auto;padding:28px;
+                    border:2px solid #c0392b;border-radius:12px;background:#fdecea;">
+          <h3 style="color:#c0392b;">⚠️ Kufuta hakukukamilika kikamilifu</h3>
+          <p style="color:#888;">ID: ${id}</p>
+          <p>${partialFailure.message}</p>
+          <p style="color:#7a5000;">
+            Sehemu moja ya somo hili (double slot) huenda haikufutwa - tafadhali kagua
+            orodha ya timetable kabla ya kuendelea.
+          </p>
+          <div style="margin-top:25px;">
+            <a href="/timetables" class="btn btn-primary">Rudi Timetables</a>
+          </div>
+        </div>
+      `);
+    }
 
     // Kama kuna warnings, onyesha kwa user badala ya redirect moja kwa moja
-    if (result.warnings && result.warnings.length > 0) {
-      const warningHtml = result.warnings
+    if (allWarnings.length > 0) {
+      const warningHtml = allWarnings
         .map(w => `<li style="margin-bottom:10px;">${w}</li>`)
         .join('');
 
@@ -160,7 +219,10 @@ const slotStrToCol = (day, slotStr) => {
   return `${String(day).toLowerCase()}_slot${num}`;
 };
 
-const isSlotStillUsed = async (conn, venueId, slotCol, excludeId = null) => {
+// excludeIds: a single id or an array of ids to exclude - a double-slot class's own two
+// rows can each occupy a different slotCol, so both group ids need excluding here, not
+// just the one row currently being edited.
+const isSlotStillUsed = async (conn, venueId, slotCol, excludeIds = null) => {
   const match = String(slotCol).match(/^(.+)_slot(\d+)$/);
   if (!match) return false;
 
@@ -186,9 +248,10 @@ const isSlotStillUsed = async (conn, venueId, slotCol, excludeId = null) => {
 
   const params = [venueId, day, startFull, startShort, endFull, endShort];
 
-  if (excludeId) {
-    query += ` AND id != ?`;
-    params.push(excludeId);
+  const excludeList = Array.isArray(excludeIds) ? excludeIds.filter(Boolean) : (excludeIds ? [excludeIds] : []);
+  if (excludeList.length) {
+    query += ` AND id NOT IN (?)`;
+    params.push(excludeList);
   }
 
   const [[row]] = await conn.query(query, params);
@@ -232,7 +295,7 @@ export const handleUpdatetimetable = async (req, res) => {
       }
     }
 
-    // ====================== FETCH CURRENT ROW ======================
+    // ====================== FETCH CURRENT ROW + ITS DOUBLE-SLOT SIBLING ======================
     const [[current]] = await conn.query(
       `SELECT * FROM extracted_timetables WHERE id = ?`, [id]
     );
@@ -243,23 +306,99 @@ export const handleUpdatetimetable = async (req, res) => {
       return res.status(404).send("Timetable entry not found");
     }
 
-    // ====================== COLLISION DETECTION ======================
+    // A class books one OR MORE rows sharing session_group_id (see
+    // models/manualTimetableModel.js / tmasterModel.js) - e.g. a tutor teaching the same
+    // subject in the same room all morning, booked as several consecutive slots (possibly
+    // across several separate "assign" clicks, and bridging the day's fixed breaks).
+    // Editing one row has to move every other row in the group by the same amount, or the
+    // class ends up split across disconnected times/venues.
+    const [groupRows] = await conn.query(
+      `SELECT * FROM extracted_timetables WHERE session_group_id = ? ORDER BY start_time`,
+      [current.session_group_id]
+    );
+    const others = groupRows.filter(r => r.id != id);
+
+    const slotNumToTime = Object.fromEntries(Object.entries(timeToSlot).map(([time, num]) => [num, time]));
+    const slotNumOf = (row) => timeToSlot[`${toShort(row.start_time)}-${toShort(row.end_time)}`];
+    const currentOldSlotNum = slotNumOf(current);
+
+    // ====================== COMPUTE NEW SLOT(S) ======================
+    // Moved ahead of collision detection (unlike the old single-row version) because the
+    // collision check below now has to look at every slot the group would occupy, not just
+    // the one being edited directly.
+    const newDay = sanitize(t.day).toLowerCase();
+    const newSlotCol = getSlotCol(newDay, t.start_time, t.end_time);
+
+    if (!newSlotCol) {
+      await conn.rollback();
+      conn.release();
+      return res.status(400).send(`Muda ${t.start_time} - ${t.end_time} hauko kwenye orodha ya slots.`);
+    }
+
+    const newSlotNum = parseInt(newSlotCol.match(/_slot(\d+)$/)[1], 10);
+
+    // Each other row keeps the same OFFSET (in slot numbers) from `current` that it had
+    // before the edit - e.g. a row that was 2 slots after current stays 2 slots after
+    // current's new position. This generalizes cleanly from 1 sibling to a whole
+    // multi-slot session.
+    const otherPlans = [];
+    for (const row of others) {
+      const oldNum = slotNumOf(row);
+      if (oldNum == null) {
+        await conn.rollback();
+        conn.release();
+        return res.status(400).send(`Data error: haiwezekani kutambua slot ya row id ${row.id}.`);
+      }
+      const offset = oldNum - currentOldSlotNum;
+      const targetNum = newSlotNum + offset;
+      const targetRange = slotNumToTime[targetNum];
+
+      if (!targetRange) {
+        await conn.rollback();
+        conn.release();
+        return res.status(400).send(
+          `Muda ${t.start_time} hauna nafasi ya kutosha kwa somo hili (linahitaji slots zaidi ` +
+          `${offset > 0 ? 'baada' : 'kabla'} yake) - chagua muda mwingine.`
+        );
+      }
+
+      const [targetStart, targetEnd] = targetRange.split('-');
+      otherPlans.push({
+        row,
+        slotCol: `${newDay}_slot${targetNum}`,
+        start_time: targetStart + ':00',
+        end_time: targetEnd + ':00',
+        slotStr: targetRange,
+        targetNum
+      });
+    }
+
+    // ====================== COLLISION DETECTION (every slot the group would occupy) ======================
     const overlap = (s1, e1, s2, e2) => s1 < e2 && e1 > s2;
 
     const getProgramCodes = (progStr) =>
       progStr ? String(progStr).split('+').map(p => p.trim().toUpperCase()).filter(Boolean) : [];
 
-    const [others] = await conn.query(
+    // Excludes the whole group (not just the single row being edited) - otherwise a
+    // multi-slot class's own other rows would show up as a false "collision" against themselves.
+    const [otherEntries] = await conn.query(
       `SELECT * FROM extracted_timetables
-       WHERE id != ? AND day = ?`,
-      [id, t.day]
+       WHERE session_group_id != ? AND day = ?`,
+      [current.session_group_id, t.day]
     );
+
+    const candidateSlots = [
+      { start_time: t.start_time, end_time: t.end_time },
+      ...otherPlans.map(p => ({ start_time: p.start_time, end_time: p.end_time }))
+    ];
 
     let action = null;
     let collisionEntry = null;
 
-    for (const e of others) {
-      if (!overlap(t.start_time, t.end_time, e.start_time, e.end_time)) continue;
+    collisionSearch:
+    for (const slotCandidate of candidateSlots) {
+    for (const e of otherEntries) {
+      if (!overlap(slotCandidate.start_time, slotCandidate.end_time, e.start_time, e.end_time)) continue;
       // Same-time overlap alone isn't enough anymore - a matching semester
       // label no longer means "same real time" now that VETA's calendar
       // diverges from non-VETA's (see SEMESTER_CALENDAR above).
@@ -269,14 +408,14 @@ export const handleUpdatetimetable = async (req, res) => {
       if (sanitize(t.tutor_name) === sanitize(e.tutor_name)) {
         action = "tutor_conflict";
         collisionEntry = e;
-        break;
+        break collisionSearch;
       }
 
-      // 2. VENUE CONFLICT 
+      // 2. VENUE CONFLICT
       if (sanitize(t.venue_name) === sanitize(e.venue_name)) {
         action = "venue_conflict";
         collisionEntry = e;
-        break;
+        break collisionSearch;
       }
 
       // 3. PROGRAM CONFLICT (Strict - only same program code)
@@ -286,11 +425,15 @@ export const handleUpdatetimetable = async (req, res) => {
       if (newCodes.some(code => existingCodes.includes(code))) {
         action = "program_conflict";
         collisionEntry = e;
-        break;
+        break collisionSearch;
       }
+    }
     }
 
     // ====================== COLLISION RESPONSE ======================
+    // The SWAP VENUE / FORCE SWAP buttons below post first_id/second_id to
+    // /timetables/exchange, which resolves each id to its full session_group_id and swaps
+    // both classes' entire double slots - not just these two single rows.
     if (action && collisionEntry) {
       await conn.rollback();
       conn.release();
@@ -362,23 +505,15 @@ export const handleUpdatetimetable = async (req, res) => {
         </div>`);
     }
 
-    // ====================== NO COLLISION - VENUE SLOT MANAGEMENT ======================
+    // ====================== NO COLLISION - VENUE SLOT MANAGEMENT (both rows of the group) ======================
     const oldDay = String(current.day).toLowerCase();
     const oldVenueId = current.venue_id || null;
 
-    let oldSlotCol = slotStrToCol(oldDay, current.slot);
-    if (!oldSlotCol) {
-      oldSlotCol = getSlotCol(oldDay, current.start_time, current.end_time);
-    }
-
-    const newDay = sanitize(t.day).toLowerCase();
-    const newSlotCol = getSlotCol(newDay, t.start_time, t.end_time);
-
-    if (!newSlotCol) {
-      await conn.rollback();
-      conn.release();
-      return res.status(400).send(`Muda ${t.start_time} - ${t.end_time} hauko kwenye orodha ya slots.`);
-    }
+    const oldSlotColFor = (row) => {
+      let col = slotStrToCol(String(row.day).toLowerCase(), row.slot);
+      if (!col) col = getSlotCol(String(row.day).toLowerCase(), row.start_time, row.end_time);
+      return col;
+    };
 
     const [[newVenueRow]] = await conn.query(
       `SELECT venue_id FROM venues WHERE venue_name = ? LIMIT 1`,
@@ -392,52 +527,67 @@ export const handleUpdatetimetable = async (req, res) => {
     }
 
     const newVenueId = newVenueRow.venue_id;
+    const groupIds = [current.id, ...others.map(r => r.id)];
 
-    const venueChanged = newVenueId !== oldVenueId;
-    const slotChanged = oldSlotCol !== newSlotCol;
-    const dayChanged = oldDay !== newDay;
+    const oldSlotColsToCheck = [oldSlotColFor(current), ...others.map(oldSlotColFor)];
 
-    if (oldVenueId && oldSlotCol && (venueChanged || slotChanged || dayChanged)) {
-      const stillUsed = await isSlotStillUsed(conn, oldVenueId, oldSlotCol, id);
+    for (const oldSlotCol of oldSlotColsToCheck) {
+      if (!oldVenueId || !oldSlotCol) continue;
+      const stillUsed = await isSlotStillUsed(conn, oldVenueId, oldSlotCol, groupIds);
       if (!stillUsed) {
         await conn.execute(`UPDATE venues SET ${oldSlotCol}_status = 'unused' WHERE venue_id = ?`, [oldVenueId]);
       }
     }
 
     await conn.execute(`UPDATE venues SET ${newSlotCol}_status = 'used' WHERE venue_id = ?`, [newVenueId]);
+    for (const plan of otherPlans) {
+      await conn.execute(`UPDATE venues SET ${plan.slotCol}_status = 'used' WHERE venue_id = ?`, [newVenueId]);
+    }
 
-    // ====================== UPDATE THE TIMETABLE ======================
+    // ====================== UPDATE THE TIMETABLE (both rows share everything except their
+    // own start_time/end_time/slot - a class can't have a different subject, tutor, or venue
+    // for each half of its double slot) ======================
     const newSlotStr = `${toShort(t.start_time)}-${toShort(t.end_time)}`;
 
     const sql = `
       UPDATE extracted_timetables SET
-        day = ?, start_time = ?, end_time = ?, subject_code = ?, subject_name = ?,
+        day = ?, subject_code = ?, subject_name = ?,
         department_name = ?, venue_name = ?, venue_id = ?, tutor_name = ?,
         venue_location = ?, program_name = ?, subject_credit = ?, program_level = ?,
-        year = ?, venue_type = ?, venue_status = ?, semester = ?, slot = ?
+        year = ?, venue_type = ?, venue_status = ?, semester = ?,
+        start_time = ?, end_time = ?, slot = ?
       WHERE id = ?`;
 
-    const values = [
-      sanitize(t.day), sanitize(t.start_time), sanitize(t.end_time),
-      sanitize(t.subject_code), sanitize(t.subject_name),
+    const sharedValues = [
+      sanitize(t.day), sanitize(t.subject_code), sanitize(t.subject_name),
       sanitize(t.department_name), sanitize(t.venue_name), newVenueId,
       sanitize(t.tutor_name), sanitize(t.venue_location),
       sanitize(t.program_name), sanitize(t.subject_credit),
       sanitize(t.program_level), sanitize(t.year),
       sanitize(t.venue_type), sanitize(t.venue_status),
-      sanitize(t.semester), newSlotStr, id
+      sanitize(t.semester)
     ];
 
-    await conn.execute(sql, values);
+    await conn.execute(sql, [...sharedValues, sanitize(t.start_time), sanitize(t.end_time), newSlotStr, current.id]);
+
+    for (const plan of otherPlans) {
+      await conn.execute(sql, [...sharedValues, plan.start_time, plan.end_time, plan.slotStr, plan.row.id]);
+    }
+
     await conn.commit();
 
-    console.log(`✅ Timetable id=${id} updated successfully`);
+    const allTargetNums = [newSlotNum, ...otherPlans.map(p => p.targetNum)];
+    const minRange = slotNumToTime[Math.min(...allTargetNums)];
+    const maxRange = slotNumToTime[Math.max(...allTargetNums)];
+    const combinedRange = `${minRange.split('-')[0]} - ${maxRange.split('-')[1]}`;
+
+    console.log(`✅ Timetable session ${current.session_group_id} (id=${groupIds.join(', id=')}) updated successfully`);
 
     return res.status(200).send(`
       <div style="max-width:600px;margin:40px auto;padding:30px;border:2px solid #27ae60;border-radius:12px;text-align:center;">
         <h3 style="color:#27ae60;">✅ Timetable Ime-update kwa Mafanikio!</h3>
         <p><strong>${t.subject_name} (${t.subject_code})</strong></p>
-        <p>${t.day} | ${t.start_time} - ${t.end_time}</p>
+        <p>${t.day} | ${combinedRange}</p>
         <p>Program: ${t.program_name} | Venue: ${t.venue_name}</p>
         <br>
         <a href="/timetables" class="btn btn-primary btn-lg">Rudi Timetables</a>
