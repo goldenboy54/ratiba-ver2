@@ -213,8 +213,9 @@
             >
               <% timetables.forEach(tt => { %>
                 <option value="<%= tt.subject_id %>">
-                  <%= tt.subject_name %> - (<%= tt.subject_code %>) | 
-                  Tutor: <%= tt.tutor_name %> | 
+                  <%= tt.subject_name %> - (<%= tt.subject_code %>) |
+                  Type: <%= tt.type_prac_or_theory %> |
+                  Tutor: <%= tt.tutor_name %> |
                   Prog: <%= tt.program_name %> <%= tt.program_code %> <%= tt.program_type %>
                 </option>
               <% }) %>
