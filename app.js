@@ -40,6 +40,11 @@ import manualTimetableRoutes from "./routes/manualTimetableRoutes.js";
 import collisionRoutes from "./routes/collisionMonitorRoutes.js";
 import collisionReportRoutes from "./routes/collisionReportRoutes.js";
 import venueManagerRoutes from "./routes/venueManagerRoutes.js";
+import teacherTimetableApiRoute from "./api/teacher-timetable/route.js";
+import studentTimetableApiRoute from "./api/student-timetable/route.js";
+import rateLimit from "express-rate-limit";
+import cors from "cors";
+import { sendError } from "./api/shared/respond.js";
 
 // Initialize dotenv
 dotenv.config();
@@ -128,6 +133,32 @@ app.use("/venueManager", anaruhusa, forcePasswordChange, venueManagerRoutes);
 app.use('/searchtimetable', searchTimetables);
 app.use('/', viewtimetable);
 app.use('/', viewTimetableByProgramCodeRoute);
+
+// Public JSON API (no login - same trust level as the public timetable pages above).
+// Each endpoint under api/ lives in its own self-contained directory. Since there's no
+// login gating these, both protections below are what stand in its place:
+
+// 1. Rate limiting - without this, anyone could call an endpoint as often as they want.
+const apiRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100,                 // per IP, per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => sendError(res, 'Too many requests - please try again later.', 429),
+});
+
+// 2. CORS - deliberately NOT wide open (Access-Control-Allow-Origin: *). Reads allowed
+// origins from ALLOWED_ORIGINS in .env (comma-separated). Until that's set, cross-origin
+// requests are blocked by default (safe default) rather than open to any site - set it
+// once there's a real frontend/app that needs to call this from another origin.
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
+  .split(',')
+  .map(o => o.trim())
+  .filter(Boolean);
+const apiCors = cors({ origin: allowedOrigins.length > 0 ? allowedOrigins : false });
+
+app.use('/api/v1/teacher-timetable', apiCors, apiRateLimiter, teacherTimetableApiRoute);
+app.use('/api/v1/student-timetable', apiCors, apiRateLimiter, studentTimetableApiRoute);
 
 // Dashboard (protected)
 app.get("/dashboard", anaruhusa, forcePasswordChange, (req, res) => {
