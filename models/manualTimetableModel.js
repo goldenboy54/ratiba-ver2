@@ -1,6 +1,10 @@
 // models/manualTimetableModel.js
 import db from '../db.js';
 import crypto from 'crypto';
+import {
+  createSemesterCalendarResolver,
+  loadSemesterCalendarSettings,
+} from './semesterCalendar.js';
 
 // ==================== SLOT RANGES ====================
 const SLOT_RANGES = {
@@ -37,32 +41,6 @@ const programSlotMatch = (programType, slotTime) => {
   }
   return false;
 };
-
-// ==================== SEMESTER CALENDAR (VETA vs NON-VETA) ====================
-const SEMESTER_CALENDAR = {
-  NON_VETA:  { I: ["OCT", "NOV", "DEC", "JAN", "FEB"], II: ["MAR", "APR", "MAY", "JUN", "JUL"] },
-  VETA_L1L2: { I: ["JAN", "FEB", "MAR", "APR", "MAY"], II: ["JUL", "AUG", "SEP", "OCT", "NOV"] },
-  VETA_L3:   { I: ["AUG", "SEP", "OCT", "NOV"],        II: ["JAN", "FEB", "MAR", "APR", "MAY"] },
-};
-
-
-// distinguish  VETA programs semester using
-//  program_level 
-function getProgramGroup(programType, programLevel) {
-  const type = (programType || "").trim().toUpperCase();
-  if (type === "VETA") {
-    return String(programLevel || "").trim() === "3" ? "VETA_L3" : "VETA_L1L2";
-  }
-  return "NON_VETA";
-}
-
-// Check for semister overlap
-function semestersOverlap(typeA, levelA, semA, typeB, levelB, semB) {
-  const monthsA = SEMESTER_CALENDAR[getProgramGroup(typeA, levelA)]?.[semA];
-  const monthsB = SEMESTER_CALENDAR[getProgramGroup(typeB, levelB)]?.[semB];
-  if (!monthsA || !monthsB) return true;
-  return monthsA.some(m => monthsB.includes(m));
-}
 
 // ==================== CO-TEACHING (COMPANION) DETECTION ====================
 // An existing entry `e` belongs to one of the OTHER TUTORS on the same co-taught
@@ -140,6 +118,9 @@ async function resolveSlotColumn({ day, slot, venue_id, venue }) {
 
 // ==================== MAIN FUNCTION: addtimetable (FULLY UPDATED) ====================
 export const addtimetable = async ({ day, venue_id, subject_ids, slot, logs = [] }) => {
+  const semesterCalendar = createSemesterCalendarResolver(
+    await loadSemesterCalendarSettings()
+  );
   //function to produce logs
   const log = (msg) => { 
     logs.push(msg); 
@@ -205,10 +186,23 @@ export const addtimetable = async ({ day, venue_id, subject_ids, slot, logs = []
     }
 
     const S = subjectData[0];
+    let possibleVenueIds = [];
+    try {
+      possibleVenueIds = Array.isArray(S.possible_venues_ids)
+        ? S.possible_venues_ids
+        : JSON.parse(S.possible_venues_ids || "[]");
+    } catch {
+      possibleVenueIds = [];
+    }
+    if (possibleVenueIds.length && !possibleVenueIds.map(String).includes(String(venue_id))) {
+      log(`⚠ Subject ${subject_id} can only use its configured possible venues.`);
+      continue;
+    }
     const currentLtpa = Number(S.ltpa || 0);
     const totalHours = Number(S.total_hours_per_week || 0);
     const remainingHours = totalHours - currentLtpa;
     const ltpaIncrement = DOUBLE_SLOT_HOURS;
+    const requestedSequentialSlots = Math.max(1, Number(S.sequential_slots) || 1);
 
     if (remainingHours < ltpaIncrement) {
       log(`⚠ Subject ${subject_id} (${S.title}) has insufficient remaining hours (${remainingHours}). Single slots not allowed. Skipping.`);
@@ -278,6 +272,34 @@ export const addtimetable = async ({ day, venue_id, subject_ids, slot, logs = []
       continue;
     }
 
+    if (requestedSequentialSlots > 2) {
+      for (let offset = 2; offset < requestedSequentialSlots; offset++) {
+        const previous = slotInfos[slotInfos.length - 1];
+        const previousMatch = previous.statusCol.match(/slot(\d+)_status$/);
+        const nextSlotNum = previousMatch ? Number(previousMatch[1]) + 1 : 0;
+        if (!nextSlotNum || nextSlotNum > MAX_SLOTS_PER_DAY) {
+          canAssignDouble = false;
+          break;
+        }
+        const nextStatusCol = previous.statusCol.replace(/slot\d+_status$/, `slot${nextSlotNum}_status`);
+        const nextTimeCol = nextStatusCol.replace(/_status$/, "");
+        const [nextRows] = await db.query(
+          `SELECT \`${nextTimeCol}\` AS t FROM venues WHERE venue_id=? LIMIT 1`,
+          [venue_id]
+        );
+        const nextSlotTime = nextRows[0]?.t;
+        if (!nextSlotTime || !programSlotMatch(S.program_type, nextSlotTime)) {
+          canAssignDouble = false;
+          break;
+        }
+        slotInfos.push({ statusCol: nextStatusCol, timeCol: nextTimeCol, slotTime: nextSlotTime });
+      }
+      if (!canAssignDouble || slotInfos.length !== requestedSequentialSlots) {
+        log(`⚠ Subject ${subject_id}: ${requestedSequentialSlots} sequential slots are not available.`);
+        continue;
+      }
+    }
+
     // ===================== STRICT COLLISION CHECKS (BEFORE INSERT) =====================
     let canAssign = true;
     const reasons = [];
@@ -288,9 +310,8 @@ export const addtimetable = async ({ day, venue_id, subject_ids, slot, logs = []
         WHERE day = ? AND slot = ?
       `, [day, sInfo.slotTime]);
 
-      const existingEntries = allEntriesThisSlot.filter(e => semestersOverlap(
-        S.program_type, S.program_level, S.semester,
-        e.program_type, e.program_level, e.semester
+      const existingEntries = allEntriesThisSlot.filter(e => semesterCalendar(
+        S, S.semester, e, e.semester
       ));
 
       // Co-teaching companions: existing entries for one of the OTHER TUTORS on the same
@@ -396,24 +417,23 @@ export const addtimetable = async ({ day, venue_id, subject_ids, slot, logs = []
       // logics/timetableGridLogic.js, which merges consecutive same-class bookings for
       // display only, independently of this id.
       const sessionGroupId = crypto.randomUUID();
+      const [timetableColumns] = await conn.query('SHOW COLUMNS FROM extracted_timetables');
+      const hasSessionGroupId = timetableColumns.some((column) => column.Field === 'session_group_id');
 
       for (const sInfo of slotInfos) {
         const [startTime, endTime] = sInfo.slotTime.split("-").map(t => t.trim());
 
-        await conn.query(`
-          INSERT INTO extracted_timetables (
-            session_group_id,
-            day, slot, start_time, end_time,
-            subject_code, subject_name, department_name,
-            venue_id, venue_name, tutor_name, venue_location,
-            program_name, subject_credit, program_level,
-            year, venue_type, venue_status,
-            semester, venue_capacity, program_capacity,
-            program_type, total_hours_per_week,
-            arrange, program_code, created_by, created_at
-          ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-        `, [
-          sessionGroupId,
+        const columns = [
+          "day", "slot", "start_time", "end_time",
+          "subject_code", "subject_name", "department_name",
+          "venue_id", "venue_name", "tutor_name", "venue_location",
+          "program_name", "subject_credit", "program_level",
+          "year", "venue_type", "venue_status",
+          "semester", "venue_capacity", "program_capacity",
+          "program_type", "total_hours_per_week",
+          "arrange", "program_code", "created_by", "created_at"
+        ];
+        const values = [
           day,
           sInfo.slotTime,
           startTime || null,
@@ -440,7 +460,15 @@ export const addtimetable = async ({ day, venue_id, subject_ids, slot, logs = []
           S.program_code || null,
           S.tutor_db_id || null,
           new Date()
-        ]);
+        ];
+        if (hasSessionGroupId) {
+          columns.unshift("session_group_id");
+          values.unshift(sessionGroupId);
+        }
+        await conn.query(
+          `INSERT INTO extracted_timetables (${columns.join(", ")}) VALUES (${columns.map(() => "?").join(", ")})`,
+          values
+        );
 
         // Mark venue slot as used
         await conn.query(`UPDATE venues SET \`${sInfo.statusCol}\` = 'used' WHERE venue_id = ?`, [venue_id]);

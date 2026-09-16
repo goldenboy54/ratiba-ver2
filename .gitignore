@@ -67,6 +67,7 @@ jest.config.ts
 models/timetable-logs.txt
 # SQL files
 *.sql
+!migrations/subjects_scheduling_features.sql
 
 # Reports - internal working documents (allocation spreadsheets, tutor/user samples,
 # generated reports), not application code - keep these out of the repo going forward.

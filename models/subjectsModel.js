@@ -13,6 +13,14 @@ export const getAllSubjects = async () => {
   }
 };
 
+export const getSubjectById = async (id) => {
+  const [rows] = await pool.execute(
+    'SELECT * FROM subjects WHERE subject_id = ? LIMIT 1',
+    [id]
+  );
+  return rows[0] || null;
+};
+
 // models/subjectsModel.js
 
 // Helper: get user by email
@@ -80,6 +88,8 @@ export const addSubjectInDB = async (input) => {
     let type_prac_or_theory = "Theory";
     let programRows = [];
     let program_ids_json = "[]";
+    let possible_venues_ids = "[]";
+    let sequential_slots = 1;
 
     if (input.registered_subject) {
       user_id = input.user_id;
@@ -93,6 +103,8 @@ export const addSubjectInDB = async (input) => {
       type_prac_or_theory = input.type_prac_or_theory;
       programRows = input.programRows;
       program_ids_json = JSON.stringify(programRows.map((p) => p.program_id));
+      possible_venues_ids = JSON.stringify(input.possible_venues_ids || []);
+      sequential_slots = Math.max(1, Number(input.sequential_slots) || 1);
     } else {
       throw new Error("Invalid input for addSubjectInDB.");
     }
@@ -126,8 +138,8 @@ export const addSubjectInDB = async (input) => {
       (user_id, subject_code, title, credit, total_hours_per_week, program_id,
        subject_department, type_prac_or_theory, semester,
        program_name, program_code, program_level, program_category, program_type, program_duration,
-       program_capacity, ltpa)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       program_capacity, ltpa, possible_venues_ids, sequential_slots)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const [result] = await pool.execute(insertQuery, [
@@ -147,7 +159,9 @@ export const addSubjectInDB = async (input) => {
       mixed_program_type,
       mixed_program_duration,
       totalProgramCapacity,
-      0.0
+      0.0,
+      possible_venues_ids,
+      sequential_slots
     ]);
 
     return result;
@@ -167,6 +181,8 @@ export const addSubject = async (subject) => {
     program_ids,
     type_prac_or_theory,
     semester,
+    possible_venues_ids,
+    sequential_slots,
   } = subject;
 
   if (!Array.isArray(program_ids) || program_ids.length === 0) {
@@ -230,8 +246,8 @@ export const addSubject = async (subject) => {
       (user_id, subject_code, title, credit, total_hours_per_week, program_id,
        subject_department, type_prac_or_theory, semester,
        program_name, program_code, program_level, program_category, program_type, program_duration,
-       program_capacity)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       program_capacity, possible_venues_ids, sequential_slots)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const values = [
@@ -250,7 +266,9 @@ export const addSubject = async (subject) => {
       mixed_program_category,
       mixed_program_type,
       mixed_program_duration,
-      totalProgramCapacity, // 🔥 HAPA NDO PROGRAM CAPACITY YA JUMLA
+      totalProgramCapacity,
+      JSON.stringify(Array.isArray(possible_venues_ids) ? possible_venues_ids : (possible_venues_ids ? [possible_venues_ids] : [])),
+      Math.max(1, Number(sequential_slots) || 1),
     ];
 
     await pool.execute(insertQuery, values);
@@ -267,7 +285,7 @@ export const addSubject = async (subject) => {
 
 // Function to update a subject
 export const updateSubject = async (id, subject) => {
-  const { user_id, subject_code, title, credit, total_hours_per_week, program_id, subject_department, type_prac_or_theory, semester } = subject;
+  const { user_id, subject_code, title, credit, total_hours_per_week, program_id, subject_department, type_prac_or_theory, semester, possible_venues_ids, sequential_slots } = subject;
 
   // Replace undefined with null
   const valuesArray = [
@@ -280,11 +298,13 @@ export const updateSubject = async (id, subject) => {
     subject_department ?? null,
     type_prac_or_theory ?? null,
     semester ?? null,
+    JSON.stringify(Array.isArray(possible_venues_ids) ? possible_venues_ids : (possible_venues_ids ? [possible_venues_ids] : [])),
+    Math.max(1, Number(sequential_slots) || 1),
     id
   ];
 console.log(valuesArray);
   try {
-    const dbquery = 'UPDATE subjects SET user_id=?, subject_code=?, title=?, credit=?, total_hours_per_week=?, program_id=?, subject_department=?, type_prac_or_theory=?, semester=? WHERE subject_id = ?';
+    const dbquery = 'UPDATE subjects SET user_id=?, subject_code=?, title=?, credit=?, total_hours_per_week=?, program_id=?, subject_department=?, type_prac_or_theory=?, semester=?, possible_venues_ids=?, sequential_slots=? WHERE subject_id = ?';
     const [results] = await pool.execute(dbquery, valuesArray);
     return results;
   } catch (err) {

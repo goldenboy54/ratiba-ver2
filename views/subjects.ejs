@@ -261,6 +261,18 @@
                           <label for="semester_<%= subject.subject_id %>" class="form-label text-info">Semester:</label>
                           <input type="text" id="semester_<%= subject.subject_id %>" name="semester" class="form-control" value="<%= subject.semester %>" required>
                         </div>
+                        <div class="row">
+                          <div class="col-md-8 mb-3">
+                            <label class="form-label text-info">Possible Venues</label>
+                            <select name="possible_venues_ids" class="form-select select2" multiple>
+                              <% venues.forEach(venue => { %><option value="<%= venue.venue_id %>" <%= String(subject.possible_venues_ids || '').includes(String(venue.venue_id)) ? 'selected' : '' %>><%= venue.venue_name %></option><% }); %>
+                            </select>
+                          </div>
+                          <div class="col-md-4 mb-3">
+                            <label class="form-label text-info">Sequential Slots</label>
+                            <input type="number" min="1" name="sequential_slots" class="form-control" value="<%= subject.sequential_slots || 1 %>">
+                          </div>
+                        </div>
                         
                         <button type="submit" class="btn btn-success">
                           <i class="fas fa-save"></i> Submit Changes
@@ -283,7 +295,7 @@
       <form action="/subjects/upload" method="post" enctype="multipart/form-data">
         <div class="mb-3">
           <label for="file" class="form-label">Choose file (CSV or XLSX)</label>
-          <p><small class="text-muted">Required columns: <strong>user_email, subject_code, program_code (single or combined with +), total_hours_per_week, semester</strong></small></p>
+          <p><small class="text-muted">Optional columns: <strong>possible_venues_ids, sequential_slots</strong></small></p>
           <input type="file" name="file" class="form-control" accept=".csv, .xlsx" required>
         </div>
         <button type="submit" class="btn btn-success">
@@ -347,6 +359,18 @@
               <option value="<%= program.program_id %>"><%= program.program_name %> (CODE: <%= program.program_code %>)</option>
             <% }); %>
           </select>
+        </div>
+        <div class="row">
+          <div class="col-md-8 mb-3">
+            <label for="possible_venues_ids" class="form-label">Possible Venues</label>
+            <select id="possible_venues_ids" name="possible_venues_ids" class="form-select select2" multiple>
+              <% venues.forEach(venue => { %><option value="<%= venue.venue_id %>"><%= venue.venue_name %></option><% }); %>
+            </select>
+          </div>
+          <div class="col-md-4 mb-3">
+            <label for="sequential_slots" class="form-label">Sequential Slots</label>
+            <input type="number" id="sequential_slots" name="sequential_slots" min="1" value="1" class="form-control">
+          </div>
         </div>
 
         <button type="submit" class="btn btn-primary">

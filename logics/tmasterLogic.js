@@ -1,9 +1,10 @@
 import { addtimetable } from '../models/tmasterModel.js';
+import { normalizeSemesterToken } from '../models/semesterCalendar.js';
 
 export const handleAddtimetable = async (req, res) => {
-  const { semester } = req.body;
+  const semester = normalizeSemesterToken(req.body?.semester);
 
-  if (!semester) {
+  if (!['I', 'II'].includes(semester)) {
     return res.status(400).json({ error: 'Missing semester' });
   }
 

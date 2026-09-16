@@ -1,0 +1,3 @@
+ALTER TABLE subjects
+  ADD COLUMN IF NOT EXISTS possible_venues_ids JSON NULL,
+  ADD COLUMN IF NOT EXISTS sequential_slots INT NOT NULL DEFAULT 1;

@@ -1,5 +1,10 @@
 // controllers/collisionReportController.js
 import { fetchAllSlots } from "../models/collisionReportModel.js";
+import {
+  createSemesterCalendarResolver,
+  loadSemesterCalendarSettings,
+  normalizeSemesterToken,
+} from "../models/semesterCalendar.js";
 
 /**
  * Helper utilities
@@ -20,6 +25,20 @@ const parseProgramCodes = (program_code) => {
     .filter(Boolean);
 };
 
+const normalizedValue = (value) => String(value || '').trim().toLowerCase();
+
+const isSameSession = (a, b) => {
+  if (!a.subject_code || !b.subject_code) return false;
+  if (normalizedValue(a.subject_code) !== normalizedValue(b.subject_code)) return false;
+  if (normalizeSemesterToken(a.semester) !== normalizeSemesterToken(b.semester)) return false;
+  if (normalizedValue(a.program_level) !== normalizedValue(b.program_level)) return false;
+  if (normalizedValue(a.year) !== normalizedValue(b.year)) return false;
+
+  const programsA = parseProgramCodes(a.program_code).map(normalizedValue);
+  const programsB = parseProgramCodes(b.program_code).map(normalizedValue);
+  return programsA.some((program) => programsB.includes(program));
+};
+
 const slotLabel = (s) =>
   `#${s.id} | ${s.day} ${s.start_time}-${s.end_time} | ${s.venue_name || '—'} | ${s.subject_code} - ${s.subject_name} | Tutor: ${s.tutor_name || '—'} | ProgCode: ${s.program_code || '—'}`;
 
@@ -28,7 +47,11 @@ const slotLabel = (s) =>
  */
 export const showCollisionReport = async (req, res) => {
   try {
-    const slots = await fetchAllSlots();
+    const requestedSemester = normalizeSemesterToken(req.query?.semester || '');
+    const slots = await fetchAllSlots(requestedSemester);
+    const semesterCalendar = createSemesterCalendarResolver(
+      await loadSemesterCalendarSettings()
+    );
 
     // Enrich slots with normalized data for reliable comparison
     const enriched = slots.map(s => ({
@@ -46,7 +69,11 @@ export const showCollisionReport = async (req, res) => {
     const programCollisions = [];
     const tutorCollisions = [];
     const venueCollisions = [];
-    const seen = new Set();
+    const seen = {
+      program: new Set(),
+      tutor: new Set(),
+      venue: new Set(),
+    };
 
     // Pairwise comparison - Reliable version
     for (let i = 0; i < enriched.length; i++) {
@@ -58,13 +85,21 @@ export const showCollisionReport = async (req, res) => {
         if (a.day !== b.day) continue;
         if (!overlap(a.startMin, a.endMin, b.startMin, b.endMin)) continue;
 
+        const semesterA = normalizeSemesterToken(a.semester);
+        const semesterB = normalizeSemesterToken(b.semester);
+        if (semesterA && semesterB && semesterA !== semesterB) {
+          if (!semesterCalendar(a, semesterA, b, semesterB)) continue;
+        } else if (!semesterCalendar(a, semesterA, b, semesterB)) {
+          continue;
+        }
+
         // ====================== 1. VENUE COLLISION (FIXED - Using venue_name) ======================
         if (a.normVenue && b.normVenue && 
             a.normVenue.toLowerCase() === b.normVenue.toLowerCase()) {
           
           const key = `venue::${[a.id, b.id].sort().join("-")}`;
-          if (!seen.has(key)) {
-            seen.add(key);
+          if (!seen.venue.has(key)) {
+            seen.venue.add(key);
             venueCollisions.push({
               type: "venue",
               ids: [a.id, b.id],
@@ -85,8 +120,8 @@ export const showCollisionReport = async (req, res) => {
         if (a.normTutor && b.normTutor && a.normTutor === b.normTutor) {
           
           const key = `tutor::${[a.id, b.id].sort().join("-")}`;
-          if (!seen.has(key)) {
-            seen.add(key);
+          if (!seen.tutor.has(key)) {
+            seen.tutor.add(key);
             tutorCollisions.push({
               type: "tutor",
               ids: [a.id, b.id],
@@ -103,6 +138,11 @@ export const showCollisionReport = async (req, res) => {
         }
 
         // ====================== 3. PROGRAM COLLISION ======================
+        // Multiple tutors may legitimately teach the same subject/cohort at the
+        // same time in different venues. Generation and manual assignment treat
+        // this as co-teaching, not as a program collision.
+        if (isSameSession(a, b)) continue;
+
         const aProgs = a.parsedPrograms;
         const bProgs = b.parsedPrograms;
         let programOverlap = false;
@@ -148,8 +188,8 @@ export const showCollisionReport = async (req, res) => {
 
         if (programOverlap) {
           const key = `program::${[a.id, b.id].sort().join("-")}`;
-          if (!seen.has(key)) {
-            seen.add(key);
+          if (!seen.program.has(key)) {
+            seen.program.add(key);
             programCollisions.push({
               type: "program",
               ids: [a.id, b.id],
