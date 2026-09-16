@@ -15,6 +15,23 @@ Branch used for these updates:
 developu
 ```
 
+## 0. Authenticate GitHub CLI
+
+Check whether GitHub CLI is authenticated:
+
+```powershell
+gh auth status
+```
+
+If authentication is missing, start the interactive login flow:
+
+```powershell
+gh auth login
+```
+
+Choose GitHub.com, HTTPS, and the browser-based authentication method when
+prompted. Pull-request commands require an authenticated GitHub CLI session.
+
 ## 1. Check the repository location
 
 ```powershell
