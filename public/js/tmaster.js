@@ -91,10 +91,6 @@
         const errorMessage = data.substring(7);
         finishError(errorMessage);
         eventSource.close();
-      } else if (data.includes('All subjects assigned successfully')) {
-        // Extra confirmation from log
-        finishSuccess(`Timetable generation completed for semester ${semester}`);
-        eventSource.close();
       } else {
         // Append log message and scroll to bottom
         appendLog(data);

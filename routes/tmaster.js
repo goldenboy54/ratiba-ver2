@@ -1,9 +1,19 @@
 import express from 'express';
 import { handleAddtimetable } from '../logics/tmasterLogic.js';
+import { getSemesterOptions } from '../models/semesterCalendar.js';
 import fs from 'fs';
 import path from 'path';
 
 const router = express.Router();
+
+router.get('/semesters', async (req, res) => {
+  try {
+    res.json({ semesters: await getSemesterOptions() });
+  } catch (error) {
+    console.error('TMASTER_SEMESTERS_ERROR', error);
+    res.status(500).json({ error: error.message || 'Unable to load semesters' });
+  }
+});
 
 // POST: Start timetable generation
 router.post('/add', handleAddtimetable);
@@ -14,6 +24,8 @@ router.get('/stream-logs', (req, res) => {
   if (!semester) return res.status(400).send('Semester required');
 
   const logPath = path.join(process.cwd(), 'models', 'timetable-logs.txt');
+  fs.mkdirSync(path.dirname(logPath), { recursive: true });
+  fs.writeFileSync(logPath, '');
 
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
@@ -22,52 +34,44 @@ router.get('/stream-logs', (req, res) => {
   res.write(`data: 🚀 Starting timetable generation for Semester ${semester}...\n\n`);
 
   let lastLineCount = 0;
+  let finished = false;
+  let poll;
 
-  const sendLogs = () => {
-    if (!fs.existsSync(logPath)) return;
-
-    const content = fs.readFileSync(logPath, 'utf-8');
-    const lines = content.split('\n');
-
-    if (lines.length > lastLineCount) {
-      const newLines = lines.slice(lastLineCount);
-      newLines.forEach(line => {
-        if (line.trim()) {
-          if (line.includes('All subjects assigned successfully')) {
-            res.write(`data: ✅ Timetable generation completed for semester ${semester}\n\n`);
-            res.write(`data: [DONE]\n\n`);
-            watcher.close();
-            res.end();
-            return;
-          }
-          res.write(`data: ${line}\n\n`);
-        }
-      });
-      lastLineCount = lines.length;
-    }
+  const finish = (message, event) => {
+    if (finished) return;
+    finished = true;
+    if (message) res.write(`data: ${message}\n\n`);
+    res.write(`data: ${event}\n\n`);
+    if (poll) clearInterval(poll);
+    res.end();
   };
 
-  const watcher = fs.watch(logPath, () => {
-    sendLogs();
-  });
+  const sendLogs = () => {
+    if (finished || !fs.existsSync(logPath)) return;
 
-  // Send existing logs first
-  sendLogs();
-
-  // Send completion if file has success line already
-  if (fs.existsSync(logPath)) {
-    const content = fs.readFileSync(logPath, 'utf-8');
-    if (content.includes('All subjects assigned successfully')) {
-      res.write(`data: ✅ Timetable generation completed for semester ${semester}\n\n`);
-      res.write(`data: [DONE]\n\n`);
-      watcher.close();
-      res.end();
+    const lines = fs.readFileSync(logPath, 'utf-8').split('\n');
+    for (const line of lines.slice(lastLineCount)) {
+      if (!line.trim()) continue;
+      res.write(`data: ${line}\n\n`);
+      if (line.includes('=== TIMETABLE GENERATION COMPLETED SUCCESSFULLY ===')) {
+        finish(`✅ Timetable generation completed for semester ${semester}`, '[DONE]');
+        return;
+      }
+      if (line.includes('FATAL ERROR:')) {
+        finish(`[ERROR] ${line}`, `[ERROR] ${line}`);
+        return;
+      }
     }
-  }
+    lastLineCount = lines.length;
+  };
+
+  poll = setInterval(sendLogs, 500);
 
   req.on('close', () => {
-    watcher.close();
-    res.end();
+    if (!finished) {
+      finished = true;
+      clearInterval(poll);
+    }
   });
 });
 

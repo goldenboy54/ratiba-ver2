@@ -1,0 +1,120 @@
+<%- include('partials/nav') %>
+
+<div class="container py-4">
+  <h1><i class="fas fa-calendar-alt"></i> Semester Calendar Settings</h1>
+  <p class="text-muted">Calendar months determine whether two semester entries are active at the same time and therefore may collide.</p>
+
+  <% if (error) { %><div class="alert alert-danger"><%= error %></div><% } %>
+  <% if (success) { %><div class="alert alert-success"><%= success %></div><% } %>
+
+  <% if (canEdit) { %>
+    <form id="semesterSettingForm" class="card card-body mb-4">
+      <input type="hidden" name="id">
+      <div class="row g-3">
+        <div class="col-md-2"><label class="form-label">Scope</label><input name="scope_type" class="form-control" value="global"></div>
+        <div class="col-md-2"><label class="form-label">Scope key</label><input name="scope_key" class="form-control" value="global"></div>
+        <div class="col-md-2"><label class="form-label">Semester</label><select name="semester" class="form-select"><option>I</option><option>II</option></select></div>
+        <div class="col-md-3"><label class="form-label">Program type/group</label><input name="program_type" class="form-control" value="NON_VETA"></div>
+        <div class="col-md-12">
+          <label class="form-label">Active calendar months</label>
+          <div class="d-flex flex-wrap gap-2" id="calendarMonths">
+            <% ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'].forEach((month) => { %>
+              <label class="border rounded px-2 py-1">
+                <input type="checkbox" name="calendar_months" value="<%= month %>"> <%= month %>
+              </label>
+            <% }); %>
+          </div>
+          <small class="text-muted">Select months; Semester I and Semester II are saved as separate active entries.</small>
+        </div>
+        <div class="col-md-3"><label class="form-label">Capacity tolerance %</label><input name="capacity_threshold_percent" type="number" min="0" max="100" class="form-control" value="20"></div>
+        <div class="col-md-3"><label class="form-label">Underutilization threshold</label><input name="underutilization_threshold" type="number" min="0" max="1" step="0.01" class="form-control" value="0.3"></div>
+      </div>
+      <button class="btn btn-primary mt-3" type="submit">Save setting</button>
+      <button class="btn btn-secondary mt-3" type="button" id="clearSemesterSetting">Clear</button>
+    </form>
+  <% } %>
+
+  <div class="table-responsive">
+    <table class="table table-bordered table-striped" id="semesterSettingsTable">
+      <thead><tr><th>Scope</th><th>Semester</th><th>Program type</th><th>Months</th><th>Capacity tolerance</th><th>Actions</th></tr></thead>
+      <tbody>
+        <% settings.forEach((setting) => { %>
+          <tr data-setting='<%- JSON.stringify(setting) %>'>
+            <td><%= setting.scope_type %>: <%= setting.scope_key %></td>
+            <td><%= setting.semester %></td>
+            <td><%= setting.program_type %></td>
+            <td><%= setting.calendar_months.join(', ') %></td>
+            <td><%= setting.capacity_threshold_percent %>%</td>
+            <td>
+              <% if (canEdit) { %>
+                <button type="button" class="btn btn-sm btn-outline-primary edit-setting">Edit</button>
+                <button type="button" class="btn btn-sm btn-outline-danger delete-setting">Delete</button>
+              <% } else { %>Read only<% } %>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+(() => {
+  const form = document.getElementById('semesterSettingForm');
+  if (!form) return;
+  const field = (name) => form.elements[name];
+  const monthBoxes = () => Array.from(form.querySelectorAll('input[name="calendar_months"]'));
+  const setMonths = (months) => {
+    const selected = new Set((Array.isArray(months) ? months : []).map((month) => String(month).toUpperCase()));
+    monthBoxes().forEach((box) => { box.checked = selected.has(box.value); });
+  };
+  const reset = () => {
+    form.reset();
+    field('id').value = '';
+    field('scope_type').value = 'global';
+    field('scope_key').value = 'global';
+    field('program_type').value = 'NON_VETA';
+    setMonths([]);
+  };
+  document.getElementById('clearSemesterSetting').addEventListener('click', reset);
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const payload = Object.fromEntries(new FormData(form).entries());
+    payload.calendar_months = monthBoxes().filter((box) => box.checked).map((box) => box.value);
+    if (!payload.calendar_months.length) return alert('Select at least one calendar month.');
+    const response = await fetch('/semester-settings/api', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const result = await response.json();
+    if (!response.ok) return alert(result.error || 'Unable to save setting');
+    window.location.reload();
+  });
+  document.querySelectorAll('.edit-setting').forEach((button) => button.addEventListener('click', () => {
+    const setting = JSON.parse(button.closest('tr').dataset.setting);
+    Object.entries(setting).forEach(([key, value]) => {
+      if (key === 'calendar_months') setMonths(value);
+      else if (field(key)) field(key).value = Array.isArray(value) ? value.join(',') : value;
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }));
+  document.querySelectorAll('.delete-setting').forEach((button) => button.addEventListener('click', async () => {
+    const setting = JSON.parse(button.closest('tr').dataset.setting);
+    if (!confirm('Delete this semester calendar setting?')) return;
+    const response = await fetch('/semester-settings/api/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: setting.id })
+    });
+    if (!response.ok) {
+      const result = await response.json();
+      return alert(result.error || 'Unable to delete setting');
+    }
+    window.location.reload();
+  }));
+})();
+</script>
+
+</main>
+<%- include('partials/footer') %>

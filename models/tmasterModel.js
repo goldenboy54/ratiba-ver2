@@ -1,43 +1,11 @@
 import db from '../db.js';
 import fs from "fs";
 import crypto from 'crypto';
-
-// ==================== SEMESTER CALENDAR (VETA vs NON-VETA) ====================
-// A `semester` label ("I"/"II") only tells you which of a student's OWN two
-// semesters an entry belongs to - it does NOT tell you the real calendar months,
-// because VETA's academic calendar no longer lines up with everyone else's. Same
-// mapping as models/manualTimetableModel.js and routes/timetables.js, confirmed
-// against the real 2026/2027 ATC/VETA academic calendar; duplicated here rather
-// than shared, matching this codebase's existing style for small per-file
-// collision helpers.
-const SEMESTER_CALENDAR = {
-  NON_VETA:  { I: ["OCT", "NOV", "DEC", "JAN", "FEB"], II: ["MAR", "APR", "MAY", "JUN", "JUL"] },
-  VETA_L1L2: { I: ["JAN", "FEB", "MAR", "APR", "MAY"], II: ["JUL", "AUG", "SEP", "OCT", "NOV"] },
-  VETA_L3:   { I: ["AUG", "SEP", "OCT", "NOV"],        II: ["JAN", "FEB", "MAR", "APR", "MAY"] },
-};
-
-// Which row of SEMESTER_CALENDAR a subject/timetable entry belongs to. VETA Level 3
-// runs on its own calendar, offset from VETA Levels 1 & 2, so program_type alone
-// ("VETA") isn't enough to tell them apart - program_level is what distinguishes them.
-function getProgramGroup(programType, programLevel) {
-  const type = (programType || "").trim().toUpperCase();
-  if (type === "VETA") {
-    return String(programLevel || "").trim() === "3" ? "VETA_L3" : "VETA_L1L2";
-  }
-  return "NON_VETA";
-}
-
-// Two entries can only really collide if their semesters run during the same real
-// months - "same semester label" stopped being a safe proxy for that once VETA's
-// calendar diverged from everyone else's (see SEMESTER_CALENDAR above). Falls back
-// to "overlapping" (the cautious answer) if either side's group/semester isn't
-// recognized, instead of silently letting an unrecognized case slip through as safe.
-function semestersOverlap(typeA, levelA, semA, typeB, levelB, semB) {
-  const monthsA = SEMESTER_CALENDAR[getProgramGroup(typeA, levelA)]?.[semA];
-  const monthsB = SEMESTER_CALENDAR[getProgramGroup(typeB, levelB)]?.[semB];
-  if (!monthsA || !monthsB) return true;
-  return monthsA.some(m => monthsB.includes(m));
-}
+import {
+  createSemesterCalendarResolver,
+  loadSemesterCalendarSettings,
+  normalizeSemesterToken,
+} from './semesterCalendar.js';
 
 // Same tolerance values as models/manualTimetableModel.js's capacity check - kept in
 // sync rather than shared, matching this codebase's existing style for small per-file
@@ -80,6 +48,14 @@ function isSameSession(e, S) {
  * - Safe partial assignment if only 1 slot fits remaining hours
  */
 export async function addtimetable({ semester }) {
+  semester = normalizeSemesterToken(semester);
+  if (!['I', 'II'].includes(semester)) {
+    throw new Error(`Invalid semester: ${semester || '(empty)'}`);
+  }
+
+  const semesterCalendar = createSemesterCalendarResolver(
+    await loadSemesterCalendarSettings()
+  );
   const logPath = "models/timetable-logs.txt";
   if (fs.existsSync(logPath)) fs.unlinkSync(logPath);
   const log = (msg) => fs.appendFileSync(logPath, `${new Date().toISOString()} - ${msg}\n`);
@@ -145,6 +121,8 @@ export async function addtimetable({ semester }) {
   const MAX_GENERATION_PASSES = 50;
 
   try {
+    const [timetableColumns] = await db.query('SHOW COLUMNS FROM extracted_timetables');
+    const hasSessionGroupId = timetableColumns.some((column) => column.Field === 'session_group_id');
     let subjectsPending = true;
     let passCount = 0;
 
@@ -289,6 +267,22 @@ export async function addtimetable({ semester }) {
               usedToleranceFallback = true;
             }
           }
+          const possibleVenueIds = (() => {
+            try {
+              const parsed = Array.isArray(S.possible_venues_ids)
+                ? S.possible_venues_ids
+                : JSON.parse(S.possible_venues_ids || "[]");
+              return new Set(parsed.map((id) => String(id)));
+            } catch {
+              return new Set();
+            }
+          })();
+          if (possibleVenueIds.size) {
+            venues.sort((a, b) =>
+              Number(possibleVenueIds.has(String(b.venue_id))) -
+              Number(possibleVenueIds.has(String(a.venue_id)))
+            );
+          }
 
           if (!venues.length) {
             log(`  - No venue for ${S.subject_code} on ${day} meets capacity ${program_capacity} even within ${CAPACITY_TOLERANCE * 100}% tolerance. Skipping day.`);
@@ -306,10 +300,13 @@ export async function addtimetable({ semester }) {
             const SINGLE_SLOT_HOURS = 0.75; // 1 slot = 0.75 hours
 
             // Prefer double slots if possible
-            const preferredSlots = remainingHours >= FULL_BLOCK_HOURS ? 2 : (remainingHours >= SINGLE_SLOT_HOURS ? 1 : 0);
+            const requestedSequentialSlots = Math.max(1, Number(S.sequential_slots) || 1);
+            const preferredSlots = requestedSequentialSlots > 1
+              ? (remainingHours >= requestedSequentialSlots * SINGLE_SLOT_HOURS ? requestedSequentialSlots : 0)
+              : (remainingHours >= FULL_BLOCK_HOURS ? 2 : (remainingHours >= SINGLE_SLOT_HOURS ? 1 : 0));
             if (preferredSlots === 0) continue;
 
-            for (let slotsNeeded = preferredSlots; slotsNeeded >= 1; slotsNeeded--) {
+            for (let slotsNeeded = preferredSlots; slotsNeeded >= (requestedSequentialSlots > 1 ? preferredSlots : 1); slotsNeeded--) {
               if (remainingHours < (slotsNeeded * 0.75)) continue;
 
               for (let i = 1; i <= MAX_SLOTS - slotsNeeded + 1; i++) {
@@ -343,7 +340,7 @@ export async function addtimetable({ semester }) {
                 if (!canAssign || slotCols.length < slotsNeeded) continue;
 
                 // Collision check - only against entries that actually overlap in real
-                // calendar months (see SEMESTER_CALENDAR/semestersOverlap above). A raw
+                // calendar months loaded from semester_calendar_settings. A raw
                 // day+slot match alone isn't enough once VETA's calendar diverges from
                 // everyone else's: two entries can share the exact same day/slot label
                 // and tutor/venue/program without ever really colliding, if one runs
@@ -355,9 +352,8 @@ export async function addtimetable({ semester }) {
                     [day, s.slotTime]
                   );
 
-                  const existingEntries = allEntriesThisSlot.filter(e => semestersOverlap(
-                    program_type, S.program_level, S.semester,
-                    e.program_type, e.program_level, e.semester
+                  const existingEntries = allEntriesThisSlot.filter(e => semesterCalendar(
+                    S, S.semester, e, e.semester
                   ));
 
                   // Co-teaching companions: the other half of the same session as S (see
@@ -409,17 +405,7 @@ export async function addtimetable({ semester }) {
 
                   for (const s of slotCols) {
                     const [startTime, endTime] = s.slotTime.split("-");
-                    await db.query(`
-                      INSERT INTO extracted_timetables (
-                        session_group_id,
-                        day, slot, start_time, end_time, subject_code, subject_name, department_name,
-                        venue_id, venue_name, tutor_name, venue_location, program_name, subject_credit,
-                        program_level, year, venue_type, venue_status, semester, venue_capacity,
-                        program_capacity, program_type, total_hours_per_week, arrange, program_code,
-                        created_by, created_at
-                      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-                    `, [
-                      sessionGroupId,
+                    const timetableValues = [
                       day, s.slotTime, startTime.trim(), endTime.trim(),
                       S.subject_code, S.title, S.subject_department,
                       venue.venue_id, venue.venue_name, S.full_name, venue.location,
@@ -427,7 +413,21 @@ export async function addtimetable({ semester }) {
                       venue.type, "used", S.semester, venue.capacity,
                       S.program_capacity, program_type, totalHours,
                       arrange, program_code, tutor_id, new Date()
-                    ]);
+                    ];
+                    const columns = [
+                      'day', 'slot', 'start_time', 'end_time', 'subject_code', 'subject_name', 'department_name',
+                      'venue_id', 'venue_name', 'tutor_name', 'venue_location', 'program_name', 'subject_credit',
+                      'program_level', 'year', 'venue_type', 'venue_status', 'semester', 'venue_capacity',
+                      'program_capacity', 'program_type', 'total_hours_per_week', 'arrange', 'program_code', 'created_by', 'created_at'
+                    ];
+                    if (hasSessionGroupId) {
+                      columns.unshift('session_group_id');
+                      timetableValues.unshift(sessionGroupId);
+                    }
+                    await db.query(
+                      `INSERT INTO extracted_timetables (${columns.join(', ')}) VALUES (${columns.map(() => '?').join(', ')})`,
+                      timetableValues
+                    );
 
                     await db.query(`UPDATE venues SET \`${s.statusCol}\` = 'used' WHERE venue_id = ?`, [venue.venue_id]);
                   }

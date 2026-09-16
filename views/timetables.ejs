@@ -143,7 +143,13 @@
   </form>
 
   <!-- Clean All Button -->
-  <form action="/timetables/delete-all" method="POST" onsubmit="return confirm('Are you sure you want to delete ALL timetables?');">
+  <form action="/timetables/delete-all" method="POST" class="clean-all-form" onsubmit="return confirm('This will delete ALL generated timetables and reset allocation counters. Continue?');">
+    <div class="row g-2 align-items-end mb-2">
+      <div class="col-md-5">
+        <label for="confirm_password" class="form-label">Confirm login password</label>
+        <input id="confirm_password" name="confirm_password" type="password" class="form-control" autocomplete="current-password" required>
+      </div>
+    </div>
     <button type="submit" class="btn-clean-all">
       ⚠️ CLEAN ALL TIMETABLES
     </button>

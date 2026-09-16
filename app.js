@@ -45,6 +45,7 @@ import studentTimetableApiRoute from "./api/student-timetable/route.js";
 import rateLimit from "express-rate-limit";
 import cors from "cors";
 import { sendError } from "./api/shared/respond.js";
+import semesterSettingsRoutes from "./routes/semesterSettingsRoutes.js";
 
 // Initialize dotenv
 dotenv.config();
@@ -103,6 +104,7 @@ app.use(forgotPasswordRoutes);
 //colision monitor
 app.use("/", collisionRoutes);
 app.use("/", collisionReportRoutes);
+app.use("/semester-settings", anaruhusa, forcePasswordChange, semesterSettingsRoutes);
 
 // Self Register
 app.use("/self-register", selfRegisterRoutes);

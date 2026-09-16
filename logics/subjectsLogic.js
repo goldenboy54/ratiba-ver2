@@ -1,7 +1,7 @@
 // logics/subjectsLogic.js
 import { getAllSubjects, addSubjectInDB, getSubjectByUniqueKeys,
   getUserByEmail,addSubject, updateSubject,  getRegisteredSubjectByCode,
-   getProgramsByCodes, deleteSubject } from '../models/subjectsModel.js';
+   getProgramsByCodes, deleteSubject, getSubjectById } from '../models/subjectsModel.js';
 import { getAllprograms } from '../models/programsModel.js';
 import { getAllusers } from '../models/usersModel.js';
 import { getAllvenues } from '../models/venuesModel.js';
@@ -86,6 +86,12 @@ export const handleUploadSubjectsCSV = async (req, res) => {
       const type_prac_or_theory = (row.type_prac_or_theory || "").trim();
       const total_hours_per_week =
         Number(row.total_hours_per_week || row.total_hours || 0);
+      const sequential_slots = Math.max(1, Number(
+        row.sequential_slots || row.sequential_slot || row.sequential_slots_per_venue || 1
+      ));
+      const possible_venues_ids = String(
+        row.possible_venues_ids || row.possible_venues || ''
+      ).split(/[,;+]/).map((value) => value.trim()).filter(Boolean);
 
       const program_code_field =
         (row.program_code || row.program || row.program_codes || "").trim();
@@ -177,7 +183,9 @@ export const handleUploadSubjectsCSV = async (req, res) => {
           total_hours_per_week,
           semester,
           type_prac_or_theory,
-          programRows: programs
+          programRows: programs,
+          possible_venues_ids,
+          sequential_slots
         };
 
         await addSubjectInDB(payload);
@@ -202,7 +210,7 @@ export const handleUploadSubjectsCSV = async (req, res) => {
 
 
 export const handleAddSubject = async (req, res) => {
-  let { user_id,subject_id, total_hours_per_week,type_prac_or_theory, semester, 'program_ids[]': program_ids } = req.body;
+  let { user_id,subject_id, total_hours_per_week,type_prac_or_theory, semester, possible_venues_ids, sequential_slots, 'program_ids[]': program_ids } = req.body;
 
 
   // For cases where program_ids is a single value and not an array
@@ -219,7 +227,7 @@ export const handleAddSubject = async (req, res) => {
 
   try {
       // Pass the parameters correctly to the model function
-      await addSubject({ user_id,subject_id, total_hours_per_week,type_prac_or_theory, semester, program_ids }); // Pass as an object
+      await addSubject({ user_id,subject_id, total_hours_per_week,type_prac_or_theory, semester, program_ids, possible_venues_ids, sequential_slots });
       res.redirect('/subjects');
   } catch (error) {
       res.status(500).send('Error assigning information: ' + error.message);
@@ -230,7 +238,14 @@ export const handleAddSubject = async (req, res) => {
 export const getEditSubjectForm = async (req, res) => {
   try {
     const subject = await getSubjectById(req.params.id);
-    res.render('subjects', { subject });
+    const [programs, users, venues, departments, registered_subjects] = await Promise.all([
+      getAllprograms(),
+      getAllusers(),
+      getAllvenues(),
+      getAlldepartments(),
+      getAllregistered_subjects(),
+    ]);
+    res.render('subjects', { subject, programs, users, venues, departments, registered_subjects });
   } catch (error) {
     res.status(500).send('Error getting subject: ' + error.message);
   }
@@ -292,5 +307,3 @@ export const getDistinctValues = async (column) => {
     throw new Error('Error fetching distinct values: ' + error.message);
   }
 };
-
-

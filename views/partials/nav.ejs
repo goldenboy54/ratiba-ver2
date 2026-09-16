@@ -71,7 +71,14 @@
   </div>
 
   <div class="nav-links">
-    <% if (user && (user.role === "tmaster" || user.role === "admin")) { %>
+    <% const navRole = String(user?.role || "").trim().toLowerCase(); %>
+    <% if (["admin", "tmaster", "hod"].includes(navRole)) { %>
+      <a href="/semester-settings" class="nav-link-item semester-calendar-link">
+        <i class="fas fa-calendar-days"></i> <span>Semester Calendar Settings</span>
+      </a>
+    <% } %>
+
+    <% if (["tmaster", "admin"].includes(navRole)) { %>
       <a href="/timetables" class="nav-link-item"><i class="fas fa-gear"></i> <span>System Settings</span></a>
       <a href="/manageTimetable" class="nav-link-item"><i class="fas fa-layer-group"></i> <span>Mix Programmes</span></a>
       <a href="/manageTimetable/freed-slots" class="nav-link-item"><i class="fas fa-clock"></i> <span>Freed Slots</span></a>
@@ -96,12 +103,12 @@
       <a href="/collision-report" class="nav-link-item"><i class="fas fa-clipboard-check"></i> <span>Collision Report</span></a>
     <% } %>
 
-    <% if (user && user.role === "hod") { %>
+    <% if (navRole === "hod") { %>
       <a href="/subjects" class="nav-link-item"><i class="fas fa-book-open"></i> <span>Allocate Modules</span></a>
       <a href="/searchtimetable" class="nav-link-item"><i class="fas fa-calendar-alt"></i> <span>View Timetable</span></a>
     <% } %>
 
-    <% if (user && ["student", "tutor", "hod", "tmaster"].includes(user.role)) { %>
+    <% if (["student", "tutor", "hod", "tmaster", "admin"].includes(navRole)) { %>
       <div class="nav-divider"></div>
       <a href="/profile" class="nav-link-item"><i class="fas fa-user-cog"></i> <span>Profile Settings</span></a>
       <a href="/logout" class="nav-link-item logout-link"><i class="fas fa-sign-out-alt"></i> <span>Logout</span></a>

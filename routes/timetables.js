@@ -1,11 +1,13 @@
 // routes/timetables.js
 import express from 'express';
+import bcrypt from 'bcrypt';
 import pool from '../db.js';
 import { showtimetableForm, getEdittimetableForm, handleUpdatetimetable, handleDeletetimetable, listtimetables } from '../logics/timetablesLogic.js';
 import { searchTimetables, getDistinctValues, groupTimetablesBySession } from '../logics/timetableLogic.js';
 import { truncateAllTimetables } from '../models/timetablesModel.js';
 import { getDistinctPrograms } from '../logics/viewtimetableLogic.js';
 import { getAllusers } from '../models/usersModel.js';
+import { createSemesterCalendarResolver, loadSemesterCalendarSettings } from '../models/semesterCalendar.js';
 
 const router = express.Router();
 
@@ -111,6 +113,22 @@ router.post('/delete-all', async (req, res) => {
       return res.redirect('/timetables?error=' + encodeURIComponent('Only admin / Timetable master can delete all timetables.'));
     }
 
+    const password = String(req.body?.confirm_password || '');
+    if (!password) {
+      return res.redirect('/timetables?error=' + encodeURIComponent('Enter your current login password to clean all timetables.'));
+    }
+
+    const [users] = await pool.execute(
+      `SELECT password FROM users
+       WHERE user_id = ? AND status = 'active'
+       AND role IN ('admin', 'tmaster')
+       LIMIT 1`,
+      [req.user.user_id]
+    );
+    if (!users[0] || !(await bcrypt.compare(password, users[0].password))) {
+      return res.redirect('/timetables?error=' + encodeURIComponent('Login email or password is incorrect. No timetable was deleted.'));
+    }
+
     await truncateAllTimetables();
     res.redirect('/timetables?success=' + encodeURIComponent('All timetables truncated successfully.'));
   } catch (err) {
@@ -142,30 +160,6 @@ const programsOverlap = (prog1, prog2) => {
 // mapping as models/manualTimetableModel.js, confirmed against the real 2026/2027
 // ATC/VETA academic calendar; duplicated here rather than shared, matching this
 // codebase's existing style for small per-file collision helpers.
-const SEMESTER_CALENDAR = {
-  NON_VETA:  { I: ["OCT", "NOV", "DEC", "JAN", "FEB"], II: ["MAR", "APR", "MAY", "JUN", "JUL"] },
-  VETA_L1L2: { I: ["JAN", "FEB", "MAR", "APR", "MAY"], II: ["JUL", "AUG", "SEP", "OCT", "NOV"] },
-  VETA_L3:   { I: ["AUG", "SEP", "OCT", "NOV"],        II: ["JAN", "FEB", "MAR", "APR", "MAY"] },
-};
-
-const getProgramGroup = (programType, programLevel) => {
-  const type = (programType || "").trim().toUpperCase();
-  if (type === "VETA") {
-    return String(programLevel || "").trim() === "3" ? "VETA_L3" : "VETA_L1L2";
-  }
-  return "NON_VETA";
-};
-
-// Two entries can only really collide if their semesters run during the same real
-// months - falls back to "overlapping" (the cautious answer) if either side's
-// group/semester isn't recognized, instead of silently letting it slip through.
-const semestersOverlap = (typeA, levelA, semA, typeB, levelB, semB) => {
-  const monthsA = SEMESTER_CALENDAR[getProgramGroup(typeA, levelA)]?.[semA];
-  const monthsB = SEMESTER_CALENDAR[getProgramGroup(typeB, levelB)]?.[semB];
-  if (!monthsA || !monthsB) return true;
-  return monthsA.some(m => monthsB.includes(m));
-};
-
 // =====================
 // Exchange Route (Updated with better collision detection)
 // =====================
@@ -177,6 +171,9 @@ router.post('/exchange', async (req, res) => {
   const conn = await pool.getConnection();
 
   try {
+    const semesterCalendar = createSemesterCalendarResolver(
+      await loadSemesterCalendarSettings()
+    );
     const { first_id, second_id, force } = req.body;
 
     if (!first_id || !second_id) {
@@ -256,10 +253,7 @@ router.post('/exchange', async (req, res) => {
       const results = [];
 
       for (const c of conflicts) {
-        // Same-time overlap alone isn't enough anymore - a matching semester
-        // label no longer means "same real time" now that VETA's calendar
-        // diverges from non-VETA's (see SEMESTER_CALENDAR above).
-        if (!semestersOverlap(entry.program_type, entry.program_level, entry.semester, c.program_type, c.program_level, c.semester)) continue;
+        if (!semesterCalendar(entry, entry.semester, c, c.semester)) continue;
 
         // Tutor conflict
         if (c.tutor_name && entry.tutor_name &&
