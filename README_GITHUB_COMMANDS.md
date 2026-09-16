@@ -173,6 +173,49 @@ can use:
 git push
 ```
 
+### If GitHub rejects the push
+
+This repository currently protects `developu` with the rule:
+
+```text
+Changes must be made through a pull request.
+```
+
+That means a direct push to `origin/developu` is expected to be rejected.
+Use a source branch and open a pull request into `developu` instead:
+
+```powershell
+git switch -c timetable-generation-updates
+```
+
+Creates a separate source branch from the current commit.
+
+```powershell
+git push -u origin timetable-generation-updates
+```
+
+Publishes the source branch without modifying the protected `developu` branch.
+
+```powershell
+gh pr create `
+  --repo goldenboy54/ratiba-ver2 `
+  --base developu `
+  --head timetable-generation-updates `
+  --title "Update Express timetable generation and collision handling" `
+  --body "Adds database-driven semester calendars, automatic and manual timetable generation updates, collision-report co-teaching handling, subject scheduling constraints, and technical documentation."
+```
+
+Creates the pull request that must be reviewed and merged into `developu`.
+
+After the pull request is merged:
+
+```powershell
+git switch developu
+git pull --ff-only origin developu
+```
+
+Updates the local `developu` branch to the reviewed GitHub version.
+
 ## 11. Verify the remote branch
 
 ```powershell
@@ -256,4 +299,3 @@ Normally this should be empty after a successful push.
   replaced.
 - Review `git diff --cached` before committing.
 - Run the targeted syntax checks and database verification before pushing.
-
